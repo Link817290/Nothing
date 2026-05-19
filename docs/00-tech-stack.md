@@ -56,7 +56,7 @@ Agent / CLI / Web（所有客户端）
 ```
 nothing/
 ├── packages/
-│   ├── nmp/              NMP 协议 SDK（发布 @nothing/nmp，零依赖）
+│   ├── nmp/              NMP 协议 SDK（发布 @nothingmail/nmp，零依赖）
 │   │   ├── src/
 │   │   │   ├── types.ts      协议类型
 │   │   │   ├── markdown.ts   nmp.md 生成 + 解析
@@ -84,7 +84,7 @@ nothing/
 │   │   ├── mail/
 │   │   │   ├── smtp.ts       统一发件接口
 │   │   │   ├── imap.ts       统一收件接口
-│   │   │   ├── mime.ts       MIME 构造（调用 @nothing/nmp）
+│   │   │   ├── mime.ts       MIME 构造（调用 @nothingmail/nmp）
 │   │   │   ├── inbound.ts    外部邮件解析
 │   │   │   └── backends/
 │   │   │       ├── stalwart.ts   自建模式后端
@@ -136,7 +136,7 @@ nothing/
 ## 包依赖关系
 
 ```
-nmp（零依赖，独立发布 @nothing/nmp）
+nmp（零依赖，独立发布 @nothingmail/nmp）
  ↑
  ├── api  (nmp + fastify + nodemailer + imapflow + drizzle)
  ├── cli  (nmp + @modelcontextprotocol/sdk + commander)
@@ -161,7 +161,7 @@ nmp（零依赖，独立发布 @nothing/nmp）
 ```json
 {
   "dependencies": {
-    "@nothing/nmp": "workspace:*",
+    "@nothingmail/nmp": "workspace:*",
     "fastify": "^5.x",
     "@fastify/jwt": "^9.x",
     "@fastify/cors": "^11.x",
@@ -197,14 +197,14 @@ nmp（零依赖，独立发布 @nothing/nmp）
 ```json
 {
   "dependencies": {
-    "@nothing/nmp": "workspace:*",
+    "@nothingmail/nmp": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.x",
     "commander": "^13.x"
   }
 }
 ```
 
-纯 HTTP 客户端，不依赖 nodemailer/imapflow。MCP tool 定义从 @nothing/nmp 导入。
+纯 HTTP 客户端，不依赖 nodemailer/imapflow。MCP tool 定义从 @nothingmail/nmp 导入。
 
 ## 开发环境
 

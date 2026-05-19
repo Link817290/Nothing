@@ -23,7 +23,7 @@ importers:
       '@fastify/rate-limit':
         specifier: ^10.2.0
         version: 10.3.0
-      '@nothing/nmp':
+      '@nothingmail/nmp':
         specifier: workspace:*
         version: link:../nmp
       drizzle-orm:
@@ -66,7 +66,7 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.12.1
         version: 1.29.0(zod@4.4.3)
-      '@nothing/nmp':
+      '@nothingmail/nmp':
         specifier: workspace:*
         version: link:../nmp
       commander:

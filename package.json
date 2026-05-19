@@ -6,7 +6,7 @@
     "dev:web": "pnpm --filter @nothing/web dev",
     "dev:cli": "pnpm --filter nothing-cli dev",
     "build": "pnpm -r build",
-    "build:nmp": "pnpm --filter @nothing/nmp build",
+    "build:nmp": "pnpm --filter @nothingmail/nmp build",
     "build:api": "pnpm --filter @nothing/api build",
     "build:web": "pnpm --filter @nothing/web build",
     "build:cli": "pnpm --filter nothing-cli build",

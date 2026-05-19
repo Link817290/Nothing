@@ -1,6 +1,6 @@
 import { getDb, saveDb } from '../db.js'
 import { randomBytes, createHash } from 'crypto'
-import type { TokenInfo, CreateTokenRequest, CreateTokenResponse, TokenPermission } from '@nothing/nmp/api'
+import type { TokenInfo, CreateTokenRequest, CreateTokenResponse, TokenPermission } from '@nothingmail/nmp/api'
 
 function genTokenId() {
   return `tok_${randomBytes(6).toString('base64url')}`

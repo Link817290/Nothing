@@ -1,7 +1,7 @@
 import { createTransport, type Transporter } from 'nodemailer'
 import { loadConfig } from '../config.js'
-import { generateMarkdown, generatePlainText, NMP_HEADERS, NMP_ATTACHMENT_NAME } from '@nothing/nmp'
-import type { NmpPayload } from '@nothing/nmp'
+import { generateMarkdown, generatePlainText, NMP_HEADERS, NMP_ATTACHMENT_NAME } from '@nothingmail/nmp'
+import type { NmpPayload } from '@nothingmail/nmp'
 
 let transporter: Transporter | null = null
 

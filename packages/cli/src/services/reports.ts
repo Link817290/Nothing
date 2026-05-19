@@ -1,6 +1,6 @@
 import { getDb } from '../db.js'
 import type { Database } from 'sql.js'
-import type { ReportQuery, ReportResponse } from '@nothing/nmp/api'
+import type { ReportQuery, ReportResponse } from '@nothingmail/nmp/api'
 
 function queryAll(db: Database, sql: string, params: unknown[] = []): Record<string, any>[] {
   const stmt = db.prepare(sql)

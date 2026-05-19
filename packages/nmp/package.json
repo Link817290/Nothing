@@ -1,5 +1,5 @@
 {
-  "name": "@nothing/nmp",
+  "name": "@nothingmail/nmp",
   "version": "0.1.0",
   "description": "Nothing Message Protocol — AI-native communication protocol",
   "type": "module",

@@ -33,7 +33,7 @@ Agent / CLI / Web
 
 ## v1 做什么
 
-### NMP 协议 SDK（@nothing/nmp）
+### NMP 协议 SDK（@nothingmail/nmp）
 
 - 协议类型定义（NmpMessage, NmpType, NmpStatus...）
 - nmp.md 生成 + 解析（Markdown-KV 格式）
@@ -199,7 +199,7 @@ POST   /api/setup/verify-dns       验证 DNS 记录
 api/mail/
 ├── smtp.ts          统一发件接口（自动选路）
 ├── imap.ts          统一收件接口（轮询所有已配邮箱）
-├── mime.ts          MIME 构造（调用 @nothing/nmp）
+├── mime.ts          MIME 构造（调用 @nothingmail/nmp）
 ├── inbound.ts       外部邮件解析
 └── backends/
     ├── stalwart.ts  自建模式（连接本地 Stalwart）
@@ -230,7 +230,7 @@ api/mail/
 | 层 | 选型 |
 |---|---|
 | 语言 | TypeScript |
-| NMP 协议 SDK | @nothing/nmp（零依赖） |
+| NMP 协议 SDK | @nothingmail/nmp（零依赖） |
 | 邮件服务器 | Stalwart（自建模式）/ Gmail/Outlook（邮箱模式） |
 | 后端 | Fastify |
 | 前端 | React + Vite（纯 SPA 静态文件） |
@@ -250,7 +250,7 @@ api/mail/
 ## 开发顺序
 
 ```
-第 1 步: NMP 协议 SDK（@nothing/nmp）           ✅ 已完成
+第 1 步: NMP 协议 SDK（@nothingmail/nmp）           ✅ 已完成
 第 2 步: 项目骨架（monorepo + 4 个包）           ✅ 已完成
 第 3 步: 数据库 schema + 后端 API（账号、Token）  (2 天)
 第 4 步: 后端 API（消息收发、状态追踪）           (2 天)

@@ -1,8 +1,8 @@
 import { getDb, saveDb } from '../db.js'
 import { randomBytes } from 'crypto'
 import type { Database } from 'sql.js'
-import type { NmpPayload } from '@nothing/nmp'
-import type { SendRequest, SendResponse, InboxQuery, InboxResponse, MessageDetail, MessageSummary, ReplyRequest, ReplyResponse } from '@nothing/nmp/api'
+import type { NmpPayload } from '@nothingmail/nmp'
+import type { SendRequest, SendResponse, InboxQuery, InboxResponse, MessageDetail, MessageSummary, ReplyRequest, ReplyResponse } from '@nothingmail/nmp/api'
 import { loadConfig } from '../config.js'
 
 function genId() {

@@ -76,7 +76,7 @@ Monorepo with 3 packages:
 
 | Package | Purpose | Published |
 |---------|---------|-----------|
-| `@nothing/nmp` | NMP protocol SDK (types, parser, validator, schemas) | npm |
+| `@nothingmail/nmp` | NMP protocol SDK (types, parser, validator, schemas) | npm |
 | `nothing-cli` | CLI + MCP Server + embedded API | npm |
 | `packages/api` | Self-hosted backend (Stalwart + PostgreSQL) — future | — |
 

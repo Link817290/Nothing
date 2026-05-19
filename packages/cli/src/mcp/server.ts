@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema, GetPromptRequestSchema, ListPromptsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { NMP_TOOLS } from '@nothing/nmp'
+import { NMP_TOOLS } from '@nothingmail/nmp'
 import { NothingClient } from '../client.js'
 import { loadConfig } from '../config.js'
 

@@ -1,9 +1,9 @@
 // MIME construction
 // Builds a full MIME email from NMP payload + content + attachments
-// Uses @nothing/nmp generateMarkdown, generatePlainText
+// Uses @nothingmail/nmp generateMarkdown, generatePlainText
 
-import { generateMarkdown, generatePlainText, NMP_ATTACHMENT_NAME, NMP_HEADERS } from '@nothing/nmp'
-import type { NmpPayload } from '@nothing/nmp'
+import { generateMarkdown, generatePlainText, NMP_ATTACHMENT_NAME, NMP_HEADERS } from '@nothingmail/nmp'
+import type { NmpPayload } from '@nothingmail/nmp'
 import type { MimeMessage } from './types.js'
 
 /** Build a MimeMessage from NMP content + payload */

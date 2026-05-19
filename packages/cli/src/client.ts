@@ -9,7 +9,7 @@ import type {
   MessageDetail,
   ReplyRequest, ReplyResponse,
   ProjectsResponse,
-} from '@nothing/nmp/api'
+} from '@nothingmail/nmp/api'
 
 interface Config {
   token: string
