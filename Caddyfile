@@ -1,0 +1,16 @@
+# Replace nothing.email with your domain
+
+nothing.email {
+    root * /srv/web
+    try_files {path} /index.html
+    file_server
+    encode gzip
+}
+
+api.nothing.email {
+    reverse_proxy localhost:3000
+}
+
+mail.nothing.email {
+    respond "Nothing Mail Server" 200
+}

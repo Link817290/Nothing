@@ -1,0 +1,92 @@
+graph TB
+    subgraph Clients["客户端"]
+        CLI["CLI<br/><small>commander</small>"]
+        MCP["MCP Server<br/><small>@modelcontextprotocol/sdk</small>"]
+        WEB["Web Dashboard<br/><small>React + Vite + react-router</small><br/><small>Tailwind + shadcn/ui</small>"]
+    end
+
+    subgraph API["Nothing API — Fastify 5.x"]
+        direction TB
+        ROUTES["Routes"]
+        AUTH_R["auth.ts<br/><small>GitHub OAuth</small>"]
+        ACC_R["account.ts<br/><small>账号信息</small>"]
+        TOK_R["tokens.ts<br/><small>Token CRUD</small>"]
+        MSG_R["messages.ts<br/><small>发送/收件箱/发件箱/读取/回复</small>"]
+        PROJ_R["projects.ts<br/><small>项目列表</small>"]
+
+        PLUGINS["Plugins"]
+        JWT["jwt.ts<br/><small>@fastify/jwt</small>"]
+        STALWART_P["stalwart.ts<br/><small>Stalwart REST API</small>"]
+        RATE["ratelimit.ts<br/><small>@fastify/rate-limit</small>"]
+
+        SERVICES["Services"]
+        MAIL_S["mail.ts<br/><small>调用 core 收发邮件</small>"]
+        INBOUND["inbound.ts<br/><small>外部邮件接收+解析</small>"]
+
+        DB["DB Schema — Drizzle ORM"]
+        USERS_T["users"]
+        TOKENS_T["tokens"]
+        MSGS_T["messages"]
+
+        ROUTES --- AUTH_R
+        ROUTES --- ACC_R
+        ROUTES --- TOK_R
+        ROUTES --- MSG_R
+        ROUTES --- PROJ_R
+
+        PLUGINS --- JWT
+        PLUGINS --- STALWART_P
+        PLUGINS --- RATE
+
+        SERVICES --- MAIL_S
+        SERVICES --- INBOUND
+
+        DB --- USERS_T
+        DB --- TOKENS_T
+        DB --- MSGS_T
+    end
+
+    subgraph CORE["Core — 邮件处理层"]
+        SMTP_C["smtp.ts<br/><small>nodemailer 6.x</small>"]
+        IMAP_C["imap.ts<br/><small>imapflow 1.x</small>"]
+        FORMAT["format.ts<br/><small>JSON ↔ MIME 转换</small>"]
+        TYPES["types.ts<br/><small>共享类型定义</small>"]
+    end
+
+    subgraph Infra["基础设施 — Docker"]
+        STALWART["Stalwart Mail Server<br/><small>SMTP 25/465/587 · IMAP 993</small><br/><small>DKIM 签名 · SPF/DMARC</small>"]
+        PG["PostgreSQL 16<br/><small>用户 · Token · 消息 · 状态</small>"]
+    end
+
+    subgraph Proxy["反向代理 — Caddy 2.x"]
+        CADDY_WEB["nothing.email<br/><small>静态文件托管</small>"]
+        CADDY_API["api.nothing.email<br/><small>反向代理 → :3000</small>"]
+        CADDY_TLS["自动 TLS<br/><small>Let's Encrypt</small>"]
+    end
+
+    CLI -->|"HTTP API<br/>Bearer Token"| API
+    MCP -->|"HTTP API<br/>Bearer Token"| API
+    WEB -->|"HTTP API<br/>JWT"| API
+
+    MAIL_S --> CORE
+    INBOUND --> CORE
+
+    SMTP_C -->|"SMTP 发件"| STALWART
+    IMAP_C -->|"IMAP 收外部邮件"| STALWART
+
+    MSG_R --> MAIL_S
+    MSG_R --> INBOUND
+
+    AUTH_R --> STALWART_P
+    STALWART_P -->|"REST API<br/>创建/删除用户"| STALWART
+
+    DB -->|"Drizzle ORM"| PG
+
+    CADDY_WEB -.->|"静态文件<br/>/srv/web/"| WEB
+    CADDY_API -.->|"localhost:3000"| API
+
+    style Clients fill:#e3f2fd,stroke:#1565c0,color:#000
+    style API fill:#fff3e0,stroke:#e65100,color:#000
+    style CORE fill:#f3e5f5,stroke:#6a1b9a,color:#000
+    style Infra fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style Proxy fill:#fce4ec,stroke:#c62828,color:#000

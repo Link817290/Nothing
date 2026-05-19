@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  stalwart:
+    image: stalwartlabs/mail-server:latest
+    container_name: nothing-mail
+    restart: always
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+      - "127.0.0.1:8443:443"
+    volumes:
+      - ./data/stalwart:/opt/stalwart-mail
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: nothing-db
+    restart: always
+    environment:
+      - POSTGRES_USER=nothing
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=nothing
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"

@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+
+# Build outputs
+packages/*/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# PM2
+.pm2/
+
+# Docker volumes
+data/
+
+# Temp
+*.tmp
+tmp/
+*.zip

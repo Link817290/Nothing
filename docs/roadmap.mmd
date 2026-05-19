@@ -1,0 +1,108 @@
+graph TD
+    ROOT["Nothing v1"] --> INFRA["基础设施"]
+    ROOT --> PROTO["NMP 协议"]
+    ROOT --> DEV["开发"]
+    ROOT --> LAUNCH["上线"]
+
+    %% 基础设施
+    INFRA --> DOMAIN["购买域名"]
+    INFRA --> VPS["购买 VPS<br/><small>腾讯云香港 2C2G</small>"]
+    INFRA --> GITHUB_APP["创建 GitHub OAuth App"]
+
+    VPS --> VPS_INIT["服务器初始化<br/><small>Docker, Node.js, pnpm, PM2, Caddy</small>"]
+    DOMAIN --> DNS["DNS 配置<br/><small>A, MX, SPF, DKIM, DMARC</small>"]
+    VPS_INIT --> DNS
+
+    DNS --> STALWART["部署 Stalwart<br/><small>Docker, SMTP/IMAP</small>"]
+    VPS_INIT --> PG["部署 PostgreSQL<br/><small>Docker</small>"]
+    STALWART --> MAIL_TEST["邮件送达率验证<br/><small>mail-tester ≥ 9/10</small>"]
+
+    %% NMP 协议
+    PROTO --> SPEC["协议规范定稿<br/><small>nmp-spec.md</small>"]
+    PROTO --> SCHEMA["JSON Schema 定义<br/><small>reply_schema 预定义</small>"]
+    SPEC --> SPEC_REVIEW["协议自查 + 迭代"]
+    SPEC_REVIEW --> SPEC_FINAL["v1 协议冻结"]
+
+    %% 开发
+    DEV --> CORE["packages/core"]
+    DEV --> API["packages/api"]
+    DEV --> CLI["packages/cli"]
+    DEV --> WEB["packages/web"]
+
+    %% 项目骨架
+    DEV --> SKELETON["项目骨架<br/><small>pnpm workspace, tsconfig, eslint</small>"]
+
+    %% Core
+    SPEC_FINAL --> CORE
+    CORE --> CORE_SMTP["smtp.ts<br/><small>构造 NMP MIME 邮件</small>"]
+    CORE --> CORE_IMAP["imap.ts<br/><small>接收外部邮件</small>"]
+    CORE --> CORE_FORMAT["format.ts<br/><small>生成 Part1 + nmp.md + JSON</small>"]
+    CORE --> CORE_PARSE["parse.ts<br/><small>解析 nmp.md 附件</small>"]
+    CORE --> CORE_TYPES["types.ts<br/><small>共享类型</small>"]
+
+    %% API
+    SKELETON --> API
+    PG --> API
+    STALWART --> API
+    GITHUB_APP --> API
+    CORE --> API_ROUTES
+
+    API --> DB_SCHEMA["DB Schema<br/><small>users, tokens, messages</small>"]
+    API --> API_AUTH["auth.ts<br/><small>GitHub OAuth</small>"]
+    API --> API_ACCOUNT["account.ts<br/><small>注册, handle, 用量</small>"]
+    API --> API_TOKENS["tokens.ts<br/><small>Token CRUD</small>"]
+    API --> API_ROUTES["messages.ts<br/><small>发送, 收件箱, 读取, 回复</small>"]
+    API --> API_PROJECTS["projects.ts<br/><small>项目列表</small>"]
+    API --> API_INBOUND["inbound.ts<br/><small>外部邮件接收→解析→入库</small>"]
+    API --> API_PLUGINS["plugins<br/><small>jwt, stalwart, ratelimit</small>"]
+
+    %% CLI
+    API_ROUTES --> CLI
+    API_AUTH --> CLI
+
+    CLI --> CLI_API["api.ts<br/><small>HTTP 客户端</small>"]
+    CLI --> CLI_LOGIN["login / whoami"]
+    CLI --> CLI_SEND["send"]
+    CLI --> CLI_INBOX["inbox / read / reply"]
+    CLI --> CLI_PROJECTS["projects"]
+    CLI --> MCP_SERVER["MCP Server<br/><small>6 个 tools</small>"]
+
+    %% Web
+    API_ROUTES --> WEB
+    API_AUTH --> WEB
+
+    WEB --> WEB_HOME["首页 + GitHub 登录"]
+    WEB --> WEB_CALLBACK["OAuth 回调 + handle 注册"]
+    WEB --> WEB_INBOX["Inbox / Sent 页面"]
+    WEB --> WEB_TOKENS["Tokens 管理页面"]
+    WEB --> WEB_SETTINGS["Settings 页面"]
+
+    %% 上线
+    MAIL_TEST --> LAUNCH
+    API --> LAUNCH
+    CLI --> LAUNCH
+    WEB --> LAUNCH
+
+    LAUNCH --> DEPLOY["部署上线<br/><small>Docker + PM2 + Caddy</small>"]
+    LAUNCH --> E2E["端到端测试<br/><small>注册→发送→接收→回复</small>"]
+    LAUNCH --> BACKUP["备份 cron<br/><small>每日 pg_dump</small>"]
+    LAUNCH --> MONITOR["监控<br/><small>PM2 + Uptime Kuma</small>"]
+
+    DEPLOY --> NPM_PUBLISH["CLI 发布到 npm"]
+    E2E --> GO_LIVE["🟢 正式上线"]
+    NPM_PUBLISH --> GO_LIVE
+
+    %% 样式
+    style ROOT fill:#1a1a2e,stroke:#e94560,color:#fff
+    style INFRA fill:#16213e,stroke:#0f3460,color:#fff
+    style PROTO fill:#1a1a2e,stroke:#e94560,color:#fff
+    style DEV fill:#0f3460,stroke:#533483,color:#fff
+    style LAUNCH fill:#e94560,stroke:#e94560,color:#fff
+    style GO_LIVE fill:#00b894,stroke:#00b894,color:#fff
+
+    style DOMAIN fill:#ffeaa7,stroke:#fdcb6e,color:#000
+    style VPS fill:#ffeaa7,stroke:#fdcb6e,color:#000
+    style GITHUB_APP fill:#ffeaa7,stroke:#fdcb6e,color:#000
+
+    style SPEC_FINAL fill:#a29bfe,stroke:#6c5ce7,color:#fff
+    style MAIL_TEST fill:#55efc4,stroke:#00b894,color:#000

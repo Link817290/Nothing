@@ -1,0 +1,57 @@
+/* Nothing — global styles. Only tokens + tweak overrides live here.
+   Component styles are inline (style={{}}) so each page reads as a single
+   visual document. */
+
+html, body { margin: 0; padding: 0; height: 100%; background: #FAFAF7; }
+body {
+  font-family: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
+  color: #0F0F0E;
+}
+* { box-sizing: border-box; }
+
+/* Display-font swap: every element whose inline style names "Instrument
+   Serif" gets its family overridden by the active data-display value.
+   Components keep Instrument Serif as their baseline; this rule lets the
+   wider system be re-skinned by setting body[data-display]. */
+body[data-display="newsreader"] [style*="Instrument Serif"] {
+  font-family: "Newsreader", serif !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+}
+body[data-display="plex"] [style*="Instrument Serif"] {
+  font-family: "IBM Plex Serif", serif !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+}
+body[data-display="source"] [style*="Instrument Serif"] {
+  font-family: "Source Serif 4", serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+}
+
+/* Inbox/Sent subject lines respond to data-subject. */
+body[data-subject="serif-italic"] [data-subject-text] {
+  font-family: "Newsreader", serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 19px !important;
+}
+body[data-subject="serif-upright"] [data-subject-text] {
+  font-family: "Newsreader", serif !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 17px !important;
+}
+
+/* Accent swap — yellow → alt colours for partner deployments. */
+body[data-accent="coral"]  [style*="background: #E5FF00"] { background: #FF6D40 !important; }
+body[data-accent="coral"]  [style*="color: #E5FF00"]      { color:      #FF6D40 !important; }
+body[data-accent="coral"]  [style*="solid #E5FF00"]       { border-color: #FF6D40 !important; }
+
+body[data-accent="green"]  [style*="background: #E5FF00"] { background: #5BE49B !important; }
+body[data-accent="green"]  [style*="color: #E5FF00"]      { color:      #2BB36C !important; }
+body[data-accent="green"]  [style*="solid #E5FF00"]       { border-color: #5BE49B !important; }
+
+body[data-accent="cream"]  [style*="background: #E5FF00"] { background: #FFE08A !important; }
+body[data-accent="cream"]  [style*="color: #E5FF00"]      { color:      #A8761A !important; }
+body[data-accent="cream"]  [style*="solid #E5FF00"]       { border-color: #FFE08A !important; }
