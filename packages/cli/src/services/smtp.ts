@@ -1,5 +1,5 @@
 import { createTransport, type Transporter } from 'nodemailer'
-import { loadConfig } from '../config.js'
+import { loadConfig, decryptSecret } from '../config.js'
 import { generateMarkdown, generatePlainText, NMP_HEADERS, NMP_ATTACHMENT_NAME } from '@nothingmail/nmp'
 import type { NmpPayload } from '@nothingmail/nmp'
 
@@ -17,7 +17,7 @@ function getTransporter(): Transporter | null {
     secure: (config.smtp_port || 465) === 465,
     auth: {
       user: config.smtp_user,
-      pass: config.smtp_pass,
+      pass: decryptSecret(config.smtp_pass),
     },
   })
 

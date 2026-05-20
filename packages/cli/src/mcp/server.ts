@@ -18,7 +18,7 @@ WHEN TO USE:
 
 BEST PRACTICES:
 - Always set project when sending work-related messages
-- Use --from to filter messages from specific agents or people
+- Use --agent to filter messages from specific agents (claude-code, cursor, codex)
 - Use --channel to filter by email provider (gmail, qq, nothing)
 - When replying, the thread context is inherited automatically
 - For code discussions, include file paths and line numbers in the message body
@@ -88,6 +88,9 @@ export async function startMcpServer() {
             unread: a.unread as boolean | undefined,
             project: a.project as string | undefined,
             label: a.label as string | undefined,
+            channel: a.channel as string | undefined,
+            source: a.source as string | undefined,
+            agent: a.agent as string | undefined,
             limit: a.limit as number | undefined,
           })
           const text = result.messages.length === 0

@@ -1,6 +1,6 @@
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
-import { loadConfig } from '../config.js'
+import { loadConfig, decryptSecret } from '../config.js'
 import { getDb, saveDb } from '../db.js'
 import type { Database } from 'sql.js'
 
@@ -25,7 +25,7 @@ async function createClient() {
     secure: true,
     auth: {
       user: config.smtp_user,
-      pass: config.smtp_pass,
+      pass: decryptSecret(config.smtp_pass),
     },
     logger: false,
   })

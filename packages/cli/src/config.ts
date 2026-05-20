@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync, rmSync } from 'fs'
 import { join } from 'path'
-import { homedir } from 'os'
+import { homedir, hostname, userInfo } from 'os'
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto'
 
 const NOTHING_DIR = join(homedir(), '.nothing')
 const CONFIG_FILE = join(NOTHING_DIR, 'config.json')
@@ -64,6 +65,47 @@ export function clearPid() {
   if (existsSync(PID_FILE)) {
     writeFileSync(PID_FILE, '')
   }
+}
+
+/** Reset all Nothing data — config, database, PID */
+export function resetAll() {
+  if (existsSync(CONFIG_FILE)) unlinkSync(CONFIG_FILE)
+  if (existsSync(DB_FILE)) unlinkSync(DB_FILE)
+  if (existsSync(PID_FILE)) unlinkSync(PID_FILE)
+}
+
+// ─── Secret encryption ─────────────────────────────────────────
+// Simple AES-256-GCM encryption using a machine-bound key.
+// Not bulletproof — but keeps passwords out of plaintext config.
+
+const ENC_PREFIX = 'enc:'
+
+/** Derive a machine-bound key from hostname + username + homedir */
+function deriveKey(): Buffer {
+  const material = `nothing:${hostname()}:${userInfo().username}:${homedir()}`
+  return createHash('sha256').update(material).digest()
+}
+
+/** Encrypt a secret. Returns "enc:<iv>:<authTag>:<ciphertext>" */
+export function encryptSecret(plain: string): string {
+  const key = deriveKey()
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(plain, 'utf-8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return `${ENC_PREFIX}${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted.toString('base64')}`
+}
+
+/** Decrypt a secret. If not encrypted (legacy), returns as-is. */
+export function decryptSecret(value: string): string {
+  if (!value.startsWith(ENC_PREFIX)) return value // legacy plaintext
+  const parts = value.slice(ENC_PREFIX.length).split(':')
+  if (parts.length !== 3) return value
+  const [ivB64, tagB64, dataB64] = parts
+  const key = deriveKey()
+  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'))
+  decipher.setAuthTag(Buffer.from(tagB64, 'base64'))
+  return decipher.update(Buffer.from(dataB64, 'base64'), undefined, 'utf-8') + decipher.final('utf-8')
 }
 
 export const paths = {

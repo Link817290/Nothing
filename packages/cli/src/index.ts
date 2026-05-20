@@ -140,4 +140,12 @@ program
     await report(opts)
   })
 
+program
+  .command('reset')
+  .description('Reset Nothing (delete config, database, stop server)')
+  .action(async () => {
+    const { reset } = await import('./commands/reset.js')
+    await reset()
+  })
+
 program.parse()

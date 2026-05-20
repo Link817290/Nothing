@@ -1,5 +1,5 @@
-import { input, select, password } from '@inquirer/prompts'
-import { loadConfig, saveConfig, paths } from '../config.js'
+import { input, select, password, confirm } from '@inquirer/prompts'
+import { loadConfig, saveConfig, paths, encryptSecret } from '../config.js'
 import { randomBytes } from 'crypto'
 
 const PROVIDERS: Record<string, {
@@ -66,9 +66,13 @@ export async function init() {
   const config = loadConfig()
 
   if (config.initialized) {
-    console.log(`  Already initialized: ${config.email}`)
-    console.log(`  Run "nothing start" to start the server\n`)
-    return
+    console.log(`  Current config: ${config.email} (${config.provider})`)
+    const reconfigure = await confirm({ message: 'Reconfigure?', default: false })
+    if (!reconfigure) {
+      console.log(`  Run "nothing start" to start the server\n`)
+      return
+    }
+    console.log()
   }
 
   const provider = await select({
@@ -84,7 +88,8 @@ export async function init() {
     ],
   })
 
-  const token = `ntk_live_${randomBytes(24).toString('base64url')}`
+  // Keep existing token if reconfiguring, generate new if first time
+  const token = config.token || `ntk_live_${randomBytes(24).toString('base64url')}`
 
   // Local mode
   if (provider === 'local') {
@@ -97,7 +102,7 @@ export async function init() {
       initialized: true,
     })
 
-    printDone(email, token)
+    await printDone(email, token)
     return
   }
 
@@ -166,7 +171,7 @@ export async function init() {
 
   if (!smtpOk && !imapOk) {
     console.log('\n  ⚠ Both connections failed. Check your credentials.')
-    console.log('  Saving config anyway — you can retry with "nothing init" after fixing.\n')
+    console.log('  Saving config anyway — you can reconfigure with "nothing init".\n')
   } else if (!smtpOk || !imapOk) {
     console.log('\n  ⚠ Partial connection. Saving config — some features may not work.\n')
   } else {
@@ -179,23 +184,33 @@ export async function init() {
     provider,
     smtp_host: smtpHost, smtp_port: smtpPort,
     imap_host: imapHost, imap_port: imapPort,
-    smtp_user: email, smtp_pass: pass,
+    smtp_user: email, smtp_pass: encryptSecret(pass),
     initialized: true,
   })
 
-  printDone(email, token)
+  await printDone(email, token)
 }
 
-function printDone(email: string, token: string) {
+async function printDone(email: string, token: string) {
   console.log('  ✓ Nothing initialized\n')
   console.log(`  Email:  ${email}`)
   console.log(`  Key:    ${token}`)
   console.log(`  Config: ${paths.config}`)
   console.log(`  DB:     ${paths.db}`)
   console.log()
+
+  // Auto-start server
+  console.log('  Starting server...')
+  try {
+    const { start } = await import('./start.js')
+    await start()
+  } catch {
+    console.log('  ⚠ Auto-start failed. Run "nothing start" manually.')
+  }
+
   console.log('  Next steps:')
-  console.log('    nothing start             Start local server')
   console.log('    nothing mcp:install       Configure MCP for Claude Code / Cursor')
   console.log('    nothing send <to> <text>  Send your first message')
+  console.log('    nothing inbox             Check your inbox')
   console.log()
 }

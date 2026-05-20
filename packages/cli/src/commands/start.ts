@@ -14,8 +14,6 @@ export async function start() {
     return
   }
 
-  console.log('  Starting Nothing server...')
-
   // Find server-process.js relative to this file
   const thisDir = dirname(fileURLToPath(import.meta.url))
   const serverScript = join(thisDir, 'server-process.js')
