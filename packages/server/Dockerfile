@@ -7,7 +7,7 @@ COPY dist ./dist
 
 # Create a production package.json without workspace references
 COPY package.json ./package.json.orig
-RUN sed 's/"@nothingmail\/nmp": "workspace:\*"/"@nothingmail\/nmp": "^0.1.0"/' package.json.orig > package.json \
+RUN sed 's/"@nothingmail\/nmp": "workspace:\*"/"@nothingmail\/nmp": "^0.2.1"/' package.json.orig > package.json \
     && rm package.json.orig \
     && npm install --omit=dev
 
