@@ -1,4 +1,4 @@
-import type { NmpMarkdown, NmpPayload, NmpContext, NmpType } from './types.js'
+import type { NmpMarkdown, NmpPayload, NmpContext, NmpType, NmpPriority } from './types.js'
 
 /** Generate nmp.md content from payload + message body */
 export function generateMarkdown(
@@ -15,6 +15,7 @@ export function generateMarkdown(
   if (payload.labels?.length) messageParts.push(`- labels: ${payload.labels.join(', ')}`)
   if (payload.priority && payload.priority !== 'normal') messageParts.push(`- priority: ${payload.priority}`)
   if (payload.expires) messageParts.push(`- expires: ${payload.expires}`)
+  if (payload.conversation_id) messageParts.push(`- conversation: ${payload.conversation_id}`)
   sections.push(`## Message\n\n${messageParts.join('\n')}`)
 
   // ## Content (required)

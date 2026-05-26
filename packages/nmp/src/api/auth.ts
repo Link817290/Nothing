@@ -1,5 +1,4 @@
-import type { TokenPermission } from '../types.js'
-export type { TokenPermission }
+export type TokenPermission = 'read' | 'write' | 'admin'
 
 /** Account and token types for Nothing API */
 

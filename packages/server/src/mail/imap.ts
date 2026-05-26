@@ -2,6 +2,7 @@ import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 import { queryOne, queryAll, run } from '../repositories/db.js'
 import { decrypt } from '../services/accounts.js'
+import { parseNmpEmail, detectNmp } from '@nothingmail/nmp'
 
 export type SyncMode = 'nmp' | 'all'
 
@@ -80,10 +81,26 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp'): Pr
           const to = parsed.to?.text || acc.email
           const subject = parsed.subject || '(no subject)'
 
-          const nmpHeader = parsed.headers?.get('x-nmp-version')
-          const nmpAttachment = parsed.attachments?.find(a => a.filename === 'nmp.md')
-          const nmpJsonAttachment = parsed.attachments?.find(a => a.filename === 'nmp.json')
-          const isNmp = !!(nmpHeader || nmpAttachment)
+          // Use NMP parser for detection and extraction
+          const nmpResult = parseNmpEmail({
+            from: parsed.from?.text,
+            to: parsed.to?.text,
+            subject: parsed.subject,
+            date: parsed.date,
+            messageId: parsed.messageId,
+            headers: parsed.headers as any,
+            text: parsed.text,
+            html: parsed.html,
+            textAsHtml: parsed.textAsHtml,
+            attachments: parsed.attachments?.map(a => ({
+              filename: a.filename,
+              content: a.content,
+              contentType: a.contentType,
+              size: a.size,
+            })),
+          })
+
+          const isNmp = nmpResult.isNmp
 
           // In NMP mode, skip non-NMP emails
           if (mode === 'nmp' && !isNmp) continue
@@ -94,32 +111,24 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp'): Pr
           let project: string | null = null
           let labels: string[] = []
 
-          if (isNmp && nmpAttachment) {
-            body = nmpAttachment.content.toString('utf-8')
-            if (nmpJsonAttachment) {
-              try {
-                jsonPayload = JSON.parse(nmpJsonAttachment.content.toString('utf-8'))
-                agent = jsonPayload.agent || null
-                project = jsonPayload.project || null
-                labels = jsonPayload.labels || []
-              } catch {}
-            }
-            if (!agent) {
-              const agentHeader = parsed.headers?.get('x-nmp-agent')
-              if (agentHeader) agent = String(agentHeader)
-            }
+          if (isNmp && nmpResult.message) {
+            body = nmpResult.message.content
+            jsonPayload = nmpResult.payload
+            agent = nmpResult.payload?.agent || null
+            project = nmpResult.payload?.project || null
+            labels = nmpResult.payload?.labels || []
           } else {
             body = parsed.html || parsed.textAsHtml || parsed.text || subject
           }
           if (body.length > 20000) body = body.slice(0, 20000)
 
           const source = isNmp ? 'nmp' : 'external'
-          const userAttachments = parsed.attachments?.filter(a => a.filename !== 'nmp.md' && a.filename !== 'nmp.json')
+          const userAttachments = nmpResult.message?.attachments || []
 
           await run(
             `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, direction, has_attachments, is_read)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, 'inbound', $15, FALSE)`,
-            [imapId, acc.user_id, acc.id, from, to, subject, body, jsonPayload ? JSON.stringify(jsonPayload) : null, agent, project, JSON.stringify(labels), acc.provider, source, imapId, userAttachments?.length ? true : false]
+            [imapId, acc.user_id, acc.id, from, to, subject, body, jsonPayload ? JSON.stringify(jsonPayload) : null, agent, project, JSON.stringify(labels), acc.provider, source, imapId, userAttachments.length > 0]
           )
           newCount++
         } catch (err) {

@@ -1,4 +1,4 @@
-import { NMP_TYPES, NMP_PRIORITIES, NMP_DEFAULTS } from './types.js'
+import { NMP_BUILTIN_TYPES, NMP_PRIORITIES, NMP_DEFAULTS } from './types.js'
 
 /** MCP tool definitions for Nothing — rich descriptions for Agent understanding */
 
@@ -13,7 +13,7 @@ export const NMP_TOOLS = {
         text: { type: 'string', description: 'Message body. For code discussions, include file paths and line numbers.' },
         agent: { type: 'string', description: 'Your agent identity (e.g., "claude-code", "cursor"). Auto-detected from MCP context.' },
         subject: { type: 'string', description: `Subject line. Auto-generated from first ${NMP_DEFAULTS.subjectMaxLength} chars if omitted.` },
-        type: { type: 'string', enum: [...NMP_TYPES], description: 'Message intent: share (FYI), question (expects reply), reply, notify (no reply expected)' },
+        type: { type: 'string', enum: [...NMP_BUILTIN_TYPES], description: 'Message type: nmp:chat, nmp:task, nmp:reply, nmp:notification, nmp:code-review, nmp:report, nmp:approval' },
         project: { type: 'string', description: 'Project name for grouping (e.g., "backend-refactor"). Messages with same project are grouped together.' },
         labels: { type: 'array', items: { type: 'string' }, description: 'Tags for categorization (e.g., ["code-review", "urgent"])' },
         files: { type: 'array', items: { type: 'string' }, description: 'Absolute file paths to attach (e.g., ["/path/to/file.ts"])' },

@@ -1,4 +1,4 @@
-import { NMP_VERSION, NMP_TYPES, NMP_PRIORITIES, NMP_LIMITS, NMP_COMPLIANCE } from './types.js'
+import { NMP_VERSION, NMP_PRIORITIES, NMP_LIMITS, NMP_COMPLIANCE } from './types.js'
 import type { NmpComplianceLevel } from './types.js'
 
 export interface ValidationResult {
@@ -22,9 +22,9 @@ export function validatePayload(payload: unknown): ValidationResult {
     errors.push(`Invalid nmp version: ${p['nmp']}, expected ${NMP_VERSION}`)
   }
 
-  // MUST: type
-  if (!p['type'] || !(NMP_TYPES as readonly string[]).includes(p['type'] as string)) {
-    errors.push(`Invalid type: ${p['type']}, expected one of ${NMP_TYPES.join(', ')}`)
+  // MUST: type (string, should contain ':' for namespaced types)
+  if (!p['type'] || typeof p['type'] !== 'string') {
+    errors.push(`Invalid type: ${p['type']}, expected a string`)
   }
 
   // SHOULD: priority
@@ -42,9 +42,14 @@ export function validatePayload(payload: unknown): ValidationResult {
     errors.push('labels must be a string array')
   }
 
-  // MAY: files (must be string array)
-  if (p['files'] && !Array.isArray(p['files'])) {
-    errors.push('files must be a string array')
+  // MAY: agent (must be string)
+  if (p['agent'] && typeof p['agent'] !== 'string') {
+    errors.push('agent must be a string')
+  }
+
+  // MAY: conversation_id (must be string)
+  if (p['conversation_id'] && typeof p['conversation_id'] !== 'string') {
+    errors.push('conversation_id must be a string')
   }
 
   // Determine compliance level
@@ -53,6 +58,9 @@ export function validatePayload(payload: unknown): ValidationResult {
     level = NMP_COMPLIANCE.BASIC
     if (p['capabilities'] || p['require'] || p['reply_schema']) {
       level = NMP_COMPLIANCE.FULL
+    }
+    if (p['signature']) {
+      level = NMP_COMPLIANCE.SIGNED
     }
   }
 

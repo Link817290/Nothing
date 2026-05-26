@@ -1,5 +1,5 @@
 import { createTransport } from 'nodemailer'
-import { generateMarkdown, generatePlainText, NMP_HEADERS, NMP_ATTACHMENT_NAME } from '@nothingmail/nmp'
+import { NmpBuilder } from '@nothingmail/nmp'
 import type { NmpPayload } from '@nothingmail/nmp'
 import type { EmailAccount } from '../types/index.js'
 import { decrypt } from '../services/accounts.js'
@@ -25,28 +25,43 @@ export async function smtpSend(opts: SmtpSendOptions): Promise<{ messageId: stri
     auth: { user: opts.account.auth_user, pass },
   })
 
-  const plainText = generatePlainText(opts.text, opts.payload)
-  const markdown = generateMarkdown(opts.text, opts.payload)
-  const jsonPayload = JSON.stringify(opts.payload)
+  // Use NmpBuilder to construct the email
+  const builder = NmpBuilder.create()
+    .from(opts.from)
+    .to(opts.to)
+    .subject(opts.subject)
+    .body(opts.text)
+    .type(opts.payload.type)
 
-  const headers: Record<string, string> = {
-    [NMP_HEADERS.version]: String(opts.payload.nmp),
-  }
-  if (opts.payload.type) headers[NMP_HEADERS.type] = opts.payload.type
-  if (opts.payload.agent) headers[NMP_HEADERS.agent] = opts.payload.agent
-  if (opts.payload.project) headers[NMP_HEADERS.project] = opts.payload.project
-  if (opts.payload.labels?.length) headers[NMP_HEADERS.labels] = opts.payload.labels.join(', ')
-  if (opts.payload.priority && opts.payload.priority !== 'normal') headers[NMP_HEADERS.priority] = opts.payload.priority
+  if (opts.payload.agent) builder.agent(opts.payload.agent)
+  if (opts.payload.project) builder.project(opts.payload.project)
+  if (opts.payload.labels?.length) builder.labels(opts.payload.labels)
+  if (opts.payload.priority) builder.priority(opts.payload.priority)
+  if (opts.payload.expires) builder.expires(opts.payload.expires)
+  if (opts.payload.conversation_id) builder.conversationId(opts.payload.conversation_id)
+  if (opts.payload.context) builder.context(opts.payload.context)
+  if (opts.payload.capabilities?.length) builder.capabilities(opts.payload.capabilities)
+  if (opts.payload.require?.length) builder.require(opts.payload.require)
+  if (opts.payload.reply_schema) builder.replySchema(opts.payload.reply_schema)
+  if (opts.payload.ack) builder.ack()
+  if (opts.inReplyTo) builder.inReplyTo(opts.inReplyTo)
+  if (opts.references) builder.references(opts.references)
+
+  const email = builder.build()
 
   const result = await transporter.sendMail({
-    from: opts.from, to: opts.to, subject: opts.subject,
-    text: plainText, headers,
-    inReplyTo: opts.inReplyTo,
-    references: opts.references?.join(' '),
-    attachments: [
-      { filename: NMP_ATTACHMENT_NAME, content: markdown, contentType: 'text/plain; charset=utf-8' },
-      { filename: 'nmp.json', content: jsonPayload, contentType: 'application/json; charset=utf-8' },
-    ],
+    from: email.from,
+    to: email.to,
+    subject: email.subject,
+    text: email.text,
+    headers: email.headers,
+    inReplyTo: email.inReplyTo,
+    references: email.references,
+    attachments: email.attachments.map(a => ({
+      filename: a.filename,
+      content: a.content,
+      contentType: a.contentType,
+    })),
   })
 
   transporter.close()

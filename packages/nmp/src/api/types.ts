@@ -1,4 +1,4 @@
-import type { NmpType, NmpPriority, NmpStatus, NmpContext, NmpSource, NmpError, NmpChannelConfig } from '../types.js'
+import type { NmpType, NmpPriority, NmpStatus, NmpContext, NmpSource, NmpError } from '../types.js'
 
 /** POST /api/messages/send */
 export interface SendRequest {
@@ -137,7 +137,7 @@ export interface ChannelsResponse {
 export interface ChannelInfo {
   id: string
   name: string
-  type: NmpChannelConfig['type']
+  type: string
   email: string
   is_primary: boolean
   is_active: boolean
@@ -147,7 +147,7 @@ export interface ChannelInfo {
 /** POST /api/channels */
 export interface CreateChannelRequest {
   name: string
-  type: NmpChannelConfig['type']
+  type: string
   email: string
   smtp_host?: string
   smtp_port?: number
