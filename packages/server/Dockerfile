@@ -1,15 +1,16 @@
-FROM node:22-alpine AS builder
-WORKDIR /app
-COPY package.json tsup.config.ts tsconfig.json ./
-RUN npm install
-COPY src ./src
-RUN npm run build
-
 FROM node:22-alpine
+
 WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
-RUN npm install --omit=dev
+
+# Copy pre-built dist from host (built by pnpm in monorepo)
+COPY dist ./dist
+
+# Create a production package.json without workspace references
+COPY package.json ./package.json.orig
+RUN sed 's/"@nothingmail\/nmp": "workspace:\*"/"@nothingmail\/nmp": "^0.1.0"/' package.json.orig > package.json \
+    && rm package.json.orig \
+    && npm install --omit=dev
+
 ENV PORT=3000
 ENV HOST=0.0.0.0
 EXPOSE 3000

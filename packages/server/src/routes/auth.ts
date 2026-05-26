@@ -32,9 +32,8 @@ export async function authRoutes(app: FastifyInstance) {
 
     try {
       const user = await login(body)
-      const perms = user.is_admin ? ['read', 'write', 'admin'] as const : ['read', 'write'] as const
-      const { key } = await createApiKey(user.id, `login-${new Date().toISOString().slice(0, 10)}`, [...perms])
-      return { api_key: key, user: { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin } }
+      const token = app.jwt.sign({ id: user.id, email: user.email }, { expiresIn: '7d' })
+      return { token, user: { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin } }
     } catch (err) {
       return reply.code(401).send({ error: (err as Error).message })
     }

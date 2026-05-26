@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   mail:
-    image: stalwartlabs/mail-server:latest
+    image: stalwartlabs/stalwart:latest
     ports:
       - "25:25"
       - "587:587"
