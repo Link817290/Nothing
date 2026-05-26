@@ -58,6 +58,7 @@ export const api = {
   sent: (params?: Record<string, string>) =>
     request(`/messages/sent${params ? '?' + new URLSearchParams(params) : ''}`),
   getMessage: (id: string) => request(`/messages/${id}`),
+  getAttachments: (messageId: string) => request(`/messages/${messageId}/attachments`),
   deleteMessage: (id: string) =>
     request(`/messages/${id}`, { method: 'DELETE' }),
   markRead: (id: string, is_read = true) =>

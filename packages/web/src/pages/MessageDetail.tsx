@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessageBody } from '@/components/email/MessageBody';
-import { Loader2, ArrowLeft, Reply, Forward, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ArrowLeft, Reply, Forward, Trash2, Eye, EyeOff, Paperclip } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
 
@@ -34,14 +34,16 @@ export default function MessageDetail() {
   const [fwdTo, setFwdTo] = useState('');
   const [panel, setPanel] = useState<'reply' | 'forward' | null>(null);
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     api.getMessage(id).then((data) => {
       setMsg(data);
-      // Auto-mark as read
       if (data.unread) api.markRead(id, true).catch(() => {});
+      // Load attachments
+      api.getAttachments(id).then(r => setAttachments(r.attachments || [])).catch(() => {});
     }).catch(() => navigate('/inbox')).finally(() => setLoading(false));
   }, [id]);
 
@@ -169,6 +171,24 @@ export default function MessageDetail() {
             <MessageBody content={msg.content} source={msg.source} />
           </div>
 
+          {/* Attachments */}
+          {attachments.length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {attachments.map((att: any) => (
+                <a
+                  key={att.id}
+                  href={`/api/attachments/${att.id}/download`}
+                  download={att.filename}
+                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors"
+                >
+                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="truncate max-w-[200px]">{att.filename}</span>
+                  <span className="text-xs text-muted-foreground">{formatSize(att.size)}</span>
+                </a>
+              ))}
+            </div>
+          )}
+
           {/* Thread */}
           {msg.thread && msg.thread.length > 1 && (
             <div className="mt-10 border-t border-border pt-6">
@@ -266,6 +286,12 @@ function Avatar({ name, isNmp }: { name: string; isNmp?: boolean }) {
       {initials}
     </span>
   );
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDate(dateStr: string): string {

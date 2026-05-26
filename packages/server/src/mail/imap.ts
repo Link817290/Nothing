@@ -131,11 +131,24 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp', onP
           const source = isNmp ? 'nmp' : 'external'
           const userAttachments = nmpResult.message?.attachments || []
 
+          // Get raw user attachments (exclude nmp.md/nmp.json)
+          const rawAttachments = (parsed.attachments || [])
+            .filter(a => a.filename && a.filename !== 'nmp.md' && a.filename !== 'nmp.json')
+
           await run(
             `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, direction, has_attachments, is_read)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, 'inbound', $15, FALSE)`,
-            [imapId, acc.user_id, acc.id, from, to, subject, body, jsonPayload ? JSON.stringify(jsonPayload) : null, agent, project, JSON.stringify(labels), acc.provider, source, imapId, userAttachments.length > 0]
+            [imapId, acc.user_id, acc.id, from, to, subject, body, jsonPayload ? JSON.stringify(jsonPayload) : null, agent, project, JSON.stringify(labels), acc.provider, source, imapId, rawAttachments.length > 0]
           )
+
+          // Save attachments to disk
+          if (rawAttachments.length > 0) {
+            const { saveAttachment } = await import('../services/attachments.js')
+            for (const att of rawAttachments) {
+              await saveAttachment(imapId, att.filename!, att.contentType || 'application/octet-stream', att.content)
+            }
+          }
+
           newCount++
         } catch (err) {
           console.error(`[imap] Failed to parse uid ${uid}:`, (err as Error).message)

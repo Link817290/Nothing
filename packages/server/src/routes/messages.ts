@@ -124,6 +124,27 @@ export async function messageRoutes(app: FastifyInstance) {
     return getThread(user.id, id)
   })
 
+  // ─── Attachments ────────────────────────────────────────────────
+  app.get('/api/messages/:id/attachments', async (req) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    const msg = await getMessage(user.id, id)
+    if (!msg) return { attachments: [] }
+    const { listAttachments } = await import('../services/attachments.js')
+    return { attachments: await listAttachments(id) }
+  })
+
+  app.get('/api/attachments/:id/download', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const { getAttachment } = await import('../services/attachments.js')
+    const att = await getAttachment(id)
+    if (!att) return reply.code(404).send({ error: 'Attachment not found' })
+    reply.header('Content-Type', att.contentType)
+    reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(att.filename)}"`)
+    reply.header('Content-Length', att.content.length)
+    return reply.send(att.content)
+  })
+
   // ─── Projects ──────────────────────────────────────────────────
   app.get('/api/projects', async (req) => {
     const user = (req as any).user as { id: string }
