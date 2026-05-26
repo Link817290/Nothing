@@ -142,7 +142,10 @@
     "sign_out_desc": "结束当前会话",
     "add_account": "添加账户",
     "admin_role": "管理员",
-    "user_role": "用户"
+    "user_role": "用户",
+    "syncing": "正在同步 NMP 消息...",
+    "importing": "正在导入所有邮件...",
+    "sync_failed": "同步失败"
   },
   "connect": {
     "title": "连接",

@@ -37,7 +37,9 @@ async function syncAll(): Promise<number> {
  * @param mode 'nmp' = only NMP protocol messages (default for auto-sync)
  *             'all' = all emails (manual import)
  */
-async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp'): Promise<number> {
+export type ProgressCallback = (progress: number, total: number) => void
+
+async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp', onProgress?: ProgressCallback): Promise<number> {
   const pass = decrypt(acc.auth_pass_encrypted)
 
   const client = new ImapFlow({
@@ -66,7 +68,11 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp'): Pr
         toFetch.push(msg.uid)
       }
 
-      for (const uid of toFetch) {
+      if (onProgress) onProgress(0, toFetch.length)
+
+      for (let i = 0; i < toFetch.length; i++) {
+        const uid = toFetch[i]
+        if (onProgress) onProgress(i + 1, toFetch.length)
         try {
           const { content } = await client.download(String(uid), undefined, { uid: true })
           if (!content) continue
@@ -154,10 +160,10 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp'): Pr
 }
 
 /** Sync a single account by ID, with mode */
-export async function syncAccountById(accountId: string, mode: SyncMode = 'nmp'): Promise<number> {
+export async function syncAccountById(accountId: string, mode: SyncMode = 'nmp', onProgress?: ProgressCallback): Promise<number> {
   const acc = await queryOne('SELECT * FROM email_accounts WHERE id = $1', [accountId])
   if (!acc) throw new Error('Account not found')
-  return syncAccount(acc, mode)
+  return syncAccount(acc, mode, onProgress)
 }
 
 export async function startImapPolling(intervalMs = 30000) {

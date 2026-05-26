@@ -142,7 +142,10 @@
     "sign_out_desc": "End this session",
     "add_account": "Add account",
     "admin_role": "Admin",
-    "user_role": "User"
+    "user_role": "User",
+    "syncing": "Syncing NMP messages...",
+    "importing": "Importing all emails...",
+    "sync_failed": "Sync failed"
   },
   "connect": {
     "title": "Connect",

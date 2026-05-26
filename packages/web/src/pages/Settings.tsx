@@ -37,6 +37,20 @@ export default function Settings() {
   const [accPass, setAccPass] = useState('');
   const [addError, setAddError] = useState('');
   const [adding, setAdding] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncProgress, setSyncProgress] = useState('');
+
+  const pollTask = async (taskId: string): Promise<any> => {
+    while (true) {
+      await new Promise(r => setTimeout(r, 1000));
+      const task = await api.getTask(taskId);
+      if (task.status === 'running') {
+        setSyncProgress(task.total > 0 ? `${task.progress}/${task.total}` : '...');
+      }
+      if (task.status === 'completed') return task.result;
+      if (task.status === 'failed') throw new Error(task.error || 'Sync failed');
+    }
+  };
 
   // New key
   const [newKey, setNewKey] = useState('');
@@ -237,11 +251,37 @@ export default function Settings() {
                     <Button variant="outline" size="sm" onClick={() => handleTestAccount(acc.id)}>
                       <TestTube2 className="h-3.5 w-3.5" /> {t('settings.test')}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'nmp').then((r) => { toast({ title: t('settings.synced_nmp', { count: r.new_messages || 0 }), variant: 'success' }); load(); })}>
-                      <RefreshCw className="h-3.5 w-3.5" /> {t('settings.sync_nmp')}
+                    <Button variant="outline" size="sm" disabled={syncingId === acc.id} onClick={async () => {
+                      setSyncingId(acc.id);
+                      setSyncProgress('...');
+                      try {
+                        const res = await api.syncAccount(acc.id, 'nmp');
+                        const result = await pollTask(res.task_id);
+                        toast({ title: t('settings.synced_nmp', { count: result.new_messages || 0 }), variant: 'success' });
+                        load();
+                      } catch (err: any) {
+                        toast({ title: t('settings.sync_failed'), description: err.message, variant: 'error' });
+                      }
+                      setSyncingId(null);
+                      setSyncProgress('');
+                    }}>
+                      {syncingId === acc.id ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {syncProgress}</> : <><RefreshCw className="h-3.5 w-3.5" /> {t('settings.sync_nmp')}</>}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'all').then((r) => { toast({ title: t('settings.imported', { count: r.new_messages || 0 }), variant: 'success' }); load(); })}>
-                      <RefreshCw className="h-3.5 w-3.5" /> {t('settings.import_all')}
+                    <Button variant="outline" size="sm" disabled={syncingId === acc.id} onClick={async () => {
+                      setSyncingId(acc.id);
+                      setSyncProgress('...');
+                      try {
+                        const res = await api.syncAccount(acc.id, 'all');
+                        const result = await pollTask(res.task_id);
+                        toast({ title: t('settings.imported', { count: result.new_messages || 0 }), variant: 'success' });
+                        load();
+                      } catch (err: any) {
+                        toast({ title: t('settings.sync_failed'), description: err.message, variant: 'error' });
+                      }
+                      setSyncingId(null);
+                      setSyncProgress('');
+                    }}>
+                      {syncingId === acc.id ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {syncProgress}</> : <><RefreshCw className="h-3.5 w-3.5" /> {t('settings.import_all')}</>}
                     </Button>
                     <div className="flex-1" />
                     <Button variant="ghost" size="sm" onClick={async () => {

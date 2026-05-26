@@ -48,6 +48,7 @@ export const api = {
     request(`/accounts/${id}/test`, { method: 'POST' }),
   syncAccount: (id: string, mode: 'nmp' | 'all' = 'nmp') =>
     request(`/accounts/${id}/sync`, { method: 'POST', body: JSON.stringify({ mode }) }),
+  getTask: (id: string) => request(`/tasks/${id}`),
   clearAccountMessages: (id: string) =>
     request(`/accounts/${id}/messages`, { method: 'DELETE' }),
 

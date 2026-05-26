@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { authenticate, requirePermission } from '../middleware/auth.js'
 import { addAccount, listAccounts, removeAccount, getUserAccount } from '../services/accounts.js'
 import { syncAccountById } from '../mail/imap.js'
+import { createTask, updateTaskProgress, completeTask, failTask, getTask } from '../services/tasks.js'
 import type { AddAccountRequest } from '../types/index.js'
 
 export async function accountRoutes(app: FastifyInstance) {
@@ -81,9 +82,7 @@ export async function accountRoutes(app: FastifyInstance) {
     return { smtp, imap }
   })
 
-  // ─── Manual sync ───────────────────────────────────────────────
-  // mode=nmp (default): only NMP protocol messages
-  // mode=all: import all emails
+  // ─── Async sync with progress ───────────────────────────────────
   app.post('/api/accounts/:id/sync', async (req, reply) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
@@ -92,12 +91,30 @@ export async function accountRoutes(app: FastifyInstance) {
     const account = await getUserAccount(user.id, id)
     if (!account) return reply.code(404).send({ error: 'Account not found' })
 
-    try {
-      const count = await syncAccountById(id, mode)
-      return { success: true, new_messages: count, mode }
-    } catch (err) {
-      return reply.code(500).send({ error: (err as Error).message })
-    }
+    // Create task and start async sync
+    const task = await createTask(user.id, `sync:${mode}`)
+
+    // Run in background (don't await)
+    syncAccountById(id, mode, async (progress, total) => {
+      await updateTaskProgress(task.id, progress, total).catch(() => {})
+    }).then(async (count) => {
+      console.log(`[sync] Task ${task.id} completed: ${count} messages`)
+      await completeTask(task.id, { new_messages: count, mode })
+    }).catch(async (err) => {
+      console.error(`[sync] Task ${task.id} failed:`, (err as Error).message)
+      await failTask(task.id, (err as Error).message)
+    })
+
+    return { task_id: task.id }
+  })
+
+  // ─── Task progress ────────────────────────────────────────────
+  app.get('/api/tasks/:id', async (req, reply) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    const task = await getTask(id)
+    if (!task || task.user_id !== user.id) return reply.code(404).send({ error: 'Task not found' })
+    return task
   })
 
   // ─── Clear messages for an account ─────────────────────────────
