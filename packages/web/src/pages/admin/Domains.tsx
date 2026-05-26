@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +15,7 @@ interface DnsStatus {
 }
 
 export default function AdminDomains() {
+  const { t } = useTranslation();
   const [domains, setDomains] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -69,11 +71,11 @@ export default function AdminDomains() {
     <>
       <div className="flex items-center justify-between border-b border-border px-10 py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Domains</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t('admin.domains_title')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">Mail engine domain management</p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
-          <Plus className="h-3 w-3" /> Add Domain
+          <Plus className="h-3 w-3" /> {t('admin.add_domain')}
         </Button>
       </div>
 
@@ -85,9 +87,9 @@ export default function AdminDomains() {
                 <div className="flex gap-2">
                   <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="example.com" className="flex-1" />
                   <Button size="sm" onClick={handleAdd} disabled={adding}>
-                    {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Create'}
+                    {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : t('common.create')}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>Cancel</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>{t('common.cancel')}</Button>
                 </div>
                 {addError && <p className="text-xs text-destructive">{addError}</p>}
               </CardContent>
@@ -122,7 +124,7 @@ export default function AdminDomains() {
                       <div className="flex gap-1">
                         <Button variant="outline" size="sm" onClick={() => handleVerify(name)} disabled={verifying === name}>
                           {verifying === name ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                          Verify DNS
+                          {t('admin.verify_dns')}
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(name)} className="text-destructive hover:text-destructive">
                           <Trash2 className="h-3 w-3" />

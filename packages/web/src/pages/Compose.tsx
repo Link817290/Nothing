@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
 
 export default function Compose() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [to, setTo] = useState(params.get('to') || '');
@@ -43,10 +45,10 @@ export default function Compose() {
         labels: labels ? labels.split(',').map((l) => l.trim()).filter(Boolean) : undefined,
         priority: priority !== 'normal' ? priority : undefined,
       });
-      toast({ title: 'Message sent', variant: 'success' });
+      toast({ title: t('compose.sent_success'), variant: 'success' });
       navigate('/sent');
     } catch (err: any) {
-      toast({ title: 'Send failed', description: err.message, variant: 'error' });
+      toast({ title: t('compose.sent_fail'), description: err.message, variant: 'error' });
     } finally {
       setSending(false);
     }
@@ -61,7 +63,7 @@ export default function Compose() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">New Message</h1>
+            <h1 className="text-xl font-bold tracking-tight">{t('compose.title')}</h1>
             {accounts.length > 1 && (
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Sending from {accounts.find(a => a.id === accountId)?.email || '—'}
@@ -70,10 +72,10 @@ export default function Compose() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-              <X className="h-4 w-4" /> Cancel
+              <X className="h-4 w-4" /> {t('compose.cancel')}
             </Button>
             <Button size="sm" onClick={handleSend} disabled={sending || !to.trim() || !body.trim() || noAccounts}>
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-3.5 w-3.5" /> Send</>}
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-3.5 w-3.5" /> {t('compose.send')}</>}
             </Button>
           </div>
         </div>
@@ -82,7 +84,11 @@ export default function Compose() {
         {noAccounts && (
           <Card className="mb-6 border-brand/20 bg-brand/5">
             <CardContent className="p-4 text-sm">
-              You need to <button onClick={() => navigate('/settings')} className="font-semibold text-brand underline">add an email account</button> before you can send messages.
+              {t('compose.no_account_hint').split('<link>').map((part, i) => {
+                if (i === 0) return part;
+                const [linkText, rest] = part.split('</link>');
+                return <span key={i}><button onClick={() => navigate('/settings')} className="font-semibold text-brand underline">{linkText}</button>{rest}</span>;
+              })}
             </CardContent>
           </Card>
         )}
@@ -93,7 +99,7 @@ export default function Compose() {
             <form onSubmit={handleSend}>
               {/* To */}
               <div className="flex items-center border-b border-border px-4">
-                <label className="w-14 shrink-0 text-xs text-muted-foreground">To</label>
+                <label className="w-14 shrink-0 text-xs text-muted-foreground">{t('compose.to')}</label>
                 <input
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
@@ -105,7 +111,7 @@ export default function Compose() {
 
               {/* Subject */}
               <div className="flex items-center border-b border-border px-4">
-                <label className="w-14 shrink-0 text-xs text-muted-foreground">Subject</label>
+                <label className="w-14 shrink-0 text-xs text-muted-foreground">{t('compose.subject')}</label>
                 <input
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
@@ -117,7 +123,7 @@ export default function Compose() {
               {/* Account selector (if multiple) */}
               {accounts.length > 1 && (
                 <div className="flex items-center border-b border-border px-4">
-                  <label className="w-14 shrink-0 text-xs text-muted-foreground">From</label>
+                  <label className="w-14 shrink-0 text-xs text-muted-foreground">{t('compose.from')}</label>
                   <select
                     value={accountId}
                     onChange={(e) => setAccountId(e.target.value)}
@@ -136,12 +142,12 @@ export default function Compose() {
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ChevronDown className={`h-3 w-3 transition-transform ${showOptions ? 'rotate-180' : ''}`} />
-                  Options
+                  {t('compose.options')}
                 </button>
                 {showOptions && (
                   <div className="mt-3 mb-1 flex flex-wrap gap-3">
                     <div className="flex items-center gap-2">
-                      <label className="text-xs text-muted-foreground">Project</label>
+                      <label className="text-xs text-muted-foreground">{t('compose.project')}</label>
                       <input
                         value={project}
                         onChange={(e) => setProject(e.target.value)}
@@ -150,7 +156,7 @@ export default function Compose() {
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-xs text-muted-foreground">Labels</label>
+                      <label className="text-xs text-muted-foreground">{t('compose.labels')}</label>
                       <input
                         value={labels}
                         onChange={(e) => setLabels(e.target.value)}
@@ -159,7 +165,7 @@ export default function Compose() {
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-xs text-muted-foreground">Priority</label>
+                      <label className="text-xs text-muted-foreground">{t('compose.priority')}</label>
                       <select
                         value={priority}
                         onChange={(e) => setPriority(e.target.value)}
@@ -179,7 +185,7 @@ export default function Compose() {
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="Write your message..."
+                placeholder={t('compose.body_placeholder')}
                 required
                 className="w-full resize-none border-0 bg-transparent px-4 py-4 text-sm leading-relaxed focus:outline-none placeholder:text-muted-foreground/40"
                 rows={16}

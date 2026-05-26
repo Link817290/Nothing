@@ -1,5 +1,6 @@
 import { type FormEvent, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Loader2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { api } from '@/services/api';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/inbox';
@@ -74,10 +76,10 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">Shown once</p>
-              <h2 className="mt-2 text-xl font-bold">Your API Key</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">{t('login.api_key_notice')}</p>
+              <h2 className="mt-2 text-xl font-bold">{t('login.api_key_title')}</h2>
               <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-                Save this key — you won't see it again. Use it for CLI login and agent config.
+                {t('login.api_key_desc')}
               </p>
             </div>
             <div className="rounded-xl border border-border bg-muted/50 p-4">
@@ -86,11 +88,11 @@ export default function LoginPage() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copied ? 'Copied' : 'Copy'}
+                {copied ? t('common.copied') : t('common.copy')}
               </Button>
             </div>
             <Button className="w-full" onClick={() => navigate('/inbox', { replace: true })}>
-              Continue to Inbox
+              {t('login.continue')}
               <ArrowRight />
             </Button>
           </CardContent>
@@ -111,8 +113,8 @@ export default function LoginPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             {isFirstTime
-              ? 'Create your admin account to get started'
-              : mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+              ? t('login.first_time')
+              : mode === 'login' ? t('login.sign_in') : t('login.register')}
           </p>
         </CardHeader>
 
@@ -120,17 +122,17 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Name</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('login.name')}</label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Optional"
+                  placeholder={t('login.name_hint')}
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Email</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('login.email')}</label>
               <Input
                 type="email"
                 value={email}
@@ -142,7 +144,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Password</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('login.password')}</label>
               <Input
                 type="password"
                 value={password}
@@ -163,7 +165,7 @@ export default function LoginPage() {
                 <Loader2 className="animate-spin" />
               ) : (
                 <>
-                  {mode === 'login' ? 'Sign in' : 'Create account'}
+                  {mode === 'login' ? t('login.submit_login') : t('login.submit_register')}
                   <ArrowRight />
                 </>
               )}
@@ -176,7 +178,7 @@ export default function LoginPage() {
               onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
             >
-              {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Sign in'}
+              {mode === 'login' ? t('login.switch_register') : t('login.switch_login')}
             </button>
           </div>
         </CardContent>

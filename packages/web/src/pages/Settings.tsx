@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ interface Account { id: string; provider: string; email: string; is_active: bool
 interface ApiKey { id: string; name: string; permissions: string[]; created_at: string }
 
 export default function Settings() {
+  const { t } = useTranslation();
   const confirm = useConfirm();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -55,7 +57,7 @@ export default function Settings() {
       const res = await api.updateProfile(data);
       setUser({ ...user!, name: res.name });
       setEditPassword('');
-      toast({ title: 'Profile updated', variant: 'success' });
+      toast({ title: t('settings.saved'), variant: 'success' });
     } catch (err: any) {
       toast({ title: 'Failed to update profile', description: err.message, variant: 'error' });
     }
@@ -82,9 +84,9 @@ export default function Settings() {
   const handleTestAccount = async (id: string) => {
     try {
       await api.testAccount(id);
-      toast({ title: 'Connection test passed', variant: 'success' });
+      toast({ title: t('settings.test_passed'), variant: 'success' });
     } catch (err: any) {
-      toast({ title: 'Connection test failed', description: err.message, variant: 'error' });
+      toast({ title: t('settings.test_failed'), description: err.message, variant: 'error' });
     }
   };
 
@@ -111,8 +113,8 @@ export default function Settings() {
   return (
     <>
       <div className="border-b border-border px-10 py-5">
-        <h1 className="text-xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">Manage your profile, connected mailboxes, and access tokens</p>
+        <h1 className="text-xl font-bold tracking-tight">{t('settings.title')}</h1>
+        <p className="mt-0.5 text-xs text-muted-foreground">{t('settings.subtitle')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-10 py-6">
@@ -121,31 +123,31 @@ export default function Settings() {
           {/* Profile */}
           <Card>
             <CardHeader>
-              <CardTitle>Profile</CardTitle>
-              <CardDescription>Your account information</CardDescription>
+              <CardTitle>{t('settings.profile')}</CardTitle>
+              <CardDescription>{t('settings.profile_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Email</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('settings.email')}</p>
                   <p className="font-mono text-sm text-foreground">{user?.email}</p>
                 </div>
                 <Badge variant={user?.is_admin ? 'brand' : 'secondary'}>
-                  {user?.is_admin ? 'Admin' : 'User'}
+                  {user?.is_admin ? t('settings.admin_role') : t('settings.user_role')}
                 </Badge>
               </div>
               <Separator />
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Display name</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t('settings.display_name')}</p>
                   <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">New password</p>
-                  <Input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} placeholder="Leave blank to keep current" />
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t('settings.new_password')}</p>
+                  <Input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} placeholder={t('settings.password_hint')} />
                 </div>
                 <Button variant="outline" size="sm" onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save changes'}
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : t('settings.save')}
                 </Button>
               </div>
             </CardContent>
@@ -154,17 +156,17 @@ export default function Settings() {
           {/* Theme */}
           <Card>
             <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Toggle between dark and light mode</CardDescription>
+              <CardTitle>{t('settings.appearance')}</CardTitle>
+              <CardDescription>{t('settings.appearance_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {theme === 'dark' ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
-                  <span className="text-sm">{theme === 'dark' ? 'Dark mode' : 'Light mode'}</span>
+                  <span className="text-sm">{theme === 'dark' ? t('settings.dark_mode') : t('settings.light_mode')}</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={toggleTheme}>
-                  Switch to {theme === 'dark' ? 'light' : 'dark'}
+                  {theme === 'dark' ? t('settings.switch_light') : t('settings.switch_dark')}
                 </Button>
               </div>
             </CardContent>
@@ -175,11 +177,11 @@ export default function Settings() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Email Accounts</CardTitle>
-                  <CardDescription>Connect your Gmail, QQ, Outlook, or other email to send and receive</CardDescription>
+                  <CardTitle>{t('settings.email_accounts')}</CardTitle>
+                  <CardDescription>{t('settings.email_accounts_desc')}</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setShowAdd(!showAdd)}>
-                  <Plus className="h-3 w-3" /> Add
+                  <Plus className="h-3 w-3" /> {t('settings.add')}
                 </Button>
               </div>
             </CardHeader>
@@ -202,15 +204,15 @@ export default function Settings() {
                   {addError && <p className="text-xs text-destructive">{addError}</p>}
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleAddAccount} disabled={adding}>
-                      {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Add account'}
+                      {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : t('settings.add_account')}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>Cancel</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>{t('common.cancel')}</Button>
                   </div>
                 </div>
               )}
 
               {accounts.length === 0 && !showAdd && (
-                <p className="text-sm text-muted-foreground">No email accounts configured</p>
+                <p className="text-sm text-muted-foreground">{t('settings.no_accounts')}</p>
               )}
 
               {accounts.map((acc) => (
@@ -225,38 +227,38 @@ export default function Settings() {
                           <Badge variant="secondary" className="text-xs uppercase">{acc.provider}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {acc.is_active ? 'Connected' : 'Disconnected'}
-                          {acc.last_sync_at && ` · Last synced ${new Date(acc.last_sync_at).toLocaleString()}`}
+                          {acc.is_active ? t('settings.connected') : t('settings.disconnected')}
+                          {acc.last_sync_at && ` · ${t('settings.last_synced', { time: new Date(acc.last_sync_at).toLocaleString() })}`}
                         </p>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
                     <Button variant="outline" size="sm" onClick={() => handleTestAccount(acc.id)}>
-                      <TestTube2 className="h-3.5 w-3.5" /> Test
+                      <TestTube2 className="h-3.5 w-3.5" /> {t('settings.test')}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'nmp').then((r) => { toast({ title: `Synced ${r.new_messages || 0} NMP messages`, variant: 'success' }); load(); })}>
-                      <RefreshCw className="h-3.5 w-3.5" /> Sync NMP
+                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'nmp').then((r) => { toast({ title: t('settings.synced_nmp', { count: r.new_messages || 0 }), variant: 'success' }); load(); })}>
+                      <RefreshCw className="h-3.5 w-3.5" /> {t('settings.sync_nmp')}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'all').then((r) => { toast({ title: `Imported ${r.new_messages || 0} emails`, variant: 'success' }); load(); })}>
-                      <RefreshCw className="h-3.5 w-3.5" /> Import All
+                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'all').then((r) => { toast({ title: t('settings.imported', { count: r.new_messages || 0 }), variant: 'success' }); load(); })}>
+                      <RefreshCw className="h-3.5 w-3.5" /> {t('settings.import_all')}
                     </Button>
                     <div className="flex-1" />
                     <Button variant="ghost" size="sm" onClick={async () => {
-                      const ok = await confirm({ title: 'Clear messages', description: `Delete all messages from ${acc.email}? This cannot be undone.`, confirmText: 'Clear', variant: 'destructive' });
+                      const ok = await confirm({ title: t('confirm.clear_messages_title'), description: t('confirm.clear_messages_desc', { email: acc.email }), confirmText: t('confirm.clear_messages_btn'), variant: 'destructive' });
                       if (!ok) return;
                       await api.clearAccountMessages(acc.id);
                       toast({ title: 'Messages cleared', variant: 'success' });
                     }} className="text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" /> Clear
+                      <Trash2 className="h-3.5 w-3.5" /> {t('settings.clear')}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={async () => {
-                      const ok = await confirm({ title: 'Remove account', description: `Remove ${acc.email} and delete all its messages? This cannot be undone.`, confirmText: 'Remove', variant: 'destructive' });
+                      const ok = await confirm({ title: t('confirm.remove_account_title'), description: t('confirm.remove_account_desc', { email: acc.email }), confirmText: t('confirm.remove_account_btn'), variant: 'destructive' });
                       if (!ok) return;
                       await api.removeAccount(acc.id);
                       load();
                     }} className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" /> Remove
+                      <Trash2 className="h-3.5 w-3.5" /> {t('settings.remove')}
                     </Button>
                   </div>
                 </div>
@@ -269,11 +271,11 @@ export default function Settings() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>API Keys</CardTitle>
-                  <CardDescription>Generate keys for CLI tools and AI agents to access your account</CardDescription>
+                  <CardTitle>{t('settings.api_keys')}</CardTitle>
+                  <CardDescription>{t('settings.api_keys_desc')}</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setShowKeyForm(!showKeyForm)}>
-                  <Plus className="h-3 w-3" /> Create
+                  <Plus className="h-3 w-3" /> {t('settings.create')}
                 </Button>
               </div>
             </CardHeader>
@@ -281,33 +283,33 @@ export default function Settings() {
               {showKeyForm && !newKey && (
                 <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-3 fade-in">
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground">Key name</label>
+                    <label className="text-xs font-medium text-muted-foreground">{t('settings.key_name')}</label>
                     <Input
                       value={newKeyName}
                       onChange={(e) => setNewKeyName(e.target.value)}
-                      placeholder="e.g. my-cli, cursor-agent, production"
+                      placeholder={t('settings.key_name_placeholder')}
                       className="mt-1"
                       autoFocus
                       onKeyDown={(e) => e.key === 'Enter' && handleCreateKey()}
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreateKey} disabled={!newKeyName.trim()}>Create key</Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setShowKeyForm(false); setNewKeyName(''); }}>Cancel</Button>
+                    <Button size="sm" onClick={handleCreateKey} disabled={!newKeyName.trim()}>{t('settings.create_key')}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setShowKeyForm(false); setNewKeyName(''); }}>{t('common.cancel')}</Button>
                   </div>
                 </div>
               )}
 
               {newKey && (
                 <div className="rounded-xl border border-brand/30 bg-brand/5 p-4 fade-in">
-                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">New key -- copy now</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">{t('settings.new_key_notice')}</p>
                   <code className="mt-2 block break-all font-mono text-sm text-foreground">{newKey}</code>
                   <div className="mt-3 flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleCopyKey}>
                       {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                      {copied ? 'Copied' : 'Copy'}
+                      {copied ? t('common.copied') : t('common.copy')}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setNewKey('')}>Dismiss</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setNewKey('')}>{t('common.dismiss')}</Button>
                   </div>
                 </div>
               )}
@@ -335,7 +337,7 @@ export default function Settings() {
                     className="text-destructive hover:text-destructive"
                     onClick={() => api.deleteKey(k.id).then(load)}
                   >
-                    Revoke
+                    {t('settings.revoke')}
                   </Button>
                 </div>
               ))}
@@ -345,16 +347,16 @@ export default function Settings() {
           {/* Danger */}
           <Card className="border-destructive/20">
             <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardTitle className="text-destructive">{t('settings.danger')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Sign out</p>
-                  <p className="text-xs text-muted-foreground">End this session</p>
+                  <p className="text-sm font-medium text-foreground">{t('settings.sign_out')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.sign_out_desc')}</p>
                 </div>
                 <Button variant="outline" size="sm" className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={logout}>
-                  <LogOut className="h-3 w-3" /> Sign out
+                  <LogOut className="h-3 w-3" /> {t('settings.sign_out')}
                 </Button>
               </div>
             </CardContent>

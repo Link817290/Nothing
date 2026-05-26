@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +17,7 @@ interface User {
 }
 
 export default function AdminUsers() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,7 @@ export default function AdminUsers() {
   return (
     <>
       <div className="border-b border-border px-10 py-5">
-        <h1 className="text-xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-xl font-bold tracking-tight">{t('admin.users_title')}</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">{users.length} registered</p>
       </div>
 
@@ -74,9 +76,9 @@ export default function AdminUsers() {
                           className={u.is_banned ? '' : 'text-destructive hover:text-destructive'}
                         >
                           {u.is_banned ? (
-                            <><ShieldCheck className="h-3 w-3" /> Unban</>
+                            <><ShieldCheck className="h-3 w-3" /> {t('admin.unban')}</>
                           ) : (
-                            <><ShieldOff className="h-3 w-3" /> Ban</>
+                            <><ShieldOff className="h-3 w-3" /> {t('admin.ban')}</>
                           )}
                         </Button>
                       )}

@@ -1,12 +1,21 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, Menu, Search, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Sun, Moon, LogOut, Menu, Search, PanelLeftClose, PanelLeft, Globe, Check } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useLocaleStore, type Locale } from '@/stores/localeStore';
 import { useState } from 'react';
 
+const LANGUAGES: { value: Locale; label: string; flag: string }[] = [
+  { value: 'en', label: 'English', flag: '🇺🇸' },
+  { value: 'zh', label: '中文', flag: '🇨🇳' },
+];
+
 export function TopBar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useUIStore((s) => s.theme);
   const toggleTheme = useUIStore((s) => s.toggleTheme);
@@ -14,6 +23,8 @@ export function TopBar() {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const locale = useLocaleStore((s) => s.locale);
+  const setLocale = useLocaleStore((s) => s.setLocale);
   const [query, setQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -44,13 +55,42 @@ export function TopBar() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search messages..."
+            placeholder={t('search.placeholder')}
             className="pl-10 bg-secondary/50 border-transparent focus-visible:border-border"
           />
         </div>
       </form>
 
       <div className="ml-auto flex items-center gap-1">
+        {/* Language switcher */}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              <Globe className="h-4 w-4" />
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="end"
+              sideOffset={8}
+              className="z-50 min-w-[160px] rounded-xl border border-border bg-background p-1.5 shadow-lg"
+            >
+              {LANGUAGES.map((lang) => (
+                <DropdownMenu.Item
+                  key={lang.value}
+                  onClick={() => setLocale(lang.value)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm outline-none cursor-pointer transition-colors hover:bg-accent"
+                >
+                  <span>{lang.flag}</span>
+                  <span className="flex-1">{lang.label}</span>
+                  {locale === lang.value && <Check className="h-4 w-4 text-brand" />}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+
+        {/* Theme toggle */}
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
@@ -62,10 +102,7 @@ export function TopBar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
+            onClick={() => { logout(); navigate('/login'); }}
             className="text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />

@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Copy, Check, Terminal, Cpu, Globe } from 'lucide-react';
 
 export default function Connect() {
+  const { t } = useTranslation();
   const serverUrl = window.location.origin;
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
@@ -17,8 +19,8 @@ export default function Connect() {
   return (
     <>
       <div className="border-b border-border px-10 py-5">
-        <h1 className="text-xl font-bold tracking-tight">Connect</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Connect your CLI tools and AI agents to this server</p>
+        <h1 className="text-xl font-bold tracking-tight">{t('connect.title')}</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">{t('connect.subtitle')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-10 py-8">
@@ -32,8 +34,8 @@ export default function Connect() {
                   <Globe className="h-5 w-5 text-brand" />
                 </div>
                 <div>
-                  <CardTitle>Server</CardTitle>
-                  <CardDescription>Your Nothing server endpoint</CardDescription>
+                  <CardTitle>{t('connect.server')}</CardTitle>
+                  <CardDescription>{t('connect.server_desc')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -54,30 +56,30 @@ export default function Connect() {
                   <Terminal className="h-5 w-5 text-foreground" />
                 </div>
                 <div>
-                  <CardTitle>CLI</CardTitle>
-                  <CardDescription>Command-line tool for sending and reading messages</CardDescription>
+                  <CardTitle>{t('connect.cli')}</CardTitle>
+                  <CardDescription>{t('connect.cli_desc')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Step n={1} title="Install">
+              <Step n={1} title={t('connect.install')}>
                 <CodeBlock
                   value="npm i -g nothing-cli"
                   copied={copiedItem === 'install'}
                   onCopy={() => copyToClipboard('npm i -g nothing-cli', 'install')}
                 />
               </Step>
-              <Step n={2} title="Initialize">
+              <Step n={2} title={t('connect.initialize')}>
                 <CodeBlock
                   value="nothing init"
                   copied={copiedItem === 'init'}
                   onCopy={() => copyToClipboard('nothing init', 'init')}
                 />
                 <p className="mt-2 text-sm text-muted-foreground">
-                  It will ask for the Server URL and your API Key. MCP is auto-configured for Claude Code and Cursor.
+                  {t('connect.init_hint')}
                 </p>
               </Step>
-              <Step n={3} title="Use">
+              <Step n={3} title={t('connect.use')}>
                 <div className="space-y-2">
                   <CodeBlock value="nothing inbox" compact />
                   <CodeBlock value="nothing send agent@example.com 'Hello'" compact />
@@ -95,20 +97,20 @@ export default function Connect() {
                   <Cpu className="h-5 w-5 text-foreground" />
                 </div>
                 <div>
-                  <CardTitle>AI Agents</CardTitle>
-                  <CardDescription>MCP tools available after CLI setup</CardDescription>
+                  <CardTitle>{t('connect.agents')}</CardTitle>
+                  <CardDescription>{t('connect.agents_desc')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2">
-                <ToolCard name="nothing_send" desc="Send a message to any email" />
-                <ToolCard name="nothing_inbox" desc="Check inbox, filter by agent/project" />
-                <ToolCard name="nothing_read" desc="Read a message by ID" />
-                <ToolCard name="nothing_reply" desc="Reply to a message" />
-                <ToolCard name="nothing_sent" desc="Check sent messages" />
-                <ToolCard name="nothing_projects" desc="List projects" />
-                <ToolCard name="nothing_report" desc="Generate activity report" />
+                <ToolCard name="nothing_send" desc={t('connect.tool_send')} />
+                <ToolCard name="nothing_inbox" desc={t('connect.tool_inbox')} />
+                <ToolCard name="nothing_read" desc={t('connect.tool_read')} />
+                <ToolCard name="nothing_reply" desc={t('connect.tool_reply')} />
+                <ToolCard name="nothing_sent" desc={t('connect.tool_sent')} />
+                <ToolCard name="nothing_projects" desc={t('connect.tool_projects')} />
+                <ToolCard name="nothing_report" desc={t('connect.tool_report')} />
               </div>
             </CardContent>
           </Card>
@@ -117,11 +119,11 @@ export default function Connect() {
           <Card>
             <CardContent className="flex items-center gap-4 p-5">
               <div className="flex-1">
-                <p className="text-sm font-medium">Need an API Key?</p>
-                <p className="text-sm text-muted-foreground">Go to Settings → API Keys to create one.</p>
+                <p className="text-sm font-medium">{t('connect.need_key')}</p>
+                <p className="text-sm text-muted-foreground">{t('connect.need_key_hint')}</p>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <a href="/settings">Go to Settings</a>
+                <a href="/settings">{t('connect.go_settings')}</a>
               </Button>
             </CardContent>
           </Card>

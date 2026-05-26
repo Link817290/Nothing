@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
 
 export default function AdminMailboxes() {
+  const { t } = useTranslation();
   const [mailboxes, setMailboxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -50,11 +52,11 @@ export default function AdminMailboxes() {
     <>
       <div className="flex items-center justify-between border-b border-border px-10 py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Mailboxes</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t('admin.mailboxes_title')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">Mail engine mailbox management</p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
-          <Plus className="h-3 w-3" /> Create Mailbox
+          <Plus className="h-3 w-3" /> {t('admin.create_mailbox')}
         </Button>
       </div>
 
@@ -71,9 +73,9 @@ export default function AdminMailboxes() {
                 {addError && <p className="text-xs text-destructive">{addError}</p>}
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleAdd} disabled={adding}>
-                    {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Create'}
+                    {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : t('common.create')}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>Cancel</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>{t('common.cancel')}</Button>
                 </div>
               </CardContent>
             </Card>

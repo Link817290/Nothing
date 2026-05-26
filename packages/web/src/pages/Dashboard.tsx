@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +18,7 @@ interface ReportData {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [report, setReport] = useState<ReportData | null>(null);
   const [unread, setUnread] = useState(0);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -54,14 +56,14 @@ export default function Dashboard() {
         {/* Welcome */}
         <div>
           <h1 className="text-4xl font-bold tracking-tighter leading-tight">
-            {user?.name ? `Welcome back, ${user.name}` : 'Welcome to Nothing'}
+            {user?.name ? t('dashboard.welcome', { name: user.name }) : t('dashboard.welcome_new')}
           </h1>
           <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
             {hasNoAccounts
-              ? 'Connect an email account to get started.'
+              ? t('dashboard.connect_hint')
               : hasNoMessages
-                ? 'Your inbox is empty. Send your first message or wait for incoming mail.'
-                : `${report?.period?.label || 'This week'} — ${unread} unread`
+                ? t('dashboard.empty_hint')
+                : `${report?.period?.label || 'This week'} — ${t('dashboard.unread', { count: unread })}`
             }
           </p>
         </div>
@@ -74,13 +76,13 @@ export default function Dashboard() {
                 <Zap className="h-6 w-6 text-brand" />
               </div>
               <div className="flex-1">
-                <p className="text-base font-semibold">Get started in 2 minutes</p>
+                <p className="text-base font-semibold">{t('dashboard.get_started')}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Connect your Gmail, QQ, or Outlook account to start sending and receiving.
+                  {t('dashboard.get_started_desc')}
                 </p>
               </div>
               <Button asChild>
-                <Link to="/settings"><Plus className="h-4 w-4" /> Add Account</Link>
+                <Link to="/settings"><Plus className="h-4 w-4" /> {t('dashboard.add_account')}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -89,32 +91,32 @@ export default function Dashboard() {
         {/* Quick actions */}
         <div className="flex items-center gap-3">
           <Button asChild>
-            <Link to="/compose"><PenSquare className="h-4 w-4" /> New Message</Link>
+            <Link to="/compose"><PenSquare className="h-4 w-4" /> {t('dashboard.new_message')}</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link to="/inbox">Inbox {unread > 0 && `(${unread})`} <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/inbox">{t('nav.inbox')} {unread > 0 && `(${unread})`} <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </div>
 
         {/* Stats */}
         <div className="grid gap-3 sm:grid-cols-4">
-          <StatCard icon={<Inbox className="h-4 w-4" />} label="Unread" value={unread} highlight={unread > 0} />
-          <StatCard icon={<Send className="h-4 w-4" />} label="Sent" value={summary.sent} />
-          <StatCard icon={<Mail className="h-4 w-4" />} label="Received" value={summary.received} />
-          <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="Failed" value={summary.failed} warn={summary.failed > 0} />
+          <StatCard icon={<Inbox className="h-4 w-4" />} label={t('stat.unread')} value={unread} highlight={unread > 0} />
+          <StatCard icon={<Send className="h-4 w-4" />} label={t('stat.sent')} value={summary.sent} />
+          <StatCard icon={<Mail className="h-4 w-4" />} label={t('stat.received')} value={summary.received} />
+          <StatCard icon={<AlertTriangle className="h-4 w-4" />} label={t('stat.failed')} value={summary.failed} warn={summary.failed > 0} />
         </div>
 
         {/* Needs Reply */}
         {report?.needs_reply && report.needs_reply.length > 0 && (
           <div>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Needs your reply</h2>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('dashboard.needs_reply')}</h2>
             <div className="space-y-1">
               {report.needs_reply.slice(0, 5).map((m) => (
                 <Link key={m.id} to={`/messages/${m.id}`} className="block">
                   <div className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-accent">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-brand" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{m.subject || '(no subject)'}</p>
+                      <p className="truncate text-sm font-medium">{m.subject || t('common.no_subject')}</p>
                       <p className="truncate text-xs text-muted-foreground">{m.from}</p>
                     </div>
                     <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(m.date)}</span>
@@ -128,7 +130,7 @@ export default function Dashboard() {
         {/* Projects */}
         {report?.projects && report.projects.length > 0 && (
           <div>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Projects</h2>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('dashboard.active_projects')}</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {report.projects.map((p) => (
                 <Link key={p.name} to={`/inbox?project=${p.name}`}>
@@ -137,7 +139,7 @@ export default function Dashboard() {
                       <FolderOpen className="h-4 w-4 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.messages} messages</p>
+                        <p className="text-xs text-muted-foreground">{p.messages} {t('dashboard.messages')}</p>
                       </div>
                     </CardContent>
                   </Card>

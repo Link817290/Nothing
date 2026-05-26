@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,6 +18,7 @@ interface StatusData {
 }
 
 export default function AdminSystem() {
+  const { t } = useTranslation();
   const confirm = useConfirm();
   const [status, setStatus] = useState<StatusData | null>(null);
   const [mailStatus, setMailStatus] = useState<string | null>(null);
@@ -72,11 +74,11 @@ export default function AdminSystem() {
     <>
       <div className="flex items-center justify-between border-b border-border px-10 py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">System</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">Server status and settings</p>
+          <h1 className="text-xl font-bold tracking-tight">{t('admin.system_title')}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.system_subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={load}>
-          <RefreshCw className="h-3 w-3" /> Refresh
+          <RefreshCw className="h-3 w-3" /> {t('common.refresh')}
         </Button>
       </div>
 
@@ -87,22 +89,22 @@ export default function AdminSystem() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Server className="h-4 w-4 text-muted-foreground" /> Server
+                  <Server className="h-4 w-4 text-muted-foreground" /> {t('admin.server')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <Stat label="Version" value={status.version} />
-                  <Stat label="Uptime" value={formatUptime(status.uptime)} />
-                  <Stat label="Memory (RSS)" value={`${status.memory.rss} MB`} />
-                  <Stat label="Heap" value={`${status.memory.heap} MB`} />
+                  <Stat label={t("admin.version")} value={status.version} />
+                  <Stat label={t("admin.uptime")} value={formatUptime(status.uptime)} />
+                  <Stat label={t("admin.memory_rss")} value={`${status.memory.rss} MB`} />
+                  <Stat label={t("admin.heap")} value={`${status.memory.heap} MB`} />
                 </div>
                 <Separator className="my-4" />
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <Stat label="Users" value={status.counts.users} />
-                  <Stat label="Email Accounts" value={status.counts.email_accounts} />
-                  <Stat label="Messages" value={status.counts.messages} />
-                  <Stat label="API Keys" value={status.counts.api_keys} />
+                  <Stat label={t("admin.users_count")} value={status.counts.users} />
+                  <Stat label={t("admin.accounts_count")} value={status.counts.email_accounts} />
+                  <Stat label={t("admin.messages_count")} value={status.counts.messages} />
+                  <Stat label={t("admin.keys_count")} value={status.counts.api_keys} />
                 </div>
               </CardContent>
             </Card>
@@ -112,7 +114,7 @@ export default function AdminSystem() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" /> Mail Engine
+                <Mail className="h-4 w-4 text-muted-foreground" /> {t('admin.mail_engine')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -123,12 +125,12 @@ export default function AdminSystem() {
                     : 'bg-destructive shadow-[0_0_6px_rgba(234,88,12,0.5)]'
                 }`} />
                 <span className="text-sm font-medium text-foreground">
-                  {mailStatus === 'ok' ? 'Stalwart Connected' : 'Not Connected'}
+                  {mailStatus === 'ok' ? t('admin.stalwart_connected') : t('admin.stalwart_not_connected')}
                 </span>
               </div>
               {mailStatus !== 'ok' && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Stalwart mail server is not running. Third-party email accounts (Gmail, QQ) still work. Self-hosted mailboxes (@yourdomain.com) require Stalwart.
+                  {t('admin.stalwart_hint')}
                 </p>
               )}
             </CardContent>
@@ -140,9 +142,9 @@ export default function AdminSystem() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Database className="h-4 w-4 text-muted-foreground" /> Settings
+                    <Database className="h-4 w-4 text-muted-foreground" /> {t('admin.global_settings')}
                   </CardTitle>
-                  <CardDescription>Global server configuration</CardDescription>
+                  <CardDescription>{t('admin.global_settings_desc')}</CardDescription>
                 </div>
                 <Button size="sm" onClick={handleSaveSettings} disabled={saving}>
                   {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
@@ -155,8 +157,8 @@ export default function AdminSystem() {
                 {Object.entries(editSettings).map(([key, value]) => (
                   <div key={key} className="flex items-center gap-4">
                     <div className="w-48 shrink-0">
-                      <p className="text-sm font-medium">{settingLabel(key)}</p>
-                      <p className="text-xs text-muted-foreground">{settingDesc(key)}</p>
+                      <p className="text-sm font-medium">{settingLabel(key, t)}</p>
+                      <p className="text-xs text-muted-foreground">{settingDesc(key, t)}</p>
                     </div>
                     <Input
                       value={value}
@@ -166,7 +168,7 @@ export default function AdminSystem() {
                   </div>
                 ))}
                 {Object.keys(editSettings).length === 0 && (
-                  <p className="text-sm text-muted-foreground">No settings configured</p>
+                  <p className="text-sm text-muted-foreground">t('admin.no_settings')</p>
                 )}
               </div>
             </CardContent>
@@ -174,49 +176,49 @@ export default function AdminSystem() {
           {/* Data Management */}
           <Card className="border-destructive/20">
             <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>Irreversible actions</CardDescription>
+              <CardTitle className="text-destructive">{t('admin.danger')}</CardTitle>
+              <CardDescription>{t('admin.danger_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Clear all messages</p>
-                  <p className="text-xs text-muted-foreground">Delete all emails from the database. Accounts and users are kept.</p>
+                  <p className="text-sm font-medium">{t('admin.clear_messages')}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.clear_messages_desc')}</p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={async () => {
-                    const ok = await confirm({ title: 'Clear all messages', description: 'Delete ALL messages from the database? Accounts and users are kept. This cannot be undone.', confirmText: 'Delete all', variant: 'destructive' });
+                    const ok = await confirm({ title: t('confirm.clear_all_title'), description: t('confirm.clear_all_desc'), confirmText: t('confirm.clear_all_btn'), variant: 'destructive' });
                     if (!ok) return;
                     await api.adminClearMessages();
                     toast({ title: 'All messages deleted', variant: 'success' });
                     load();
                   }}
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Clear Messages
+                  <Trash2 className="h-3.5 w-3.5" /> {t('admin.clear_messages_btn')}
                 </Button>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Full server reset</p>
-                  <p className="text-xs text-muted-foreground">Delete everything except your admin account.</p>
+                  <p className="text-sm font-medium">{t('admin.full_reset')}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.full_reset_desc')}</p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={async () => {
-                    const ok = await confirm({ title: 'Full server reset', description: 'This deletes all messages, accounts, users, and settings. Only your admin account survives. This cannot be undone.', confirmText: 'Reset everything', variant: 'destructive' });
+                    const ok = await confirm({ title: t('confirm.reset_title'), description: t('confirm.reset_desc'), confirmText: t('confirm.reset_btn'), variant: 'destructive' });
                     if (!ok) return;
                     await api.adminReset();
                     toast({ title: 'Server reset complete', variant: 'success' });
                     load();
                   }}
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Full Reset
+                  <Trash2 className="h-3.5 w-3.5" /> {t('admin.full_reset_btn')}
                 </Button>
               </div>
             </CardContent>
@@ -236,11 +238,14 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-const SETTING_LABELS: Record<string, [string, string]> = {
-  open_registration: ['Open Registration', 'Allow new users to create accounts'],
-  server_name: ['Server Name', 'Display name for this instance'],
-  max_accounts_per_user: ['Max Accounts', 'Maximum email accounts per user'],
-};
-
-function settingLabel(key: string) { return SETTING_LABELS[key]?.[0] || key; }
-function settingDesc(key: string) { return SETTING_LABELS[key]?.[1] || ''; }
+// Setting labels use i18n keys: admin.setting_{key} and admin.setting_{key}_desc
+function settingLabel(key: string, t: (k: string) => string) {
+  const k = `admin.setting_${key}`;
+  const v = t(k);
+  return v !== k ? v : key;
+}
+function settingDesc(key: string, t: (k: string) => string) {
+  const k = `admin.setting_${key}_desc`;
+  const v = t(k);
+  return v !== k ? v : '';
+}

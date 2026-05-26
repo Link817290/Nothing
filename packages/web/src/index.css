@@ -126,7 +126,7 @@
 
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-heading: "General Sans", "Inter", -apple-system, sans-serif;
-  --font-mono: "Geist Mono", "SF Mono", "Fira Code", monospace;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
 }
 
 @layer base {

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ interface Account {
 type FilterType = 'unread' | 'all' | 'nmp';
 
 export default function Inbox() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [totalUnread, setTotalUnread] = useState(0);
@@ -78,7 +80,7 @@ export default function Inbox() {
     await Promise.all(ids.map((id) => api.markRead(id, true)));
     clearSelection();
     fetchMessages();
-    toast({ title: `Marked ${ids.length} messages as read`, variant: 'success' });
+    toast({ title: t('message.marked_read'), variant: 'success' });
   };
 
   const handleBulkDelete = async () => {
@@ -86,7 +88,7 @@ export default function Inbox() {
     await Promise.all(ids.map((id) => api.deleteMessage(id)));
     clearSelection();
     fetchMessages();
-    toast({ title: `Deleted ${ids.length} messages`, variant: 'success' });
+    toast({ title: t('message.deleted'), variant: 'success' });
   };
 
   return (
@@ -98,10 +100,10 @@ export default function Inbox() {
           ) : (
             <>
               <h1 className="text-xl font-bold tracking-tight">
-                Inbox
+                {t('inbox.title')}
                 {project && <span className="ml-2 font-normal text-muted-foreground">/ {project}</span>}
               </h1>
-              <p className="mt-0.5 text-xs text-muted-foreground">{totalUnread} unread</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('dashboard.unread', { count: totalUnread })}</p>
             </>
           )}
         </div>
@@ -113,7 +115,7 @@ export default function Inbox() {
               onChange={(e) => setSelectedAccount(e.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/30"
             >
-              <option value="all">All accounts</option>
+              <option value="all">{t('inbox.all_accounts')}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.email}</option>
               ))}
@@ -123,14 +125,14 @@ export default function Inbox() {
           {/* Filter tabs */}
           {!q && (
             <div className="flex items-center gap-1">
-              <FilterTab label="Unread" active={filter === 'unread'} count={totalUnread} onClick={() => setFilter('unread')} />
-              <FilterTab label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
-              <FilterTab label="NMP" active={filter === 'nmp'} onClick={() => setFilter('nmp')} />
+              <FilterTab label={t('inbox.filter.unread')} active={filter === 'unread'} count={totalUnread} onClick={() => setFilter('unread')} />
+              <FilterTab label={t('inbox.filter.all')} active={filter === 'all'} onClick={() => setFilter('all')} />
+              <FilterTab label={t('inbox.filter.nmp')} active={filter === 'nmp'} onClick={() => setFilter('nmp')} />
             </div>
           )}
 
           <Button size="sm" asChild>
-            <Link to="/compose">Compose</Link>
+            <Link to="/compose">{t('nav.compose')}</Link>
           </Button>
         </div>
       </div>
@@ -138,15 +140,15 @@ export default function Inbox() {
       {/* Bulk actions bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 border-b border-border bg-brand/5 px-6 py-2 fade-in">
-          <span className="text-xs font-medium text-brand">{selectedIds.size} selected</span>
+          <span className="text-xs font-medium text-brand">{t('inbox.selected', { count: selectedIds.size })}</span>
           <Button variant="ghost" size="sm" onClick={handleBulkRead}>
-            <CheckCheck className="h-3 w-3" /> Mark read
+            <CheckCheck className="h-3 w-3" /> {t('inbox.mark_read')}
           </Button>
           <Button variant="ghost" size="sm" onClick={handleBulkDelete} className="text-destructive hover:text-destructive">
-            <Trash2 className="h-3 w-3" /> Delete
+            <Trash2 className="h-3 w-3" /> {t('common.delete')}
           </Button>
-          <Button variant="ghost" size="sm" onClick={clearSelection}>Clear</Button>
-          <Button variant="ghost" size="sm" onClick={() => selectAll(messages.map((m) => m.id))}>Select all</Button>
+          <Button variant="ghost" size="sm" onClick={clearSelection}>{t('common.clear')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => selectAll(messages.map((m) => m.id))}>{t('inbox.select_all')}</Button>
         </div>
       )}
 
@@ -159,10 +161,10 @@ export default function Inbox() {
         {!loading && messages.length === 0 && (
           <div className="p-12 text-center fade-in">
             <p className="text-lg font-semibold text-muted-foreground">
-              {filter === 'unread' ? 'All caught up' : filter === 'nmp' ? 'No NMP messages' : 'No messages'}
+              {filter === 'unread' ? t('inbox.all_caught_up') : filter === 'nmp' ? t('inbox.no_nmp') : t('inbox.no_messages')}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {filter === 'unread' ? 'Switch to All to see older messages' : 'Messages will appear here'}
+              {filter === 'unread' ? t('inbox.switch_all') : t('inbox.will_appear')}
             </p>
           </div>
         )}
@@ -207,7 +209,7 @@ export default function Inbox() {
                   </span>
                 </div>
                 <p className={cn('mt-0.5 truncate text-sm', m.unread ? 'font-medium text-foreground' : 'text-muted-foreground')}>
-                  {m.subject || '(no subject)'}
+                  {m.subject || t('common.no_subject')}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground/70">{m.preview}</p>
                 <div className="mt-2 flex items-center gap-2">

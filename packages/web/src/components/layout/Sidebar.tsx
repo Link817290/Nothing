@@ -7,6 +7,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/services/api';
 
 interface ProjectInfo { name: string; unread: number }
@@ -16,6 +17,7 @@ export function Sidebar() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const user = useAuthStore((s) => s.user);
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -53,13 +55,13 @@ export function Sidebar() {
       >
         <div className="flex-1 overflow-y-auto py-4 [scrollbar-width:thin]">
           <nav className="flex flex-col gap-0.5 px-3">
-            <SectionLabel>Overview</SectionLabel>
-            <NavItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" active={isActive('/dashboard')} />
+            <SectionLabel>{t('nav.overview')}</SectionLabel>
+            <NavItem icon={LayoutDashboard} label={t('nav.dashboard')} href="/dashboard" active={isActive('/dashboard')} />
 
-            <SectionLabel>Mail</SectionLabel>
-            <NavItem icon={Inbox} label="Inbox" href="/inbox" active={isActive('/inbox')} badge={unreadCount || undefined} />
-            <NavItem icon={Send} label="Sent" href="/sent" active={isActive('/sent')} />
-            <NavItem icon={PenSquare} label="Compose" href="/compose" active={isActive('/compose')} />
+            <SectionLabel>{t('nav.mail')}</SectionLabel>
+            <NavItem icon={Inbox} label={t('nav.inbox')} href="/inbox" active={isActive('/inbox')} badge={unreadCount || undefined} />
+            <NavItem icon={Send} label={t('nav.sent')} href="/sent" active={isActive('/sent')} />
+            <NavItem icon={PenSquare} label={t('nav.compose')} href="/compose" active={isActive('/compose')} />
 
             {projects.length > 0 && (
               <>
@@ -77,17 +79,17 @@ export function Sidebar() {
               </>
             )}
 
-            <SectionLabel>Manage</SectionLabel>
-            <NavItem icon={Plug} label="Connect" href="/connect" active={isActive('/connect')} />
-            <NavItem icon={Settings} label="Settings" href="/settings" active={isActive('/settings')} />
+            <SectionLabel>{t('nav.manage')}</SectionLabel>
+            <NavItem icon={Plug} label={t('nav.connect')} href="/connect" active={isActive('/connect')} />
+            <NavItem icon={Settings} label={t('nav.settings')} href="/settings" active={isActive('/settings')} />
 
             {user?.is_admin && (
               <>
-                <SectionLabel>Admin</SectionLabel>
-                <NavItem icon={Users} label="Users" href="/admin/users" active={isActive('/admin/users')} />
-                <NavItem icon={Globe} label="Domains" href="/admin/domains" active={isActive('/admin/domains')} />
-                <NavItem icon={Mail} label="Mailboxes" href="/admin/mailboxes" active={isActive('/admin/mailboxes')} />
-                <NavItem icon={Server} label="System" href="/admin/system" active={isActive('/admin/system')} />
+                <SectionLabel>{t('nav.admin')}</SectionLabel>
+                <NavItem icon={Users} label={t('nav.users')} href="/admin/users" active={isActive('/admin/users')} />
+                <NavItem icon={Globe} label={t('nav.domains')} href="/admin/domains" active={isActive('/admin/domains')} />
+                <NavItem icon={Mail} label={t('nav.mailboxes')} href="/admin/mailboxes" active={isActive('/admin/mailboxes')} />
+                <NavItem icon={Server} label={t('nav.system')} href="/admin/system" active={isActive('/admin/system')} />
               </>
             )}
           </nav>

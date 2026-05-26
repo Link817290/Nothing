@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Paperclip } from 'lucide-react';
@@ -26,6 +27,7 @@ const STATUS_MAP: Record<string, { label: string; variant: 'secondary' | 'succes
 };
 
 export default function Sent() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<{ id: string; email: string }[]>([]);
@@ -47,8 +49,8 @@ export default function Sent() {
     <>
       <div className="flex items-center justify-between border-b border-border px-10 py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Sent</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">Outbound messages</p>
+          <h1 className="text-xl font-bold tracking-tight">{t('sent.title')}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('sent.subtitle')}</p>
         </div>
         {accounts.length > 1 && (
           <select
@@ -56,7 +58,7 @@ export default function Sent() {
             onChange={(e) => setSelectedAccount(e.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/30"
           >
-            <option value="all">All accounts</option>
+            <option value="all">{t('inbox.all_accounts')}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.email}</option>
             ))}
@@ -72,8 +74,8 @@ export default function Sent() {
         )}
         {!loading && messages.length === 0 && (
           <div className="p-12 text-center fade-in">
-            <p className="text-lg font-semibold text-muted-foreground">No sent messages</p>
-            <p className="mt-1 text-sm text-muted-foreground">Messages you send will appear here</p>
+            <p className="text-lg font-semibold text-muted-foreground">{t('sent.empty')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('sent.empty_hint')}</p>
           </div>
         )}
         {messages.map((m) => {
@@ -96,7 +98,7 @@ export default function Sent() {
                       {formatDate(m.date)}
                     </span>
                   </div>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{m.subject || '(no subject)'}</p>
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{m.subject || t('common.no_subject')}</p>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground/70">{m.preview}</p>
                   <div className="mt-2 flex items-center gap-2">
                     {m.project && <Badge variant="outline" className="text-xs">{m.project}</Badge>}

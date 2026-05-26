@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ interface MessageData {
 }
 
 export default function MessageDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [msg, setMsg] = useState<MessageData | null>(null);
@@ -50,10 +52,10 @@ export default function MessageDetail() {
       await api.reply(id, replyText);
       setReplyText('');
       setPanel(null);
-      toast({ title: 'Reply sent', variant: 'success' });
+      toast({ title: t('message.reply_sent'), variant: 'success' });
       api.getMessage(id).then(setMsg);
     } catch (err: any) {
-      toast({ title: 'Failed to send reply', description: err.message, variant: 'error' });
+      toast({ title: t('message.reply_fail'), description: err.message, variant: 'error' });
     }
     setSending(false);
   };
@@ -65,9 +67,9 @@ export default function MessageDetail() {
       await api.forward(id, fwdTo);
       setFwdTo('');
       setPanel(null);
-      toast({ title: 'Message forwarded', variant: 'success' });
+      toast({ title: t('message.forwarded'), variant: 'success' });
     } catch (err: any) {
-      toast({ title: 'Failed to forward', description: err.message, variant: 'error' });
+      toast({ title: t('message.forward_fail'), description: err.message, variant: 'error' });
     }
     setSending(false);
   };
@@ -75,7 +77,7 @@ export default function MessageDetail() {
   const handleDelete = async () => {
     if (!id) return;
     await api.deleteMessage(id);
-    toast({ title: 'Message deleted', variant: 'success' });
+    toast({ title: t('message.deleted'), variant: 'success' });
     navigate('/inbox');
   };
 
@@ -83,7 +85,7 @@ export default function MessageDetail() {
     if (!id || !msg) return;
     await api.markRead(id, !!msg.unread);
     setMsg({ ...msg, unread: !msg.unread });
-    toast({ title: msg.unread ? 'Marked as read' : 'Marked as unread', variant: 'info' });
+    toast({ title: msg.unread ? t('message.marked_read') : t('message.marked_unread'), variant: 'info' });
   };
 
   if (loading) {
@@ -102,20 +104,20 @@ export default function MessageDetail() {
       {/* Top bar */}
       <div className="flex items-center gap-3 border-b border-border px-6 py-3">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/inbox"><ArrowLeft className="h-4 w-4" /> Inbox</Link>
+          <Link to="/inbox"><ArrowLeft className="h-4 w-4" /> {t('nav.inbox')}</Link>
         </Button>
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={() => setPanel(panel === 'reply' ? null : 'reply')}>
-            <Reply className="h-3.5 w-3.5" /> Reply
+            <Reply className="h-3.5 w-3.5" /> {t('message.reply')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setPanel(panel === 'forward' ? null : 'forward')}>
-            <Forward className="h-3.5 w-3.5" /> Forward
+            <Forward className="h-3.5 w-3.5" /> {t('message.forward')}
           </Button>
           <Button variant="outline" size="sm" onClick={handleToggleRead}>
-            {msg.unread ? <><Eye className="h-3.5 w-3.5" /> Mark read</> : <><EyeOff className="h-3.5 w-3.5" /> Mark unread</>}
+            {msg.unread ? <><Eye className="h-3.5 w-3.5" /> {t('message.mark_read')}</> : <><EyeOff className="h-3.5 w-3.5" /> {t('message.mark_unread')}</>}
           </Button>
           <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive border-destructive/30">
-            <Trash2 className="h-3.5 w-3.5" /> Delete
+            <Trash2 className="h-3.5 w-3.5" /> {t('message.delete')}
           </Button>
         </div>
       </div>
@@ -135,7 +137,7 @@ export default function MessageDetail() {
           </div>
 
           <h1 className="mt-4 text-2xl font-bold tracking-tight md:text-3xl text-foreground">
-            {msg.subject || '(no subject)'}
+            {msg.subject || t('common.no_subject')}
           </h1>
 
           {/* From / To */}
@@ -171,7 +173,7 @@ export default function MessageDetail() {
           {msg.thread && msg.thread.length > 1 && (
             <div className="mt-10 border-t border-border pt-6">
               <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                Thread &middot; {msg.thread.length}
+                {t('message.thread')} &middot; {msg.thread.length}
               </p>
               <div className="mt-3 space-y-0">
                 {msg.thread.map((t) => (
@@ -198,20 +200,20 @@ export default function MessageDetail() {
           {/* Reply panel */}
           {panel === 'reply' && (
             <div className="mt-8 border-t border-border pt-6 fade-in">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Reply</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{t('message.reply')}</p>
               <textarea
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write your reply..."
+                placeholder={t('message.reply_placeholder')}
                 className="mt-3 w-full rounded-xl border border-border bg-accent/30 p-4 text-sm leading-relaxed placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/30 transition-all duration-200 resize-none"
                 rows={5}
                 autoFocus
               />
               <div className="mt-3 flex gap-2">
                 <Button size="sm" onClick={handleReply} disabled={sending}>
-                  {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Send reply'}
+                  {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : t('message.send_reply')}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setPanel(null)}>Cancel</Button>
+                <Button variant="ghost" size="sm" onClick={() => setPanel(null)}>{t('common.cancel')}</Button>
               </div>
             </div>
           )}
@@ -219,7 +221,7 @@ export default function MessageDetail() {
           {/* Forward panel */}
           {panel === 'forward' && (
             <div className="mt-8 border-t border-border pt-6 fade-in">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Forward to</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{t('message.forward_to')}</p>
               <input
                 value={fwdTo}
                 onChange={(e) => setFwdTo(e.target.value)}
@@ -229,9 +231,9 @@ export default function MessageDetail() {
               />
               <div className="mt-3 flex gap-2">
                 <Button size="sm" onClick={handleForward} disabled={sending}>
-                  {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Forward'}
+                  {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : t('message.forward')}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setPanel(null)}>Cancel</Button>
+                <Button variant="ghost" size="sm" onClick={() => setPanel(null)}>{t('common.cancel')}</Button>
               </div>
             </div>
           )}
