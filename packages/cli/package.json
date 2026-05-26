@@ -17,7 +17,7 @@
   "dependencies": {
     "@inquirer/prompts": "^7.5.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "@nothingmail/nmp": "workspace:*",
+    "@nothingmail/nmp": "^0.2.0",
     "commander": "^13.1.0"
   },
   "devDependencies": {
