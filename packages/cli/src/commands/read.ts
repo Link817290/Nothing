@@ -3,12 +3,12 @@ import { NothingClient } from '../client.js'
 
 export async function read(id: string) {
   const config = loadConfig()
-  if (!config.token) {
-    console.log('  Not logged in. Run "nothing init" or "nothing login <token>"')
+  if (!config.initialized || !config.server_url || !config.token) {
+    console.log('  Not initialized. Run "nothing init" first.')
     return
   }
 
-  const client = new NothingClient(config as Required<Pick<typeof config, 'token' | 'api_host'>>)
+  const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
 
   try {
     const msg = await client.read(id)
@@ -18,7 +18,6 @@ export async function read(id: string) {
     console.log(`  To:      ${msg.to}`)
     console.log(`  Date:    ${new Date(msg.date).toLocaleString()}`)
     console.log(`  Subject: ${msg.subject}`)
-    if (msg.channel) console.log(`  Via:     ${msg.channel.name}`)
     if (msg.project) console.log(`  Project: ${msg.project}`)
     if (msg.labels?.length) console.log(`  Labels:  ${msg.labels.join(', ')}`)
 
@@ -35,7 +34,7 @@ export async function read(id: string) {
     if (msg.attachments?.length) {
       console.log()
       console.log('  Attachments:')
-      msg.attachments.forEach((att, i) => {
+      msg.attachments.forEach((att: any, i: number) => {
         console.log(`    [${i + 1}] ${att.filename} (${(att.size / 1024).toFixed(1)} KB)`)
       })
     }
@@ -43,7 +42,7 @@ export async function read(id: string) {
     if (msg.thread && msg.thread.length > 1) {
       console.log()
       console.log('  Thread:')
-      msg.thread.forEach(t => {
+      msg.thread.forEach((t: any) => {
         const marker = t.id === id ? '→' : ' '
         console.log(`  ${marker} ${t.from}: ${t.preview}`)
       })

@@ -1,0 +1,60 @@
+graph TB
+    subgraph Client ["Client (本地)"]
+        CLI["nothing-cli<br/>CLI 命令"]
+        MCP["MCP Server<br/>Agent 工具"]
+    end
+
+    subgraph Server ["Nothing Server (Docker)"]
+        API["Fastify API<br/>:3000"]
+        AUTH["Auth<br/>注册/登录/API Key"]
+        MSG["Messages<br/>收发/过滤/聚合"]
+        ACC["Accounts<br/>邮箱管理"]
+        ADMIN["Admin<br/>用户/设置/状态"]
+        IMAP_SVC["IMAP Poller<br/>定时拉取"]
+        SMTP_SVC["SMTP Sender<br/>NMP 封装"]
+        PROXY["Mail Engine Proxy<br/>域名/用户管理"]
+    end
+
+    subgraph Infra ["基础设施 (Docker)"]
+        PG["PostgreSQL<br/>:5432"]
+        MAIL["Nothing Mail<br/>SMTP/IMAP<br/>:25 :465 :993"]
+    end
+
+    subgraph External ["外部邮箱"]
+        GMAIL["Gmail"]
+        QQ["QQ Mail"]
+        OUTLOOK["Outlook"]
+    end
+
+    CLI -->|"HTTP + API Key"| API
+    MCP -->|"HTTP + API Key"| API
+
+    API --> AUTH
+    API --> MSG
+    API --> ACC
+    API --> ADMIN
+    API --> PROXY
+
+    MSG --> SMTP_SVC
+    MSG --> PG
+    ACC --> PG
+    AUTH --> PG
+    ADMIN --> PG
+    IMAP_SVC --> PG
+
+    SMTP_SVC -->|"发送 NMP 邮件"| MAIL
+    SMTP_SVC -->|"发送 NMP 邮件"| GMAIL
+    SMTP_SVC -->|"发送 NMP 邮件"| QQ
+    SMTP_SVC -->|"发送 NMP 邮件"| OUTLOOK
+
+    IMAP_SVC -->|"拉取邮件"| MAIL
+    IMAP_SVC -->|"拉取邮件"| GMAIL
+    IMAP_SVC -->|"拉取邮件"| QQ
+    IMAP_SVC -->|"拉取邮件"| OUTLOOK
+
+    PROXY -->|"内部 API :8080"| MAIL
+
+    style Client fill:#e8f4f8,stroke:#2196F3
+    style Server fill:#fff3e0,stroke:#FF9800
+    style Infra fill:#e8f5e9,stroke:#4CAF50
+    style External fill:#fce4ec,stroke:#E91E63

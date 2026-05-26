@@ -11,21 +11,20 @@ interface SendOptions {
 
 export async function send(to: string, text: string, opts: SendOptions) {
   const config = loadConfig()
-  if (!config.token) {
-    console.log('  Not logged in. Run "nothing init" or "nothing login <token>"')
+  if (!config.initialized || !config.server_url || !config.token) {
+    console.log('  Not initialized. Run "nothing init" first.')
     return
   }
 
-  const client = new NothingClient(config as Required<Pick<typeof config, 'token' | 'api_host'>>)
+  const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
 
   try {
     const result = await client.send({
-      to,
-      text,
+      to, text,
       files: opts.file,
       project: opts.project,
       labels: opts.labels,
-      priority: opts.priority as 'urgent' | 'normal' | 'low',
+      priority: opts.priority,
       require: opts.require,
     })
     console.log(`  ✓ Sent to ${to}`)

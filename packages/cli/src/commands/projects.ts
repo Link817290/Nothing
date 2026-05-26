@@ -3,12 +3,12 @@ import { NothingClient } from '../client.js'
 
 export async function projects() {
   const config = loadConfig()
-  if (!config.token) {
-    console.log('  Not logged in. Run "nothing init" or "nothing login <token>"')
+  if (!config.initialized || !config.server_url || !config.token) {
+    console.log('  Not initialized. Run "nothing init" first.')
     return
   }
 
-  const client = new NothingClient(config as Required<Pick<typeof config, 'token' | 'api_host'>>)
+  const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
 
   try {
     const result = await client.projects()

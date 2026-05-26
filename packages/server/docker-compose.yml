@@ -1,0 +1,48 @@
+services:
+  server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://nothing:${DB_PASSWORD:-nothing}@db:5432/nothing
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - ENCRYPT_KEY=${ENCRYPT_KEY:-change-me-in-production}
+      - MAIL_ADMIN_URL=http://mail:8080
+      - PORT=3000
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=nothing
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-nothing}
+      - POSTGRES_DB=nothing
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nothing"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mail:
+    image: stalwartlabs/mail-server:latest
+    ports:
+      - "25:25"
+      - "587:587"
+      - "465:465"
+      - "143:143"
+      - "993:993"
+    expose:
+      - "8080"
+    volumes:
+      - maildata:/opt/stalwart-mail
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  maildata:

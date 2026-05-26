@@ -1,6 +1,6 @@
 {
   "name": "nothing-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Nothing — AI Agent email client & MCP Server",
   "type": "module",
   "bin": {
@@ -15,20 +15,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@fastify/static": "^9.1.3",
     "@inquirer/prompts": "^7.5.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "@nothingmail/nmp": "^0.1.0",
-    "commander": "^13.1.0",
-    "fastify": "^5.3.3",
-    "imapflow": "^1.0.177",
-    "mailparser": "^3.9.8",
-    "nodemailer": "^6.10.1",
-    "sql.js": "^1.14.1"
+    "@nothingmail/nmp": "workspace:*",
+    "commander": "^13.1.0"
   },
   "devDependencies": {
-    "@types/mailparser": "^3.4.6",
-    "@types/nodemailer": "^6.4.17",
     "tsup": "^8.4.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"

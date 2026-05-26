@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from 'commander'
 
 const program = new Command()
@@ -10,61 +11,26 @@ program
 // Setup
 program
   .command('init')
-  .description('Initialize Nothing (choose email provider, create local account)')
+  .description('Initialize Nothing (choose email provider, configure account)')
   .action(async () => {
     const { init } = await import('./commands/init.js')
     await init()
   })
 
-// MCP
 program
-  .command('mcp')
-  .description('Start MCP Server (stdio mode)')
+  .command('reset')
+  .description('Reset Nothing (delete config, database)')
   .action(async () => {
-    const { startMcpServer } = await import('./mcp/server.js')
-    await startMcpServer()
-  })
-
-program
-  .command('mcp:install')
-  .description('Auto-configure MCP in Claude Code / Cursor')
-  .action(async () => {
-    const { mcpInstall } = await import('./commands/mcp-install.js')
-    await mcpInstall()
-  })
-
-// Server
-program
-  .command('start')
-  .description('Start local Nothing server (background)')
-  .action(async () => {
-    const { start } = await import('./commands/start.js')
-    await start()
-  })
-
-program
-  .command('stop')
-  .description('Stop local Nothing server')
-  .action(async () => {
-    const { stop } = await import('./commands/stop.js')
-    await stop()
+    const { reset } = await import('./commands/reset.js')
+    await reset()
   })
 
 program
   .command('status')
-  .description('Show local server status')
+  .description('Show current configuration')
   .action(async () => {
     const { status } = await import('./commands/status.js')
     await status()
-  })
-
-// Auth
-program
-  .command('login <token>')
-  .description('Login with API token')
-  .action(async (token: string) => {
-    const { login } = await import('./commands/login.js')
-    await login(token)
   })
 
 program
@@ -73,6 +39,23 @@ program
   .action(async () => {
     const { whoami } = await import('./commands/whoami.js')
     await whoami()
+  })
+
+// MCP
+program
+  .command('mcp')
+  .description('Start MCP Server (stdio mode, used by editors)')
+  .action(async () => {
+    const { startMcpServer } = await import('./mcp/server.js')
+    await startMcpServer()
+  })
+
+program
+  .command('mcp:install')
+  .description('Auto-configure MCP in Claude Code / Cursor / Claude Desktop')
+  .action(async () => {
+    const { mcpInstall } = await import('./commands/mcp-install.js')
+    await mcpInstall()
   })
 
 // Messaging
@@ -138,14 +121,6 @@ program
   .action(async (opts) => {
     const { report } = await import('./commands/report.js')
     await report(opts)
-  })
-
-program
-  .command('reset')
-  .description('Reset Nothing (delete config, database, stop server)')
-  .action(async () => {
-    const { reset } = await import('./commands/reset.js')
-    await reset()
   })
 
 program.parse()

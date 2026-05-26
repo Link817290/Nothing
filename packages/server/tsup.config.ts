@@ -5,9 +5,14 @@ export default defineConfig({
   format: ['esm'],
   clean: true,
   splitting: false,
-  banner: { js: '#!/usr/bin/env node' },
   external: [
-    '@inquirer/prompts',
-    '@modelcontextprotocol/sdk',
+    'pg',
+    'nodemailer',
+    'imapflow',
+    'mailparser',
+    'fastify',
+    '@fastify/cors',
+    '@fastify/jwt',
+    'bcryptjs',
   ],
 })

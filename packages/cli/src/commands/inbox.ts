@@ -13,12 +13,12 @@ interface InboxOptions {
 
 export async function inbox(opts: InboxOptions) {
   const config = loadConfig()
-  if (!config.token) {
-    console.log('  Not logged in. Run "nothing init" or "nothing login <token>"')
+  if (!config.initialized || !config.server_url || !config.token) {
+    console.log('  Not initialized. Run "nothing init" first.')
     return
   }
 
-  const client = new NothingClient(config as Required<Pick<typeof config, 'token' | 'api_host'>>)
+  const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
 
   try {
     const result = await client.inbox({
@@ -37,16 +37,15 @@ export async function inbox(opts: InboxOptions) {
     }
 
     console.log()
-    console.log('  #   From                    Subject                          Date           Channel')
-    console.log('  ' + '─'.repeat(90))
+    console.log('  #   From                    Subject                          Date')
+    console.log('  ' + '─'.repeat(80))
 
-    result.messages.forEach((msg, i) => {
+    result.messages.forEach((msg: any, i: number) => {
       const unread = msg.unread ? '●' : '○'
       const from = (msg.from || '').padEnd(22).slice(0, 22)
       const subject = (msg.subject || '').padEnd(32).slice(0, 32)
-      const date = timeAgo(msg.date).padEnd(14)
-      const ch = (msg as any).channel?.name || ''
-      console.log(`  ${unread} ${String(i + 1).padStart(2)}  ${from}  ${subject}  ${date}  ${ch}`)
+      const date = timeAgo(msg.date)
+      console.log(`  ${unread} ${String(i + 1).padStart(2)}  ${from}  ${subject}  ${date}`)
     })
 
     console.log()
