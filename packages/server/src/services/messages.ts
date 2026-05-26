@@ -22,7 +22,7 @@ export async function sendMessage(userId: string, req: SendRequest) {
   const subject = req.subject || req.text.slice(0, 50)
 
   const payload: NmpPayload = {
-    nmp: 1, type: (req.type as any) || 'share',
+    nmp: 1, type: (req.type as any) || 'nmp:chat',
     agent: req.agent, project: req.project, labels: req.labels,
     priority: (req.priority as any), require: req.require,
   }
@@ -103,7 +103,7 @@ export async function getMessage(userId: string, id: string) {
   return {
     id: row.id, from: row.from_address, to: row.to_address,
     subject: row.subject, date: row.created_at,
-    type: payload?.type || 'share', content: row.content,
+    type: payload?.type || 'nmp:chat', content: row.content,
     project: row.project || undefined,
     labels: typeof row.labels === 'string' ? JSON.parse(row.labels) : (row.labels || []),
     context: payload?.context, status: row.status, source: row.source,
@@ -134,7 +134,7 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   const origLabels = typeof original.labels === 'string' ? JSON.parse(original.labels) : (original.labels || [])
 
   const payload: NmpPayload = {
-    nmp: 1, type: 'reply',
+    nmp: 1, type: 'nmp:reply',
     project: original.project || undefined,
     labels: origLabels,
   }
@@ -248,7 +248,7 @@ export async function forwardMessage(userId: string, id: string, req: { to: stri
   const content = req.text ? `${req.text}\n\n--- Forwarded ---\n${original.content}` : original.content
 
   const payload: NmpPayload = {
-    nmp: 1, type: 'share',
+    nmp: 1, type: 'nmp:chat',
     project: original.project || undefined,
   }
 
@@ -322,7 +322,7 @@ function rowToSummary(row: Record<string, any>) {
   return {
     id: row.id, from: row.from_address, to: row.to_address, subject: row.subject,
     preview: stripHtml(row.content).slice(0, 120),
-    date: row.created_at, type: payload.type || 'share',
+    date: row.created_at, type: payload.type || 'nmp:chat',
     status: row.direction === 'outbound' ? row.status : undefined,
     source: row.source || undefined, agent: row.agent || undefined,
     channel: row.channel_id || undefined, unread: !row.is_read,
