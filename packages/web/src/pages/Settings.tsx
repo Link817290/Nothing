@@ -86,10 +86,16 @@ export default function Settings() {
     }
   };
 
+  const [newKeyName, setNewKeyName] = useState('');
+  const [showKeyForm, setShowKeyForm] = useState(false);
+
   const handleCreateKey = async () => {
+    if (!newKeyName.trim()) return;
     try {
-      const res = await api.createKey('web-' + Date.now());
+      const res = await api.createKey(newKeyName.trim());
       setNewKey(res.key);
+      setNewKeyName('');
+      setShowKeyForm(false);
       load();
     } catch {}
   };
@@ -206,26 +212,36 @@ export default function Settings() {
               )}
 
               {accounts.map((acc) => (
-                <div key={acc.id} className="flex items-center justify-between rounded-xl border border-border p-4 transition-all duration-200 hover:bg-accent/30">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">{acc.email}</span>
-                      <Badge variant="secondary" className="text-xs uppercase">{acc.provider}</Badge>
+                <div key={acc.id} className="rounded-xl border border-border p-5 transition-all duration-150 hover:bg-accent/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {/* Status dot */}
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${acc.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">{acc.email}</span>
+                          <Badge variant="secondary" className="text-xs uppercase">{acc.provider}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {acc.is_active ? 'Connected' : 'Disconnected'}
+                          {acc.last_sync_at && ` · Last synced ${new Date(acc.last_sync_at).toLocaleString()}`}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      {acc.is_active ? 'Active' : 'Inactive'}
-                      {acc.last_sync_at && ` / Synced ${new Date(acc.last_sync_at).toLocaleString()}`}
-                    </p>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleTestAccount(acc.id)} className="text-muted-foreground">
-                      <TestTube2 className="h-3 w-3" />
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
+                    <Button variant="outline" size="sm" onClick={() => handleTestAccount(acc.id)}>
+                      <TestTube2 className="h-3.5 w-3.5" /> Test
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => api.syncAccount(acc.id).then(() => { toast({ title: 'Sync started', variant: 'info' }); load(); })}>
-                      <RefreshCw className="h-3 w-3" />
+                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'nmp').then((r) => { toast({ title: `Synced ${r.new_messages || 0} NMP messages`, variant: 'success' }); load(); })}>
+                      <RefreshCw className="h-3.5 w-3.5" /> Sync NMP
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => api.removeAccount(acc.id).then(load)} className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-3 w-3" />
+                    <Button variant="outline" size="sm" onClick={() => api.syncAccount(acc.id, 'all').then((r) => { toast({ title: `Imported ${r.new_messages || 0} emails`, variant: 'success' }); load(); })}>
+                      <RefreshCw className="h-3.5 w-3.5" /> Import All
+                    </Button>
+                    <div className="flex-1" />
+                    <Button variant="ghost" size="sm" onClick={() => api.removeAccount(acc.id).then(load)} className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" /> Remove
                     </Button>
                   </div>
                 </div>
@@ -241,12 +257,32 @@ export default function Settings() {
                   <CardTitle>API Keys</CardTitle>
                   <CardDescription>Generate keys for CLI tools and AI agents to access your account</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleCreateKey}>
+                <Button variant="outline" size="sm" onClick={() => setShowKeyForm(!showKeyForm)}>
                   <Plus className="h-3 w-3" /> Create
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {showKeyForm && !newKey && (
+                <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-3 fade-in">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Key name</label>
+                    <Input
+                      value={newKeyName}
+                      onChange={(e) => setNewKeyName(e.target.value)}
+                      placeholder="e.g. my-cli, cursor-agent, production"
+                      className="mt-1"
+                      autoFocus
+                      onKeyDown={(e) => e.key === 'Enter' && handleCreateKey()}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCreateKey} disabled={!newKeyName.trim()}>Create key</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setShowKeyForm(false); setNewKeyName(''); }}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+
               {newKey && (
                 <div className="rounded-xl border border-brand/30 bg-brand/5 p-4 fade-in">
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">New key -- copy now</p>

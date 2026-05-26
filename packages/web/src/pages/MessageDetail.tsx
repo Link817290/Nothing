@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { MessageBody } from '@/components/email/MessageBody';
 import { Loader2, ArrowLeft, Reply, Forward, Trash2, Eye, EyeOff } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
@@ -103,19 +104,18 @@ export default function MessageDetail() {
         <Button variant="ghost" size="sm" asChild>
           <Link to="/inbox"><ArrowLeft className="h-4 w-4" /> Inbox</Link>
         </Button>
-        <span className="text-xs text-muted-foreground/50">{msg.id}</span>
-        <div className="ml-auto flex items-center gap-1">
-          <Button variant="default" size="sm" onClick={() => setPanel(panel === 'reply' ? null : 'reply')}>
-            <Reply className="h-3 w-3" /> Reply
+        <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" onClick={() => setPanel(panel === 'reply' ? null : 'reply')}>
+            <Reply className="h-3.5 w-3.5" /> Reply
           </Button>
           <Button variant="outline" size="sm" onClick={() => setPanel(panel === 'forward' ? null : 'forward')}>
-            <Forward className="h-3 w-3" /> Forward
+            <Forward className="h-3.5 w-3.5" /> Forward
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleToggleRead} className="text-muted-foreground">
-            {msg.unread ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+          <Button variant="outline" size="sm" onClick={handleToggleRead}>
+            {msg.unread ? <><Eye className="h-3.5 w-3.5" /> Mark read</> : <><EyeOff className="h-3.5 w-3.5" /> Mark unread</>}
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
-            <Trash2 className="h-3 w-3" />
+          <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive border-destructive/30">
+            <Trash2 className="h-3.5 w-3.5" /> Delete
           </Button>
         </div>
       </div>
@@ -143,15 +143,15 @@ export default function MessageDetail() {
             'mt-6 flex items-center gap-4 rounded-xl p-4',
             isNmp ? 'nmp-glow bg-nmp-glow-alpha/30' : 'bg-accent/50',
           )}>
-            <Avatar name={msg.from.split('@')[0]} isNmp={isNmp} />
+            <Avatar name={parseAddress(msg.from).name} isNmp={isNmp} />
             <div className="text-sm min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{msg.from.split('@')[0]}</span>
+                <span className="font-medium text-foreground">{parseAddress(msg.from).name}</span>
                 <span className="text-muted-foreground/40">&rarr;</span>
-                <span className="text-muted-foreground">{msg.to.split('@')[0]}</span>
+                <span className="text-muted-foreground">{parseAddress(msg.to).name}</span>
               </div>
               <div className="text-xs text-muted-foreground/60 truncate">
-                {msg.from} &middot; {msg.to}
+                {parseAddress(msg.from).email} &middot; {parseAddress(msg.to).email}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -163,8 +163,8 @@ export default function MessageDetail() {
           </div>
 
           {/* Body */}
-          <div className="mt-8 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-            {msg.content}
+          <div className="mt-8">
+            <MessageBody content={msg.content} source={msg.source} />
           </div>
 
           {/* Thread */}
@@ -241,8 +241,19 @@ export default function MessageDetail() {
   );
 }
 
+/** Parse "Display Name" <email@host> into { name, email } */
+function parseAddress(raw: string): { name: string; email: string } {
+  const match = raw.match(/^"?([^"<]+)"?\s*<?([^>]*)>?$/);
+  if (match) {
+    return { name: match[1].trim(), email: match[2].trim() || raw };
+  }
+  // Fallback: just an email
+  return { name: raw.split('@')[0], email: raw };
+}
+
 function Avatar({ name, isNmp }: { name: string; isNmp?: boolean }) {
-  const initials = name.split(/[\s-]+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const clean = name.replace(/['"<>]/g, '').trim();
+  const initials = clean.split(/[\s-]+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
   return (
     <span className={cn(
       'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold',

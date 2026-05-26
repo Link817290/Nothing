@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Loader2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,17 @@ export default function LoginPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [isFirstTime, setIsFirstTime] = useState(false);
+
+  // Check if this is first-time setup (no users yet)
+  useEffect(() => {
+    fetch('/api/setup/status').then(r => r.json()).then(data => {
+      if (data.needs_setup) {
+        setMode('register');
+        setIsFirstTime(true);
+      }
+    }).catch(() => {});
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -99,7 +110,9 @@ export default function LoginPage() {
             <span className="h-2 w-2 rounded-full bg-brand " />
           </div>
           <p className="text-sm text-muted-foreground">
-            {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+            {isFirstTime
+              ? 'Create your admin account to get started'
+              : mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
           </p>
         </CardHeader>
 

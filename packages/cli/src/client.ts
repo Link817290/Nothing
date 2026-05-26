@@ -108,6 +108,37 @@ export class NothingClient {
     return this.request<{ success: boolean; message_id: string; status: string }>('POST', `/api/messages/${id}/reply`, req)
   }
 
+  // ─── Message actions ────────────────────────────────────────────
+
+  markRead(id: string, isRead: boolean) {
+    return this.request<{ success: boolean }>('PUT', `/api/messages/${id}/read`, { is_read: isRead })
+  }
+
+  deleteMessage(id: string) {
+    return this.request<{ success: boolean }>('DELETE', `/api/messages/${id}`)
+  }
+
+  forward(id: string, to: string, text?: string) {
+    return this.request<{ success: boolean; message_id: string }>('POST', `/api/messages/${id}/forward`, { to, text })
+  }
+
+  search(q: string, opts?: { project?: string; limit?: number }) {
+    const params = new URLSearchParams({ q })
+    if (opts?.project) params.set('project', opts.project)
+    if (opts?.limit) params.set('limit', String(opts.limit))
+    return this.request<{ messages: any[] }>('GET', `/api/messages/search?${params}`)
+  }
+
+  // ─── Accounts ─────────────────────────────────────────────────
+
+  syncAccount(id: string, mode: 'nmp' | 'all' = 'nmp') {
+    return this.request<{ success: boolean; new_messages: number }>('POST', `/api/accounts/${id}/sync`, { mode })
+  }
+
+  testAccount(id: string) {
+    return this.request<{ smtp: boolean; imap: boolean }>('POST', `/api/accounts/${id}/test`)
+  }
+
   // ─── Aggregation ───────────────────────────────────────────────
 
   projects() {

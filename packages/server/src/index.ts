@@ -26,6 +26,13 @@ async function main() {
   // Health check (public)
   app.get('/health', async () => ({ status: 'ok', version: '0.1.0' }))
 
+  // Setup status (public) — tells frontend if first-time setup is needed
+  app.get('/api/setup/status', async () => {
+    const { queryOne } = await import('./repositories/db.js')
+    const count = await queryOne('SELECT COUNT(*) as c FROM users')
+    return { needs_setup: parseInt(count?.c) === 0 }
+  })
+
   // Routes
   await app.register(authRoutes)
   await app.register(accountRoutes)

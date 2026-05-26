@@ -82,15 +82,19 @@ export async function accountRoutes(app: FastifyInstance) {
   })
 
   // ─── Manual sync ───────────────────────────────────────────────
+  // mode=nmp (default): only NMP protocol messages
+  // mode=all: import all emails
   app.post('/api/accounts/:id/sync', async (req, reply) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
+    const body = req.body as { mode?: string } || {}
+    const mode = (body.mode === 'all' ? 'all' : 'nmp') as 'nmp' | 'all'
     const account = await getUserAccount(user.id, id)
     if (!account) return reply.code(404).send({ error: 'Account not found' })
 
     try {
-      const count = await syncAccountById(id)
-      return { success: true, new_messages: count }
+      const count = await syncAccountById(id, mode)
+      return { success: true, new_messages: count, mode }
     } catch (err) {
       return reply.code(500).send({ error: (err as Error).message })
     }

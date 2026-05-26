@@ -28,17 +28,40 @@ const STATUS_MAP: Record<string, { label: string; variant: 'secondary' | 'succes
 export default function Sent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accounts, setAccounts] = useState<{ id: string; email: string }[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState('all');
 
   useEffect(() => {
-    api.sent({ limit: '50' }).then((r) => setMessages(r.messages || []))
-      .catch(() => {}).finally(() => setLoading(false));
+    api.listAccounts().then((r) => setAccounts(r.accounts || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const params: Record<string, string> = { limit: '50' };
+    if (selectedAccount !== 'all') params.channel = selectedAccount;
+    api.sent(params).then((r) => setMessages(r.messages || []))
+      .catch(() => {}).finally(() => setLoading(false));
+  }, [selectedAccount]);
 
   return (
     <>
-      <div className="border-b border-border px-10 py-5">
-        <h1 className="text-xl font-bold tracking-tight">Sent</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">Outbound messages</p>
+      <div className="flex items-center justify-between border-b border-border px-10 py-5">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Sent</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">Outbound messages</p>
+        </div>
+        {accounts.length > 1 && (
+          <select
+            value={selectedAccount}
+            onChange={(e) => setSelectedAccount(e.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/30"
+          >
+            <option value="all">All accounts</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.email}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">

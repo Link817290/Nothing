@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Paperclip, CheckCheck, Trash2 } from 'lucide-react';
+import { Loader2, Paperclip, CheckCheck, Trash2, ChevronDown } from 'lucide-react';
 import { api } from '@/services/api';
 import { useMessageStore } from '@/stores/messageStore';
 import { toast } from '@/components/ui/toast';
@@ -21,6 +21,12 @@ interface Message {
   labels: string[];
 }
 
+interface Account {
+  id: string;
+  email: string;
+  provider: string;
+}
+
 type FilterType = 'unread' | 'all' | 'nmp';
 
 export default function Inbox() {
@@ -29,10 +35,17 @@ export default function Inbox() {
   const [totalUnread, setTotalUnread] = useState(0);
   const [filter, setFilter] = useState<FilterType>('unread');
   const [loading, setLoading] = useState(true);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const { selectedIds, toggleSelected, clearSelection, selectAll } = useMessageStore();
 
   const project = searchParams.get('project') || undefined;
   const q = searchParams.get('q') || undefined;
+
+  // Load accounts
+  useEffect(() => {
+    api.listAccounts().then((r) => setAccounts(r.accounts || [])).catch(() => {});
+  }, []);
 
   const fetchMessages = useCallback(() => {
     setLoading(true);
@@ -48,11 +61,12 @@ export default function Inbox() {
     if (filter === 'all') params.unread = 'false';
     if (filter === 'nmp') params.source = 'nmp';
     if (project) params.project = project;
+    if (selectedAccount !== 'all') params.account_id = selectedAccount;
     api.inbox(params).then((r) => {
       setMessages(r.messages || []);
       setTotalUnread(r.total_unread || 0);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [filter, project, q]);
+  }, [filter, project, q, selectedAccount]);
 
   useEffect(() => {
     fetchMessages();
@@ -91,15 +105,31 @@ export default function Inbox() {
             </>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Account selector */}
+          {!q && accounts.length > 1 && (
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/30"
+            >
+              <option value="all">All accounts</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.email}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Filter tabs */}
           {!q && (
-            <>
+            <div className="flex items-center gap-1">
               <FilterTab label="Unread" active={filter === 'unread'} count={totalUnread} onClick={() => setFilter('unread')} />
               <FilterTab label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
               <FilterTab label="NMP" active={filter === 'nmp'} onClick={() => setFilter('nmp')} />
-            </>
+            </div>
           )}
-          <Button size="pill" asChild>
+
+          <Button size="sm" asChild>
             <Link to="/compose">Compose</Link>
           </Button>
         </div>

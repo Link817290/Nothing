@@ -3,9 +3,12 @@ import { simpleParser } from 'mailparser'
 import { queryOne, queryAll, run } from '../repositories/db.js'
 import { decrypt } from '../services/accounts.js'
 
+export type SyncMode = 'nmp' | 'all'
+
 let polling = false
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
+/** Auto-sync: only NMP messages */
 async function syncAll(): Promise<number> {
   if (polling) return 0
   polling = true
@@ -15,7 +18,7 @@ async function syncAll(): Promise<number> {
     const accounts = await queryAll('SELECT * FROM email_accounts WHERE is_active = TRUE')
     for (const acc of accounts) {
       try {
-        total += await syncAccount(acc)
+        total += await syncAccount(acc, 'nmp')
       } catch (err) {
         console.error(`[imap] Sync error for ${acc.email}:`, (err as Error).message)
       }
@@ -28,7 +31,12 @@ async function syncAll(): Promise<number> {
   return total
 }
 
-async function syncAccount(acc: Record<string, any>): Promise<number> {
+/**
+ * Sync a single account.
+ * @param mode 'nmp' = only NMP protocol messages (default for auto-sync)
+ *             'all' = all emails (manual import)
+ */
+async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp'): Promise<number> {
   const pass = decrypt(acc.auth_pass_encrypted)
 
   const client = new ImapFlow({
@@ -76,6 +84,9 @@ async function syncAccount(acc: Record<string, any>): Promise<number> {
           const nmpAttachment = parsed.attachments?.find(a => a.filename === 'nmp.md')
           const nmpJsonAttachment = parsed.attachments?.find(a => a.filename === 'nmp.json')
           const isNmp = !!(nmpHeader || nmpAttachment)
+
+          // In NMP mode, skip non-NMP emails
+          if (mode === 'nmp' && !isNmp) continue
 
           let body: string
           let jsonPayload: any = null
@@ -127,21 +138,21 @@ async function syncAccount(acc: Record<string, any>): Promise<number> {
 
   if (newCount > 0) {
     await run(`UPDATE email_accounts SET last_sync_at = NOW() WHERE id = $1`, [acc.id])
-    console.log(`[imap] ${acc.email}: synced ${newCount} new emails`)
+    console.log(`[imap] ${acc.email}: synced ${newCount} new ${mode === 'nmp' ? 'NMP ' : ''}emails`)
   }
 
   return newCount
 }
 
-/** Sync a single account by ID */
-export async function syncAccountById(accountId: string): Promise<number> {
+/** Sync a single account by ID, with mode */
+export async function syncAccountById(accountId: string, mode: SyncMode = 'nmp'): Promise<number> {
   const acc = await queryOne('SELECT * FROM email_accounts WHERE id = $1', [accountId])
   if (!acc) throw new Error('Account not found')
-  return syncAccount(acc)
+  return syncAccount(acc, mode)
 }
 
 export async function startImapPolling(intervalMs = 30000) {
-  console.log(`[imap] Starting polling, interval: ${intervalMs / 1000}s`)
+  console.log(`[imap] Starting polling (NMP only), interval: ${intervalMs / 1000}s`)
   await syncAll()
   pollTimer = setInterval(syncAll, intervalMs)
 }

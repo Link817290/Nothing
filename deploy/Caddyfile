@@ -1,0 +1,15 @@
+{$DOMAIN:localhost} {
+    # Web frontend
+    handle {
+        reverse_proxy web:80
+    }
+
+    # API requests
+    handle /api/* {
+        reverse_proxy server:3000
+    }
+
+    handle /health {
+        reverse_proxy server:3000
+    }
+}
