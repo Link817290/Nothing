@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { listUsers, banUser } from '../services/auth.js'
 import { getAllSettings, setSetting } from '../services/settings.js'
-import { queryOne } from '../repositories/db.js'
+import { queryOne, run } from '../repositories/db.js'
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook('onRequest', authenticate)
@@ -71,5 +71,24 @@ export async function adminRoutes(app: FastifyInstance) {
         heap: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
       },
     }
+  })
+
+  // ─── Data management ───────────────────────────────────────────
+
+  // Delete all messages (keeps users and accounts)
+  app.delete('/api/admin/messages', async () => {
+    await run('DELETE FROM messages')
+    return { success: true, message: 'All messages deleted' }
+  })
+
+  // Full reset — delete everything except the current admin
+  app.post('/api/admin/reset', async (req) => {
+    const user = (req as any).user as { id: string }
+    await run('DELETE FROM messages')
+    await run('DELETE FROM email_accounts')
+    await run('DELETE FROM api_keys WHERE user_id != $1', [user.id])
+    await run('DELETE FROM users WHERE id != $1', [user.id])
+    await run('DELETE FROM server_settings')
+    return { success: true, message: 'Server reset. Only your admin account remains.' }
   })
 }

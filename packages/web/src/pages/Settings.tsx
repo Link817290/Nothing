@@ -9,11 +9,13 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Account { id: string; provider: string; email: string; is_active: boolean; last_sync_at?: string }
 interface ApiKey { id: string; name: string; permissions: string[]; created_at: string }
 
 export default function Settings() {
+  const confirm = useConfirm();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
@@ -240,7 +242,20 @@ export default function Settings() {
                       <RefreshCw className="h-3.5 w-3.5" /> Import All
                     </Button>
                     <div className="flex-1" />
-                    <Button variant="ghost" size="sm" onClick={() => api.removeAccount(acc.id).then(load)} className="text-destructive hover:text-destructive">
+                    <Button variant="ghost" size="sm" onClick={async () => {
+                      const ok = await confirm({ title: 'Clear messages', description: `Delete all messages from ${acc.email}? This cannot be undone.`, confirmText: 'Clear', variant: 'destructive' });
+                      if (!ok) return;
+                      await api.clearAccountMessages(acc.id);
+                      toast({ title: 'Messages cleared', variant: 'success' });
+                    }} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" /> Clear
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={async () => {
+                      const ok = await confirm({ title: 'Remove account', description: `Remove ${acc.email} and delete all its messages? This cannot be undone.`, confirmText: 'Remove', variant: 'destructive' });
+                      if (!ok) return;
+                      await api.removeAccount(acc.id);
+                      load();
+                    }} className="text-destructive hover:text-destructive">
                       <Trash2 className="h-3.5 w-3.5" /> Remove
                     </Button>
                   </div>

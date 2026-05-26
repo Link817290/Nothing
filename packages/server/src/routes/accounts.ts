@@ -99,4 +99,16 @@ export async function accountRoutes(app: FastifyInstance) {
       return reply.code(500).send({ error: (err as Error).message })
     }
   })
+
+  // ─── Clear messages for an account ─────────────────────────────
+  app.delete('/api/accounts/:id/messages', async (req, reply) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    const account = await getUserAccount(user.id, id)
+    if (!account) return reply.code(404).send({ error: 'Account not found' })
+
+    const { run } = await import('../repositories/db.js')
+    await run('DELETE FROM messages WHERE account_id = $1 AND user_id = $2', [id, user.id])
+    return { success: true }
+  })
 }

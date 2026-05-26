@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Toaster } from '@/components/ui/toast';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { api } from '@/services/api';
@@ -28,27 +29,29 @@ export default function App() {
 
   // Login page -- no shell
   if (isLoginPage) return (
-    <>
+    <ConfirmProvider>
       <Outlet />
       <Toaster />
-    </>
+    </ConfirmProvider>
   );
 
   // Authenticated shell
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <TopBar />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main
-          className={`flex flex-1 flex-col overflow-auto bg-background transition-[margin] duration-300 ease-out pb-16 md:pb-0 ${
-            sidebarOpen ? 'md:ml-64' : ''
-          }`}
-        >
-          <Outlet />
-        </main>
+    <ConfirmProvider>
+      <div className="flex min-h-screen flex-col bg-background">
+        <TopBar />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main
+            className={`flex flex-1 flex-col overflow-auto bg-background transition-[margin] duration-300 ease-out pb-16 md:pb-0 ${
+              sidebarOpen ? 'md:ml-64' : ''
+            }`}
+          >
+            <Outlet />
+          </main>
+        </div>
+        <Toaster />
       </div>
-      <Toaster />
-    </div>
+    </ConfirmProvider>
   );
 }

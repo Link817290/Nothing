@@ -48,6 +48,8 @@ export const api = {
     request(`/accounts/${id}/test`, { method: 'POST' }),
   syncAccount: (id: string, mode: 'nmp' | 'all' = 'nmp') =>
     request(`/accounts/${id}/sync`, { method: 'POST', body: JSON.stringify({ mode }) }),
+  clearAccountMessages: (id: string) =>
+    request(`/accounts/${id}/messages`, { method: 'DELETE' }),
 
   // ── Messages ─────────────────────────────────────────
   inbox: (params?: Record<string, string>) =>
@@ -98,4 +100,8 @@ export const api = {
   adminDeleteMailbox: (name: string) =>
     request(`/admin/mailboxes/${name}`, { method: 'DELETE' }),
   adminMailStatus: () => request('/admin/mail/status'),
+
+  // ── Admin - Data ────────────────────────────────────
+  adminClearMessages: () => request('/admin/messages', { method: 'DELETE' }),
+  adminReset: () => request('/admin/reset', { method: 'POST' }),
 };

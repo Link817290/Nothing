@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, RefreshCw, Server, Database, Mail, Save } from 'lucide-react';
+import { Loader2, RefreshCw, Server, Database, Mail, Save, Trash2 } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface StatusData {
   version: string;
@@ -16,6 +17,7 @@ interface StatusData {
 }
 
 export default function AdminSystem() {
+  const confirm = useConfirm();
   const [status, setStatus] = useState<StatusData | null>(null);
   const [mailStatus, setMailStatus] = useState<string | null>(null);
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -166,6 +168,56 @@ export default function AdminSystem() {
                 {Object.keys(editSettings).length === 0 && (
                   <p className="text-sm text-muted-foreground">No settings configured</p>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Data Management */}
+          <Card className="border-destructive/20">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardDescription>Irreversible actions</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Clear all messages</p>
+                  <p className="text-xs text-muted-foreground">Delete all emails from the database. Accounts and users are kept.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Clear all messages', description: 'Delete ALL messages from the database? Accounts and users are kept. This cannot be undone.', confirmText: 'Delete all', variant: 'destructive' });
+                    if (!ok) return;
+                    await api.adminClearMessages();
+                    toast({ title: 'All messages deleted', variant: 'success' });
+                    load();
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Clear Messages
+                </Button>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Full server reset</p>
+                  <p className="text-xs text-muted-foreground">Delete everything except your admin account.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Full server reset', description: 'This deletes all messages, accounts, users, and settings. Only your admin account survives. This cannot be undone.', confirmText: 'Reset everything', variant: 'destructive' });
+                    if (!ok) return;
+                    await api.adminReset();
+                    toast({ title: 'Server reset complete', variant: 'success' });
+                    load();
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Full Reset
+                </Button>
               </div>
             </CardContent>
           </Card>
