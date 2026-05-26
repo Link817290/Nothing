@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Inbox, Send, PenSquare, Settings,
+  LayoutDashboard, Inbox, Send, PenSquare, Settings, Plug,
   FolderOpen, Users, Globe, Mail, Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -78,6 +78,7 @@ export function Sidebar() {
             )}
 
             <SectionLabel>Manage</SectionLabel>
+            <NavItem icon={Plug} label="Connect" href="/connect" active={isActive('/connect')} />
             <NavItem icon={Settings} label="Settings" href="/settings" active={isActive('/settings')} />
 
             {user?.is_admin && (

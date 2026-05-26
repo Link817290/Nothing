@@ -10,6 +10,7 @@ import Sent from './pages/Sent';
 import MessageDetail from './pages/MessageDetail';
 import Compose from './pages/Compose';
 import Settings from './pages/Settings';
+import Connect from './pages/Connect';
 import AdminUsers from './pages/admin/Users';
 import AdminDomains from './pages/admin/Domains';
 import AdminMailboxes from './pages/admin/Mailboxes';
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
       { path: 'sent', element: <P><Sent /></P> },
       { path: 'messages/:id', element: <P><MessageDetail /></P> },
       { path: 'compose', element: <P><Compose /></P> },
+      { path: 'connect', element: <P><Connect /></P> },
       { path: 'settings', element: <P><Settings /></P> },
       { path: 'admin/users', element: <P><AdminUsers /></P> },
       { path: 'admin/domains', element: <P><AdminDomains /></P> },
