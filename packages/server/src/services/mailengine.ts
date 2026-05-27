@@ -268,10 +268,19 @@ export async function setMailboxQuota(mailboxName: string, quotaBytes: number): 
 
 export async function mailEngineHealthy(): Promise<boolean> {
   try {
+    // Try a simple JMAP call to check connectivity
     const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-    const res = await fetch(`${MAIL_URL}/healthz`, {
-      signal: AbortSignal.timeout(3000),
-      headers: { 'Authorization': `Basic ${auth}` },
+    const res = await fetch(`${MAIL_URL}/api`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${auth}`,
+      },
+      body: JSON.stringify({
+        using: ['urn:ietf:params:jmap:core'],
+        methodCalls: [['Core/echo', { hello: 'nothing' }, 'h1']],
+      }),
     })
     return res.ok
   } catch {

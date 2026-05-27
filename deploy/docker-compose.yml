@@ -77,6 +77,8 @@ services:
       - "8080"
     volumes:
       - maildata:/opt/stalwart-mail
+    environment:
+      - STALWART_RECOVERY_ADMIN=${MAIL_ADMIN_USER:-admin}:${MAIL_ADMIN_PASS:-changeme}
     restart: unless-stopped
 
 volumes:
