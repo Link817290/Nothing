@@ -3,7 +3,9 @@
  * Stalwart uses JMAP-style method calls on POST /api
  */
 
-const MAIL_URL = process.env.MAIL_ADMIN_URL || 'http://mail:8080'
+// Stalwart in normal mode uses HTTPS with self-signed cert
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+const MAIL_URL = process.env.MAIL_ADMIN_URL || 'https://mail:443'
 const MAIL_USER = process.env.MAIL_ADMIN_USER || 'admin'
 const MAIL_PASS = process.env.MAIL_ADMIN_PASS || 'changeme'
 
@@ -297,6 +299,8 @@ export async function mailEngineHealthy(): Promise<boolean> {
     // Try a simple JMAP call to check connectivity
     const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
     const res = await fetch(`${MAIL_URL}/.well-known/jmap`, {
+      // @ts-ignore
+      rejectUnauthorized: false,
       signal: AbortSignal.timeout(5000),
       headers: { 'Authorization': `Basic ${auth}` },
     })
