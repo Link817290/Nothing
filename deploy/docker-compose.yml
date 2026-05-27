@@ -67,7 +67,7 @@ services:
   # ─── Stalwart (mail server, optional) ──────────────────────
   mail:
     image: stalwartlabs/stalwart:latest
-    command: ["/usr/local/bin/stalwart", "--config", "/opt/stalwart-mail/etc/config.json"]
+    entrypoint: ["stalwart", "-c", "/opt/stalwart-mail/etc/config.json"]
     ports:
       - "25:25"
       - "587:587"
