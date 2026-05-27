@@ -9,9 +9,10 @@ const MAIL_URL = process.env.MAIL_ADMIN_URL || 'https://mail:443'
 const MAIL_USER = process.env.MAIL_ADMIN_USER || 'admin'
 const MAIL_PASS = process.env.MAIL_ADMIN_PASS || 'changeme'
 
-const USING = ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap']
+const ADMIN_USING = ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap']
+const PRINCIPAL_USING = ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:principals']
 
-async function jmapCall(methodCalls: any[]): Promise<any> {
+async function jmapCall(methodCalls: any[], using?: string[]): Promise<any> {
   const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
   const res = await fetch(`${MAIL_URL}/jmap/`, {
     method: 'POST',
@@ -19,7 +20,7 @@ async function jmapCall(methodCalls: any[]): Promise<any> {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${auth}`,
     },
-    body: JSON.stringify({ using: USING, methodCalls }),
+    body: JSON.stringify({ using: using || ADMIN_USING, methodCalls }),
   })
 
   if (!res.ok) {
@@ -37,6 +38,25 @@ function getMethodResult(response: any, callId: string): any {
     if (id === callId) return result
   }
   return null
+}
+
+/** Get admin accountId from JMAP session */
+let cachedAccountId: string | null = null
+async function getAccountId(): Promise<string> {
+  if (cachedAccountId) return cachedAccountId
+  const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
+  const res = await fetch(`${MAIL_URL}/.well-known/jmap`, {
+    headers: { 'Authorization': `Basic ${auth}` },
+  })
+  if (!res.ok) throw new Error('Failed to get JMAP session')
+  const session = await res.json()
+  // Get primary account for principals
+  const principalAccountId = session.primaryAccounts?.['urn:ietf:params:jmap:principals']
+    || session.primaryAccounts?.['urn:stalwart:jmap']
+    || Object.keys(session.accounts || {})[0]
+  if (!principalAccountId) throw new Error('No account found in JMAP session')
+  cachedAccountId = principalAccountId
+  return principalAccountId
 }
 
 // ─── Domains ───────────────────────────────────────────────────
@@ -204,12 +224,15 @@ export async function verifyDomainDns(domain: string): Promise<{
 // ─── Mailboxes ─────────────────────────────────────────────────
 
 export async function listMailboxes(): Promise<any[]> {
+  const accountId = await getAccountId()
   const res = await jmapCall([
-    ['x:Principal/query', { filter: { type: 'individual' } }, 'q1'],
-    ['x:Principal/get', { '#ids': { resultOf: 'q1', name: 'x:Principal/query', path: '/ids' } }, 'g1'],
-  ])
+    ['Principal/query', { accountId }, 'q1'],
+    ['Principal/get', { accountId, '#ids': { resultOf: 'q1', name: 'Principal/query', path: '/ids' } }, 'g1'],
+  ], PRINCIPAL_USING)
   const result = getMethodResult(res, 'g1')
-  return result?.list || []
+  const list = result?.list || []
+  // Filter to individual accounts (exclude admin, groups, etc.)
+  return list.filter((p: any) => p.type === 'individual' || p.emails?.length > 0)
 }
 
 export async function createMailbox(account: {
@@ -219,8 +242,10 @@ export async function createMailbox(account: {
   emails: string[]
   description?: string
 }): Promise<void> {
+  const accountId = await getAccountId()
   const res = await jmapCall([
-    ['x:Principal/set', {
+    ['Principal/set', {
+      accountId,
       create: {
         new1: {
           name: account.name,
@@ -231,7 +256,7 @@ export async function createMailbox(account: {
         },
       },
     }, 'c1'],
-  ])
+  ], PRINCIPAL_USING)
   const result = getMethodResult(res, 'c1')
   if (result?.notCreated) {
     const err = Object.values(result.notCreated)[0] as any
@@ -248,9 +273,10 @@ export async function deleteMailbox(name: string): Promise<void> {
   const mailbox = await getMailbox(name)
   if (!mailbox) throw new Error('Mailbox not found')
 
+  const accountId = await getAccountId()
   await jmapCall([
-    ['x:Principal/set', { destroy: [mailbox.id] }, 'd1'],
-  ])
+    ['Principal/set', { accountId, destroy: [mailbox.id] }, 'd1'],
+  ], PRINCIPAL_USING)
 }
 
 // ─── Aliases ───────────────────────────────────────────────────
@@ -258,25 +284,21 @@ export async function deleteMailbox(name: string): Promise<void> {
 export async function addAlias(mailboxName: string, alias: string): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
-
+  const accountId = await getAccountId()
   const emails = [...(mailbox.emails || []), alias]
   await jmapCall([
-    ['x:Principal/set', {
-      update: { [mailbox.id]: { emails } },
-    }, 'u1'],
-  ])
+    ['Principal/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
+  ], PRINCIPAL_USING)
 }
 
 export async function removeAlias(mailboxName: string, alias: string): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
-
+  const accountId = await getAccountId()
   const emails = (mailbox.emails || []).filter((e: string) => e !== alias)
   await jmapCall([
-    ['x:Principal/set', {
-      update: { [mailbox.id]: { emails } },
-    }, 'u1'],
-  ])
+    ['Principal/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
+  ], PRINCIPAL_USING)
 }
 
 // ─── Quota ─────────────────────────────────────────────────────
@@ -284,12 +306,10 @@ export async function removeAlias(mailboxName: string, alias: string): Promise<v
 export async function setMailboxQuota(mailboxName: string, quotaBytes: number): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
-
+  const accountId = await getAccountId()
   await jmapCall([
-    ['x:Principal/set', {
-      update: { [mailbox.id]: { quota: quotaBytes } },
-    }, 'u1'],
-  ])
+    ['Principal/set', { accountId, update: { [mailbox.id]: { quota: quotaBytes } } }, 'u1'],
+  ], PRINCIPAL_USING)
 }
 
 // ─── Health ────────────────────────────────────────────────────
