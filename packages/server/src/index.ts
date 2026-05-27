@@ -30,9 +30,18 @@ async function main() {
   app.get('/api/setup/status', async () => {
     const { queryOne } = await import('./repositories/db.js')
     const count = await queryOne('SELECT COUNT(*) as c FROM users')
+    // Get mail domain from Stalwart if available
+    let mailDomain: string | null = null
+    try {
+      const { listDomains, mailEngineHealthy } = await import('./services/mailengine.js')
+      if (await mailEngineHealthy()) {
+        const domains = await listDomains()
+        if (domains?.length > 0) mailDomain = domains[0].name
+      }
+    } catch {}
     return {
       needs_setup: parseInt(count?.c) === 0,
-      mail_domain: config.mailDomain || null,
+      mail_domain: mailDomain,
     }
   })
 

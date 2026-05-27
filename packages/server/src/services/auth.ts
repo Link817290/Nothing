@@ -50,24 +50,27 @@ export async function register(req: RegisterRequest): Promise<User> {
 
 /** Create a mailbox on the platform's mail domain for the new user */
 async function autoProvisionMailbox(user: User, password: string, customUsername?: string) {
-  const { loadServerConfig } = await import('../config/index.js')
-  const config = loadServerConfig()
-  if (!config.mailDomain) return // No mail domain configured, skip
-
-  // Use custom username or generate from name/email
-  const username = customUsername?.toLowerCase().replace(/[^a-z0-9._-]/g, '')
-    || user.name?.toLowerCase().replace(/[^a-z0-9]/g, '')
-    || user.email.split('@')[0].replace(/[^a-z0-9]/g, '')
-  const mailEmail = `${username}@${config.mailDomain}`
-
   try {
-    // Create mailbox in Stalwart
-    const { createMailbox, mailEngineHealthy } = await import('./mailengine.js')
+    // Get mail domain from Stalwart's configured domains (not env var)
+    const { listDomains, createMailbox, mailEngineHealthy } = await import('./mailengine.js')
     const healthy = await mailEngineHealthy()
     if (!healthy) {
-      console.warn(`[auto-provision] Stalwart not available, skipping mailbox for ${mailEmail}`)
+      console.warn(`[auto-provision] Stalwart not available, skipping`)
       return
     }
+
+    const domains = await listDomains()
+    if (!domains || domains.length === 0) {
+      console.warn(`[auto-provision] No domains configured in Stalwart, skipping`)
+      return
+    }
+
+    // Use first domain
+    const mailDomain = domains[0].name
+    const username = customUsername?.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+      || user.name?.toLowerCase().replace(/[^a-z0-9]/g, '')
+      || user.email.split('@')[0].replace(/[^a-z0-9]/g, '')
+    const mailEmail = `${username}@${mailDomain}`
 
     await createMailbox({
       name: username,
