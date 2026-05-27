@@ -30,7 +30,10 @@ async function main() {
   app.get('/api/setup/status', async () => {
     const { queryOne } = await import('./repositories/db.js')
     const count = await queryOne('SELECT COUNT(*) as c FROM users')
-    return { needs_setup: parseInt(count?.c) === 0 }
+    return {
+      needs_setup: parseInt(count?.c) === 0,
+      mail_domain: config.mailDomain || null,
+    }
   })
 
   // Routes

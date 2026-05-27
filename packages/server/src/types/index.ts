@@ -57,6 +57,7 @@ export interface RegisterRequest {
   email: string
   password: string
   name?: string
+  mail_username?: string  // custom mailbox username (e.g. 'alice' → alice@domain.com)
 }
 
 export interface LoginRequest {

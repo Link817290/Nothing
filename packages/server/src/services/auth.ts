@@ -40,7 +40,61 @@ export async function register(req: RegisterRequest): Promise<User> {
     [id, req.email, hash, req.name || null, isAdmin]
   )
 
-  return (await getUserById(id))!
+  const user = (await getUserById(id))!
+
+  // Auto-provision mailbox on self-hosted domain
+  await autoProvisionMailbox(user, req.password, req.mail_username)
+
+  return user
+}
+
+/** Create a mailbox on the platform's mail domain for the new user */
+async function autoProvisionMailbox(user: User, password: string, customUsername?: string) {
+  const { loadServerConfig } = await import('../config/index.js')
+  const config = loadServerConfig()
+  if (!config.mailDomain) return // No mail domain configured, skip
+
+  // Use custom username or generate from name/email
+  const username = customUsername?.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+    || user.name?.toLowerCase().replace(/[^a-z0-9]/g, '')
+    || user.email.split('@')[0].replace(/[^a-z0-9]/g, '')
+  const mailEmail = `${username}@${config.mailDomain}`
+
+  try {
+    // Create mailbox in Stalwart
+    const { createMailbox, mailEngineHealthy } = await import('./mailengine.js')
+    const healthy = await mailEngineHealthy()
+    if (!healthy) {
+      console.warn(`[auto-provision] Stalwart not available, skipping mailbox for ${mailEmail}`)
+      return
+    }
+
+    await createMailbox({
+      name: username,
+      type: 'individual',
+      secrets: [password],
+      emails: [mailEmail],
+      description: user.name || username,
+    })
+
+    // Auto-bind as email account
+    const { addAccountInternal } = await import('./accounts.js')
+    await addAccountInternal(user.id, {
+      provider: 'stalwart',
+      email: mailEmail,
+      smtp_host: 'mail',
+      smtp_port: 587,
+      imap_host: 'mail',
+      imap_port: 993,
+      auth_user: username,
+      auth_pass: password,
+    })
+
+    console.log(`[auto-provision] Created mailbox ${mailEmail} for user ${user.id}`)
+  } catch (err) {
+    // Don't fail registration if mailbox creation fails
+    console.error(`[auto-provision] Failed for ${mailEmail}:`, (err as Error).message)
+  }
 }
 
 export async function login(req: LoginRequest): Promise<User> {

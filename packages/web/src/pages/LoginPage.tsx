@@ -17,14 +17,17 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isFirstTime, setIsFirstTime] = useState(false);
+  const [mailDomain, setMailDomain] = useState<string | null>(null);
+  const [mailUsername, setMailUsername] = useState('');
 
-  // Check if this is first-time setup (no users yet)
+  // Check if this is first-time setup
   useEffect(() => {
     fetch('/api/setup/status').then(r => r.json()).then(data => {
       if (data.needs_setup) {
         setMode('register');
         setIsFirstTime(true);
       }
+      if (data.mail_domain) setMailDomain(data.mail_domain);
     }).catch(() => {});
   }, []);
   const [email, setEmail] = useState('');
@@ -33,6 +36,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [mailbox, setMailbox] = useState<string | null>(null);
+  const [needsEmailSetup, setNeedsEmailSetup] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -41,12 +46,14 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (mode === 'register') {
-        const res = await api.register(email, password, name || undefined);
+        const res = await api.register(email, password, name || undefined, mailUsername || undefined);
         setAuth(res.api_key, res.user);
-        setApiKey(res.api_key); // Show API key once after registration
+        setApiKey(res.api_key);
+        setMailbox(res.mailbox || null);
+        setNeedsEmailSetup(res.needs_email_setup ?? false);
       } else {
         const res = await api.login(email, password);
-        setAuth(res.token, res.user); // JWT token for web sessions
+        setAuth(res.token, res.user);
         navigate(from, { replace: true });
       }
     } catch (err: any) {
@@ -75,8 +82,19 @@ export default function LoginPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            {mailbox && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your mailbox</p>
+                <p className="mt-1 text-lg font-semibold text-foreground">{mailbox}</p>
+              </div>
+            )}
+            {needsEmailSetup && (
+              <div className="rounded-xl border border-border bg-accent p-4">
+                <p className="text-sm text-muted-foreground">No email service configured on this server. Go to Settings to connect your Gmail, QQ, or Outlook account.</p>
+              </div>
+            )}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">{t('login.api_key_notice')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('login.api_key_notice')}</p>
               <h2 className="mt-2 text-xl font-bold">{t('login.api_key_title')}</h2>
               <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                 {t('login.api_key_desc')}
@@ -121,14 +139,32 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">{t('login.name')}</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('login.name_hint')}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">{t('login.name')}</label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t('login.name_hint')}
+                  />
+                </div>
+                {mailDomain && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Mailbox</label>
+                    <div className="flex items-center gap-0">
+                      <Input
+                        value={mailUsername}
+                        onChange={(e) => setMailUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
+                        placeholder="username"
+                        className="rounded-r-none"
+                      />
+                      <span className="flex h-10 items-center rounded-r-lg border border-l-0 border-border bg-muted px-3 text-sm text-muted-foreground">
+                        @{mailDomain}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="space-y-2">

@@ -18,7 +18,8 @@ function genId() {
 const ENC_PREFIX = 'enc:'
 
 function deriveKey(): Buffer {
-  const secret = process.env.ENCRYPT_KEY || 'change-me-in-production'
+  const secret = process.env.ENCRYPT_KEY
+  if (!secret) throw new Error('ENCRYPT_KEY environment variable is required')
   return createHash('sha256').update(secret).digest()
 }
 
@@ -62,6 +63,25 @@ export async function addAccount(userId: string, req: AddAccountRequest): Promis
     `INSERT INTO email_accounts (id, user_id, provider, email, smtp_host, smtp_port, imap_host, imap_port, auth_user, auth_pass_encrypted)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [id, userId, req.provider, req.email, smtpHost, smtpPort, imapHost, imapPort, req.email, encPass]
+  )
+
+  return (await getAccountById(id))!
+}
+
+/** Internal: add account without connection test (for auto-provisioning) */
+export async function addAccountInternal(userId: string, opts: {
+  provider: string; email: string;
+  smtp_host: string; smtp_port: number;
+  imap_host: string; imap_port: number;
+  auth_user: string; auth_pass: string;
+}): Promise<EmailAccount> {
+  const id = genId()
+  const encPass = encrypt(opts.auth_pass)
+
+  await run(
+    `INSERT INTO email_accounts (id, user_id, provider, email, smtp_host, smtp_port, imap_host, imap_port, auth_user, auth_pass_encrypted)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [id, userId, opts.provider, opts.email, opts.smtp_host, opts.smtp_port, opts.imap_host, opts.imap_port, opts.auth_user, encPass]
   )
 
   return (await getAccountById(id))!

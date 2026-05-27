@@ -15,10 +15,24 @@ export async function authRoutes(app: FastifyInstance) {
 
     try {
       const user = await register(body)
-      // Admin gets full permissions, regular users get read+write
       const perms = user.is_admin ? ['read', 'write', 'admin'] as const : ['read', 'write'] as const
       const { key } = await createApiKey(user.id, 'default', [...perms])
-      return { api_key: key, user: { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin } }
+
+      // Check if user got an auto-provisioned mailbox
+      const { listAccounts } = await import('../services/accounts.js')
+      const accounts = await listAccounts(user.id)
+      const hasMailbox = accounts.length > 0
+
+      const { loadServerConfig } = await import('../config/index.js')
+      const mailDomain = loadServerConfig().mailDomain
+
+      return {
+        api_key: key,
+        user: { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin },
+        mailbox: hasMailbox ? accounts[0].email : null,
+        needs_email_setup: !hasMailbox,
+        mail_domain: mailDomain || null,
+      }
     } catch (err) {
       return reply.code(409).send({ error: (err as Error).message })
     }

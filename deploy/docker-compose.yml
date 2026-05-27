@@ -39,6 +39,7 @@ services:
       - MAIL_ADMIN_PASS=${MAIL_ADMIN_PASS:-changeme}
       - SERVER_IP=${SERVER_IP:-}
       - ATTACHMENT_DIR=/data/attachments
+      - MAIL_DOMAIN=${MAIL_DOMAIN:-}
       - PORT=3000
     depends_on:
       db:
