@@ -101,18 +101,21 @@ export async function getDomainDnsRecords(domain: string, serverIp?: string): Pr
 }> {
   const ip = serverIp || process.env.SERVER_IP || 'YOUR_SERVER_IP'
 
-  // Try to get DKIM selector from Stalwart
-  let dkimRecord: { type: string; host: string; value: string } | null = null
+  // Parse DKIM records from Stalwart's dnsZoneFile
+  const dkimRecords: { type: string; host: string; value: string }[] = []
   try {
     const domainObj = await getDomain(domain)
-    if (domainObj?.dkimKeys) {
-      const firstKey = Object.values(domainObj.dkimKeys)[0] as any
-      if (firstKey?.dnsRecord) {
-        dkimRecord = {
+    if (domainObj?.dnsZoneFile) {
+      const zoneFile = domainObj.dnsZoneFile as string
+      // Match DKIM TXT records: selector._domainkey.domain. IN TXT "v=DKIM1; ..."
+      const dkimRegex = /([a-z0-9-]+\._domainkey\.[^\s]+)\.\s+IN\s+TXT\s+"([^"]+)"/g
+      let match
+      while ((match = dkimRegex.exec(zoneFile)) !== null) {
+        dkimRecords.push({
           type: 'TXT',
-          host: firstKey.selector ? `${firstKey.selector}._domainkey.${domain}` : `default._domainkey.${domain}`,
-          value: firstKey.dnsRecord,
-        }
+          host: match[1],
+          value: match[2],
+        })
       }
     }
   } catch {}
@@ -121,15 +124,15 @@ export async function getDomainDnsRecords(domain: string, serverIp?: string): Pr
   const spf = { type: 'TXT', host: domain, value: `v=spf1 ip4:${ip} mx -all` }
   const dmarc = { type: 'TXT', host: `_dmarc.${domain}`, value: `v=DMARC1; p=quarantine; rua=mailto:dmarc@${domain}` }
 
-  const records = [
+  const records: { type: string; host: string; value: string; priority?: number }[] = [
     { type: 'A', host: `mail.${domain}`, value: ip },
     mx,
     spf,
     dmarc,
+    ...dkimRecords,
   ]
-  if (dkimRecord) records.push(dkimRecord)
 
-  return { mx, spf, dkim: dkimRecord, dmarc, records }
+  return { mx, spf, dkim: dkimRecords[0] || null, dmarc, records }
 }
 
 /**
@@ -164,9 +167,32 @@ export async function verifyDomainDns(domain: string): Promise<{
       dmarc = dmarcRecords.flat().some(r => r.includes('v=DMARC1'))
     } catch {}
 
+    // Check DKIM — try to get actual selectors from Stalwart domain config
     try {
-      const dkimRecords = await resolve(`default._domainkey.${domain}`, 'TXT')
-      dkim = dkimRecords.flat().some(r => r.includes('v=DKIM1') || r.includes('p='))
+      const domainObj = await getDomain(domain)
+      const dkimMgmt = domainObj?.dkimManagement
+      if (dkimMgmt?.selectorTemplate) {
+        // Try common selector patterns from Stalwart
+        const selectors = [`v1-ed25519-*`, `v1-rsa-*`]
+        // Check dnsZoneFile for actual selector names
+        const zoneFile = domainObj?.dnsZoneFile || ''
+        const selectorMatches = zoneFile.match(/([a-z0-9-]+)\._domainkey/g) || []
+        for (const match of selectorMatches) {
+          const selector = match.replace('._domainkey', '')
+          try {
+            const dkimRecords = await resolve(`${selector}._domainkey.${domain}`, 'TXT')
+            if (dkimRecords.flat().some(r => r.includes('v=DKIM1') || r.includes('p='))) {
+              dkim = true
+              break
+            }
+          } catch {}
+        }
+      }
+      if (!dkim) {
+        // Fallback: try default selector
+        const dkimRecords = await resolve(`default._domainkey.${domain}`, 'TXT')
+        dkim = dkimRecords.flat().some(r => r.includes('v=DKIM1') || r.includes('p='))
+      }
     } catch {}
   } catch {}
 
