@@ -42,60 +42,8 @@ echo ""
 docker compose up -d --build
 
 echo ""
-echo "  Waiting for services to be ready..."
-sleep 15
-
-# ─── Auto-initialize Stalwart via Python ─────────────────────
-echo "  Initializing mail engine..."
-
-MAIL_IP=$(docker inspect deploy-mail-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-
-cat > /tmp/nothing_bootstrap.py << PYEOF
-import urllib.request, json, base64, sys
-auth = base64.b64encode(b"admin:${MAIL_PASS}").decode()
-body = json.dumps({
-    "using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"],
-    "methodCalls": [["x:Bootstrap/set", {"update": {"singleton": {
-        "serverHostname": "mail.localhost",
-        "defaultDomain": "localhost",
-        "requestTlsCertificate": False,
-        "generateDkimKeys": True,
-        "dataStore": {"@type": "RocksDb", "path": "/opt/stalwart-mail/"},
-        "blobStore": {"@type": "Default"},
-        "searchStore": {"@type": "Default"},
-        "inMemoryStore": {"@type": "Default"},
-        "directory": {"@type": "Internal"},
-        "tracer": {"@type": "Disabled"},
-        "dnsServer": {"@type": "Manual"}
-    }}}, "c1"]]
-}).encode()
-req = urllib.request.Request(
-    "http://${MAIL_IP}:8080/api",
-    data=body,
-    headers={"Content-Type": "application/json", "Authorization": "Basic " + auth}
-)
-try:
-    res = urllib.request.urlopen(req, timeout=10)
-    data = json.loads(res.read().decode())
-    if "methodResponses" in data:
-        print("OK")
-    else:
-        print("WARN: unexpected response")
-except Exception as e:
-    print(f"SKIP: {e}")
-PYEOF
-
-RESULT=$(python3 /tmp/nothing_bootstrap.py 2>&1)
-rm -f /tmp/nothing_bootstrap.py
-
-if echo "$RESULT" | grep -q "OK"; then
-  echo "  ✓ Mail engine initialized"
-  sleep 5
-elif echo "$RESULT" | grep -q "SKIP"; then
-  echo "  ⚠ Mail engine bootstrap skipped (may already be initialized)"
-else
-  echo "  ⚠ Mail engine: $RESULT"
-fi
+echo "  Waiting for services..."
+sleep 10
 
 echo ""
 echo "  ✓ Nothing is running!"
