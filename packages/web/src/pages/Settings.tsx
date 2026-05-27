@@ -95,13 +95,18 @@ export default function Settings() {
     setAdding(false);
   };
 
+  const [testingId, setTestingId] = useState<string | null>(null);
+
   const handleTestAccount = async (id: string) => {
+    setTestingId(id);
     try {
-      await api.testAccount(id);
-      toast({ title: t('settings.test_passed'), variant: 'success' });
+      const res = await api.testAccount(id);
+      const details = `SMTP: ${res.smtp ? '✓' : '✗'}  IMAP: ${res.imap ? '✓' : '✗'}`;
+      toast({ title: t('settings.test_passed'), description: details, variant: 'success' });
     } catch (err: any) {
       toast({ title: t('settings.test_failed'), description: err.message, variant: 'error' });
     }
+    setTestingId(null);
   };
 
   const [newKeyName, setNewKeyName] = useState('');
@@ -248,8 +253,8 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
-                    <Button variant="outline" size="sm" onClick={() => handleTestAccount(acc.id)}>
-                      <TestTube2 className="h-3.5 w-3.5" /> {t('settings.test')}
+                    <Button variant="outline" size="sm" disabled={testingId === acc.id} onClick={() => handleTestAccount(acc.id)}>
+                      {testingId === acc.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TestTube2 className="h-3.5 w-3.5" />} {t('settings.test')}
                     </Button>
                     <Button variant="outline" size="sm" disabled={syncingId === acc.id} onClick={async () => {
                       setSyncingId(acc.id);
@@ -341,7 +346,7 @@ export default function Settings() {
               )}
 
               {newKey && (
-                <div className="rounded-xl border border-brand/30 bg-brand/5 p-4 fade-in">
+                <div className="rounded-xl border border-border bg-accent p-4 fade-in">
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">{t('settings.new_key_notice')}</p>
                   <code className="mt-2 block break-all font-mono text-sm text-foreground">{newKey}</code>
                   <div className="mt-3 flex gap-2">

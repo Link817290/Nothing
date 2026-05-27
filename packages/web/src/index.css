@@ -162,9 +162,6 @@
 }
 
 @layer utilities {
-  .nmp-glow {
-    border-left: 2px solid var(--nmp-glow);
-  }
 
   .fade-in {
     animation: fadeIn 0.25s ease-out;

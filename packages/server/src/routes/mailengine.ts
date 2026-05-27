@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import {
-  listDomains, createDomain, deleteDomain, verifyDomainDns,
+  listDomains, createDomain, deleteDomain, verifyDomainDns, getDomainDnsRecords,
   listMailboxes, createMailbox, getMailbox, deleteMailbox,
+  addAlias, removeAlias, setMailboxQuota,
   mailEngineHealthy,
 } from '../services/mailengine.js'
 
@@ -25,7 +26,8 @@ export async function mailEngineRoutes(app: FastifyInstance) {
     if (!body.name) return reply.code(400).send({ error: 'Domain name required' })
     try {
       await createDomain(body.name)
-      const dns = await verifyDomainDns(body.name)
+      // Return DNS records that need to be configured
+      const dns = await getDomainDnsRecords(body.name)
       return { success: true, domain: body.name, dns }
     } catch (err) {
       return reply.code(400).send({ error: (err as Error).message })
@@ -42,6 +44,17 @@ export async function mailEngineRoutes(app: FastifyInstance) {
     }
   })
 
+  // Get required DNS records for a domain
+  app.get('/api/admin/domains/:name/dns', async (req, reply) => {
+    const { name } = req.params as { name: string }
+    try {
+      return await getDomainDnsRecords(name)
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message })
+    }
+  })
+
+  // Verify DNS records
   app.post('/api/admin/domains/:name/verify', async (req, reply) => {
     const { name } = req.params as { name: string }
     try {
@@ -80,7 +93,9 @@ export async function mailEngineRoutes(app: FastifyInstance) {
   app.get('/api/admin/mailboxes/:name', async (req, reply) => {
     const { name } = req.params as { name: string }
     try {
-      return await getMailbox(name)
+      const mailbox = await getMailbox(name)
+      if (!mailbox) return reply.code(404).send({ error: 'Mailbox not found' })
+      return mailbox
     } catch (err) {
       return reply.code(404).send({ error: (err as Error).message })
     }
@@ -90,6 +105,44 @@ export async function mailEngineRoutes(app: FastifyInstance) {
     const { name } = req.params as { name: string }
     try {
       await deleteMailbox(name)
+      return { success: true }
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message })
+    }
+  })
+
+  // ─── Aliases ───────────────────────────────────────────────────
+
+  app.post('/api/admin/mailboxes/:name/aliases', async (req, reply) => {
+    const { name } = req.params as { name: string }
+    const body = req.body as { alias: string }
+    if (!body.alias) return reply.code(400).send({ error: 'alias required' })
+    try {
+      await addAlias(name, body.alias)
+      return { success: true }
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message })
+    }
+  })
+
+  app.delete('/api/admin/mailboxes/:name/aliases/:alias', async (req, reply) => {
+    const { name, alias } = req.params as { name: string; alias: string }
+    try {
+      await removeAlias(name, alias)
+      return { success: true }
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message })
+    }
+  })
+
+  // ─── Quota ─────────────────────────────────────────────────────
+
+  app.put('/api/admin/mailboxes/:name/quota', async (req, reply) => {
+    const { name } = req.params as { name: string }
+    const body = req.body as { quota_mb: number }
+    if (!body.quota_mb) return reply.code(400).send({ error: 'quota_mb required' })
+    try {
+      await setMailboxQuota(name, body.quota_mb * 1024 * 1024)
       return { success: true }
     } catch (err) {
       return reply.code(400).send({ error: (err as Error).message })

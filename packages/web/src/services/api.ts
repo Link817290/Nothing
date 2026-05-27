@@ -101,7 +101,15 @@ export const api = {
     request('/admin/mailboxes', { method: 'POST', body: JSON.stringify(data) }),
   adminDeleteMailbox: (name: string) =>
     request(`/admin/mailboxes/${name}`, { method: 'DELETE' }),
+  adminDomainDns: (name: string) =>
+    request(`/admin/domains/${name}/dns`),
   adminMailStatus: () => request('/admin/mail/status'),
+  adminAddAlias: (mailbox: string, alias: string) =>
+    request(`/admin/mailboxes/${mailbox}/aliases`, { method: 'POST', body: JSON.stringify({ alias }) }),
+  adminRemoveAlias: (mailbox: string, alias: string) =>
+    request(`/admin/mailboxes/${mailbox}/aliases/${encodeURIComponent(alias)}`, { method: 'DELETE' }),
+  adminSetQuota: (mailbox: string, quotaMb: number) =>
+    request(`/admin/mailboxes/${mailbox}/quota`, { method: 'PUT', body: JSON.stringify({ quota_mb: quotaMb }) }),
 
   // ── Admin - Data ────────────────────────────────────
   adminClearMessages: () => request('/admin/messages', { method: 'DELETE' }),

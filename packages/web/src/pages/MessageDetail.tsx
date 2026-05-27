@@ -8,6 +8,7 @@ import { MessageBody } from '@/components/email/MessageBody';
 import { Loader2, ArrowLeft, Reply, Forward, Trash2, Eye, EyeOff, Paperclip } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
+import { useAuthStore } from '@/stores/authStore';
 
 interface MessageData {
   id: string;
@@ -145,7 +146,7 @@ export default function MessageDetail() {
           {/* From / To */}
           <div className={cn(
             'mt-6 flex items-center gap-4 rounded-xl p-4',
-            isNmp ? 'nmp-glow bg-nmp-glow-alpha/30' : 'bg-accent/50',
+            isNmp ? 'bg-accent/30' : 'bg-accent/30',
           )}>
             <Avatar name={parseAddress(msg.from).name} isNmp={isNmp} />
             <div className="text-sm min-w-0 flex-1">
@@ -175,16 +176,32 @@ export default function MessageDetail() {
           {attachments.length > 0 && (
             <div className="mt-6 flex flex-wrap gap-2">
               {attachments.map((att: any) => (
-                <a
+                <button
                   key={att.id}
-                  href={`/api/attachments/${att.id}/download`}
-                  download={att.filename}
-                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors"
+                  onClick={async () => {
+                    try {
+                      const token = useAuthStore.getState().token;
+                      const res = await fetch(`/api/attachments/${att.id}/download`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                      });
+                      if (!res.ok) throw new Error('Download failed');
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = att.filename;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      toast({ title: 'Download failed', variant: 'error' });
+                    }
+                  }}
+                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
                 >
                   <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="truncate max-w-[200px]">{att.filename}</span>
                   <span className="text-xs text-muted-foreground">{formatSize(att.size)}</span>
-                </a>
+                </button>
               ))}
             </div>
           )}
@@ -203,7 +220,7 @@ export default function MessageDetail() {
                     )}>
                       <span className={cn(
                         'h-2 w-2 shrink-0 rounded-full',
-                        t.id === msg.id ? 'bg-brand shadow-[0_0_6px_rgba(245,158,11,0.4)]' : 'bg-border',
+                        t.id === msg.id ? 'bg-foreground' : 'bg-border',
                       )} />
                       <span className={cn('w-28 shrink-0 truncate', t.id === msg.id ? 'font-medium text-foreground' : 'text-muted-foreground')}>
                         {t.from.split('@')[0]}
@@ -280,7 +297,7 @@ function Avatar({ name, isNmp }: { name: string; isNmp?: boolean }) {
     <span className={cn(
       'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
       isNmp
-        ? 'bg-brand/20 text-brand border border-brand/30'
+        ? 'bg-accent text-foreground border border-border'
         : 'bg-accent text-foreground border border-border',
     )}>
       {initials}

@@ -27,16 +27,32 @@ export async function sendMessage(userId: string, req: SendRequest) {
     priority: (req.priority as any), require: req.require,
   }
 
+  const hasAttachments = (req.attachments?.length || 0) > 0
+
   await run(
     `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, direction, has_attachments)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'queued', 'nmp', $13, 'outbound', $14)`,
-    [id, userId, account.id, from, req.to, subject, req.text, JSON.stringify(payload), req.agent || null, req.project || null, JSON.stringify(req.labels || []), account.provider, id, req.files?.length ? true : false]
+    [id, userId, account.id, from, req.to, subject, req.text, JSON.stringify(payload), req.agent || null, req.project || null, JSON.stringify(req.labels || []), account.provider, id, hasAttachments]
   )
+
+  // Save outbound attachments to disk
+  if (hasAttachments) {
+    const { saveAttachment } = await import('./attachments.js')
+    for (const att of req.attachments!) {
+      await saveAttachment(id, att.filename, att.content_type || 'application/octet-stream', Buffer.from(att.content, 'base64'))
+    }
+  }
 
   let status = 'sent'
   try {
     const { smtpSend } = await import('../mail/smtp.js')
-    const result = await smtpSend({ account, from, to: req.to, subject, text: req.text, payload })
+    // Pass user attachments to SMTP
+    const userAttachments = req.attachments?.map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.content, 'base64'),
+      contentType: a.content_type || 'application/octet-stream',
+    }))
+    const result = await smtpSend({ account, from, to: req.to, subject, text: req.text, payload, userAttachments })
     status = result.accepted ? 'sent' : 'failed'
   } catch {
     status = 'failed'

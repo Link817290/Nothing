@@ -1,54 +1,187 @@
 /**
- * Mail Engine API proxy.
- * Communicates with the internal mail server management API at :8080.
+ * Stalwart Mail Engine integration via JMAP management API.
+ * Stalwart uses JMAP-style method calls on POST /api
  */
 
-const MAIL_ENGINE_URL = process.env.MAIL_ADMIN_URL || 'http://mail:8080'
-const MAIL_ENGINE_AUTH = process.env.MAIL_ADMIN_AUTH || ''
+const MAIL_URL = process.env.MAIL_ADMIN_URL || 'http://mail:8080'
+const MAIL_USER = process.env.MAIL_ADMIN_USER || 'admin'
+const MAIL_PASS = process.env.MAIL_ADMIN_PASS || 'changeme'
 
-async function engineRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (MAIL_ENGINE_AUTH) headers['Authorization'] = MAIL_ENGINE_AUTH
+const USING = ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap']
 
-  const res = await fetch(`${MAIL_ENGINE_URL}${path}`, {
-    method, headers,
-    body: body ? JSON.stringify(body) : undefined,
+async function jmapCall(methodCalls: any[]): Promise<any> {
+  const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
+  const res = await fetch(`${MAIL_URL}/api`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${auth}`,
+    },
+    body: JSON.stringify({ using: USING, methodCalls }),
   })
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`Mail engine error (${res.status}): ${text}`)
+    throw new Error(`Stalwart error (${res.status}): ${text}`)
   }
 
-  const contentType = res.headers.get('content-type') || ''
-  if (contentType.includes('application/json')) {
-    return res.json() as Promise<T>
+  const data = await res.json()
+  return data
+}
+
+function getMethodResult(response: any, callId: string): any {
+  if (!response?.methodResponses) return null
+  for (const [, result, id] of response.methodResponses) {
+    if (id === callId) return result
   }
-  return {} as T
+  return null
 }
 
 // ─── Domains ───────────────────────────────────────────────────
 
 export async function listDomains(): Promise<any[]> {
-  return engineRequest<any[]>('GET', '/api/domain')
+  const res = await jmapCall([
+    ['x:Domain/query', { filter: {} }, 'q1'],
+    ['x:Domain/get', { '#ids': { resultOf: 'q1', name: 'x:Domain/query', path: '/ids' } }, 'g1'],
+  ])
+  const result = getMethodResult(res, 'g1')
+  return result?.list || []
 }
 
-export async function createDomain(name: string): Promise<void> {
-  await engineRequest('POST', `/api/domain/${encodeURIComponent(name)}`)
+export async function createDomain(name: string): Promise<any> {
+  const res = await jmapCall([
+    ['x:Domain/set', {
+      create: {
+        new1: {
+          name,
+          aliases: {},
+          certificateManagement: { '@type': 'Manual' },
+          dkimManagement: { '@type': 'Automatic' },
+          dnsManagement: { '@type': 'Manual' },
+          subAddressing: { '@type': 'Enabled' },
+          isEnabled: true,
+        },
+      },
+    }, 'c1'],
+  ])
+  const result = getMethodResult(res, 'c1')
+  if (result?.notCreated) {
+    const err = Object.values(result.notCreated)[0] as any
+    throw new Error(err?.description || 'Failed to create domain')
+  }
+  return result
 }
 
 export async function deleteDomain(name: string): Promise<void> {
-  await engineRequest('DELETE', `/api/domain/${encodeURIComponent(name)}`)
+  // First get the domain ID
+  const domains = await listDomains()
+  const domain = domains.find((d: any) => d.name === name)
+  if (!domain) throw new Error('Domain not found')
+
+  await jmapCall([
+    ['x:Domain/set', { destroy: [domain.id] }, 'd1'],
+  ])
 }
 
-export async function getDomainDnsRecords(name: string): Promise<any> {
-  return engineRequest('GET', `/api/domain/${encodeURIComponent(name)}/dns`)
+export async function getDomain(name: string): Promise<any> {
+  const domains = await listDomains()
+  return domains.find((d: any) => d.name === name) || null
+}
+
+/**
+ * Get DNS records that need to be configured for a domain.
+ * Returns the records the user needs to add to their DNS provider.
+ */
+export async function getDomainDnsRecords(domain: string, serverIp?: string): Promise<{
+  mx: { type: string; host: string; value: string; priority: number };
+  spf: { type: string; host: string; value: string };
+  dkim: { type: string; host: string; value: string } | null;
+  dmarc: { type: string; host: string; value: string };
+  records: { type: string; host: string; value: string; priority?: number }[];
+}> {
+  const ip = serverIp || process.env.SERVER_IP || 'YOUR_SERVER_IP'
+
+  // Try to get DKIM selector from Stalwart
+  let dkimRecord: { type: string; host: string; value: string } | null = null
+  try {
+    const domainObj = await getDomain(domain)
+    if (domainObj?.dkimKeys) {
+      const firstKey = Object.values(domainObj.dkimKeys)[0] as any
+      if (firstKey?.dnsRecord) {
+        dkimRecord = {
+          type: 'TXT',
+          host: firstKey.selector ? `${firstKey.selector}._domainkey.${domain}` : `default._domainkey.${domain}`,
+          value: firstKey.dnsRecord,
+        }
+      }
+    }
+  } catch {}
+
+  const mx = { type: 'MX', host: domain, value: `mail.${domain}`, priority: 10 }
+  const spf = { type: 'TXT', host: domain, value: `v=spf1 ip4:${ip} mx -all` }
+  const dmarc = { type: 'TXT', host: `_dmarc.${domain}`, value: `v=DMARC1; p=quarantine; rua=mailto:dmarc@${domain}` }
+
+  const records = [
+    { type: 'A', host: `mail.${domain}`, value: ip },
+    mx,
+    spf,
+    dmarc,
+  ]
+  if (dkimRecord) records.push(dkimRecord)
+
+  return { mx, spf, dkim: dkimRecord, dmarc, records }
+}
+
+/**
+ * Verify DNS records for a domain by checking actual DNS.
+ */
+export async function verifyDomainDns(domain: string): Promise<{
+  mx: boolean; spf: boolean; dkim: boolean; dmarc: boolean;
+  required: { type: string; host: string; value: string; priority?: number }[];
+}> {
+  const { records } = await getDomainDnsRecords(domain)
+
+  // Simple verification — try to resolve records
+  let mx = false, spf = false, dkim = false, dmarc = false
+
+  try {
+    const { resolve } = await import('dns/promises')
+
+    try {
+      const mxRecords = await resolve(domain, 'MX')
+      mx = mxRecords.length > 0
+    } catch {}
+
+    try {
+      const txtRecords = await resolve(domain, 'TXT')
+      const flat = txtRecords.map(r => r.join(''))
+      spf = flat.some(r => r.includes('v=spf1'))
+      dmarc = false // checked separately
+    } catch {}
+
+    try {
+      const dmarcRecords = await resolve(`_dmarc.${domain}`, 'TXT')
+      dmarc = dmarcRecords.flat().some(r => r.includes('v=DMARC1'))
+    } catch {}
+
+    try {
+      const dkimRecords = await resolve(`default._domainkey.${domain}`, 'TXT')
+      dkim = dkimRecords.flat().some(r => r.includes('v=DKIM1') || r.includes('p='))
+    } catch {}
+  } catch {}
+
+  return { mx, spf, dkim, dmarc, required: records }
 }
 
 // ─── Mailboxes ─────────────────────────────────────────────────
 
 export async function listMailboxes(): Promise<any[]> {
-  return engineRequest<any[]>('GET', '/api/principal')
+  const res = await jmapCall([
+    ['x:Principal/query', { filter: { type: 'individual' } }, 'q1'],
+    ['x:Principal/get', { '#ids': { resultOf: 'q1', name: 'x:Principal/query', path: '/ids' } }, 'g1'],
+  ])
+  const result = getMethodResult(res, 'g1')
+  return result?.list || []
 }
 
 export async function createMailbox(account: {
@@ -58,36 +191,89 @@ export async function createMailbox(account: {
   emails: string[]
   description?: string
 }): Promise<void> {
-  await engineRequest('POST', '/api/principal', account)
+  const res = await jmapCall([
+    ['x:Principal/set', {
+      create: {
+        new1: {
+          name: account.name,
+          type: account.type || 'individual',
+          secrets: account.secrets,
+          emails: account.emails,
+          description: account.description || '',
+        },
+      },
+    }, 'c1'],
+  ])
+  const result = getMethodResult(res, 'c1')
+  if (result?.notCreated) {
+    const err = Object.values(result.notCreated)[0] as any
+    throw new Error(err?.description || 'Failed to create mailbox')
+  }
 }
 
 export async function getMailbox(name: string): Promise<any> {
-  return engineRequest('GET', `/api/principal/${encodeURIComponent(name)}`)
+  const mailboxes = await listMailboxes()
+  return mailboxes.find((m: any) => m.name === name) || null
 }
 
 export async function deleteMailbox(name: string): Promise<void> {
-  await engineRequest('DELETE', `/api/principal/${encodeURIComponent(name)}`)
+  const mailbox = await getMailbox(name)
+  if (!mailbox) throw new Error('Mailbox not found')
+
+  await jmapCall([
+    ['x:Principal/set', { destroy: [mailbox.id] }, 'd1'],
+  ])
 }
 
-// ─── DNS Verification ──────────────────────────────────────────
+// ─── Aliases ───────────────────────────────────────────────────
 
-export async function verifyDomainDns(domain: string): Promise<{
-  mx: boolean; spf: boolean; dkim: boolean; dmarc: boolean; records: any
-}> {
-  const dns = await getDomainDnsRecords(domain)
-  return {
-    mx: !!dns?.mx, spf: !!dns?.spf,
-    dkim: !!dns?.dkim, dmarc: !!dns?.dmarc,
-    records: dns,
-  }
+export async function addAlias(mailboxName: string, alias: string): Promise<void> {
+  const mailbox = await getMailbox(mailboxName)
+  if (!mailbox) throw new Error('Mailbox not found')
+
+  const emails = [...(mailbox.emails || []), alias]
+  await jmapCall([
+    ['x:Principal/set', {
+      update: { [mailbox.id]: { emails } },
+    }, 'u1'],
+  ])
+}
+
+export async function removeAlias(mailboxName: string, alias: string): Promise<void> {
+  const mailbox = await getMailbox(mailboxName)
+  if (!mailbox) throw new Error('Mailbox not found')
+
+  const emails = (mailbox.emails || []).filter((e: string) => e !== alias)
+  await jmapCall([
+    ['x:Principal/set', {
+      update: { [mailbox.id]: { emails } },
+    }, 'u1'],
+  ])
+}
+
+// ─── Quota ─────────────────────────────────────────────────────
+
+export async function setMailboxQuota(mailboxName: string, quotaBytes: number): Promise<void> {
+  const mailbox = await getMailbox(mailboxName)
+  if (!mailbox) throw new Error('Mailbox not found')
+
+  await jmapCall([
+    ['x:Principal/set', {
+      update: { [mailbox.id]: { quota: quotaBytes } },
+    }, 'u1'],
+  ])
 }
 
 // ─── Health ────────────────────────────────────────────────────
 
 export async function mailEngineHealthy(): Promise<boolean> {
   try {
-    await fetch(`${MAIL_ENGINE_URL}/healthz`, { signal: AbortSignal.timeout(3000) })
-    return true
+    const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
+    const res = await fetch(`${MAIL_URL}/healthz`, {
+      signal: AbortSignal.timeout(3000),
+      headers: { 'Authorization': `Basic ${auth}` },
+    })
+    return res.ok
   } catch {
     return false
   }

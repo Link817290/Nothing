@@ -13,6 +13,7 @@ export interface SmtpSendOptions {
   payload: NmpPayload
   inReplyTo?: string
   references?: string[]
+  userAttachments?: { filename: string; content: Buffer; contentType: string }[]
 }
 
 export async function smtpSend(opts: SmtpSendOptions): Promise<{ messageId: string; accepted: boolean }> {
@@ -57,11 +58,20 @@ export async function smtpSend(opts: SmtpSendOptions): Promise<{ messageId: stri
     headers: email.headers,
     inReplyTo: email.inReplyTo,
     references: email.references,
-    attachments: email.attachments.map(a => ({
-      filename: a.filename,
-      content: a.content,
-      contentType: a.contentType,
-    })),
+    attachments: [
+      // NMP protocol attachments
+      ...email.attachments.map(a => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType,
+      })),
+      // User attachments
+      ...(opts.userAttachments || []).map(a => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType,
+      })),
+    ],
   })
 
   transporter.close()

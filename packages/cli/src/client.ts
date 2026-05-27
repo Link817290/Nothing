@@ -74,7 +74,7 @@ export class NothingClient {
 
   // ─── Messages ──────────────────────────────────────────────────
 
-  send(req: { to: string; text: string; subject?: string; type?: string; agent?: string; project?: string; labels?: string[]; priority?: string; require?: string[]; files?: string[]; account_id?: string }) {
+  send(req: { to: string; text: string; subject?: string; type?: string; agent?: string; project?: string; labels?: string[]; priority?: string; require?: string[]; attachments?: { filename: string; content: string; content_type?: string }[]; account_id?: string }) {
     return this.request<{ success: boolean; message_id: string; status: string }>('POST', '/api/messages/send', req)
   }
 

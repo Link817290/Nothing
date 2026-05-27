@@ -82,7 +82,7 @@ export default function Compose() {
 
         {/* No accounts warning */}
         {noAccounts && (
-          <Card className="mb-6 border-brand/20 bg-brand/5">
+          <Card className="mb-6 border-border bg-accent">
             <CardContent className="p-4 text-sm">
               {t('compose.no_account_hint').split('<link>').map((part, i) => {
                 if (i === 0) return part;

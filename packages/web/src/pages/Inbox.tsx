@@ -139,7 +139,7 @@ export default function Inbox() {
 
       {/* Bulk actions bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 border-b border-border bg-brand/5 px-6 py-2 fade-in">
+        <div className="flex items-center gap-3 border-b border-border bg-accent px-6 py-2 fade-in">
           <span className="text-xs font-medium text-brand">{t('inbox.selected', { count: selectedIds.size })}</span>
           <Button variant="ghost" size="sm" onClick={handleBulkRead}>
             <CheckCheck className="h-3 w-3" /> {t('inbox.mark_read')}
@@ -174,8 +174,8 @@ export default function Inbox() {
             className={cn(
               'flex items-start gap-4 border-b border-border px-10 py-4 transition-all duration-200 hover:bg-accent/50 group',
               m.unread && 'bg-accent/20',
-              m.source === 'nmp' && 'nmp-glow',
-              selectedIds.has(m.id) && 'bg-brand/5',
+              
+              selectedIds.has(m.id) && 'bg-accent',
             )}
           >
             {/* Checkbox */}
@@ -183,7 +183,7 @@ export default function Inbox() {
               onClick={(e) => { e.preventDefault(); toggleSelected(m.id); }}
               className={cn(
                 'mt-1.5 h-4 w-4 shrink-0 rounded border border-border transition-all duration-200 flex items-center justify-center',
-                selectedIds.has(m.id) ? 'bg-brand border-brand' : 'hover:border-muted-foreground',
+                selectedIds.has(m.id) ? 'bg-foreground border-foreground' : 'hover:border-muted-foreground',
               )}
             >
               {selectedIds.has(m.id) && (
@@ -197,7 +197,7 @@ export default function Inbox() {
               {/* Unread dot */}
               <span className={cn(
                 'mt-2 h-2 w-2 shrink-0 rounded-full transition-colors',
-                m.unread ? 'bg-brand shadow-[0_0_6px_rgba(245,158,11,0.4)]' : 'bg-transparent',
+                m.unread ? 'bg-foreground' : 'bg-transparent',
               )} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-3">

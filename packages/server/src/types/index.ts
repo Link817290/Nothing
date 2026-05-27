@@ -79,18 +79,24 @@ export interface AddAccountRequest {
   imap_port?: number
 }
 
+export interface SendAttachment {
+  filename: string
+  content: string  // base64 encoded
+  content_type?: string
+}
+
 export interface SendRequest {
   to: string
   text: string
   subject?: string
-  account_id?: string      // which account to send from (default: first)
+  account_id?: string
   type?: string
   agent?: string
   project?: string
   labels?: string[]
   priority?: string
   require?: string[]
-  files?: string[]
+  attachments?: SendAttachment[]
 }
 
 export interface InboxQuery {

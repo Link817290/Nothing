@@ -53,31 +53,36 @@ export async function accountRoutes(app: FastifyInstance) {
 
     const { decrypt } = await import('../services/accounts.js')
     const pass = decrypt(account.auth_pass_encrypted)
-    let smtp = false, imap = false
 
-    try {
-      const { createTransport } = await import('nodemailer')
-      const t = createTransport({
-        host: account.smtp_host, port: account.smtp_port,
-        secure: account.smtp_port === 465,
-        auth: { user: account.auth_user, pass },
-        connectionTimeout: 10000,
-      })
-      await t.verify()
-      t.close()
-      smtp = true
-    } catch {}
-
-    try {
-      const { ImapFlow } = await import('imapflow')
-      const client = new ImapFlow({
-        host: account.imap_host, port: account.imap_port, secure: true,
-        auth: { user: account.auth_user, pass }, logger: false,
-      })
-      await client.connect()
-      await client.logout()
-      imap = true
-    } catch {}
+    // Test SMTP and IMAP in parallel
+    const [smtp, imap] = await Promise.all([
+      (async () => {
+        try {
+          const { createTransport } = await import('nodemailer')
+          const t = createTransport({
+            host: account.smtp_host, port: account.smtp_port,
+            secure: account.smtp_port === 465,
+            auth: { user: account.auth_user, pass },
+            connectionTimeout: 5000,
+          })
+          await t.verify()
+          t.close()
+          return true
+        } catch { return false }
+      })(),
+      (async () => {
+        try {
+          const { ImapFlow } = await import('imapflow')
+          const client = new ImapFlow({
+            host: account.imap_host, port: account.imap_port, secure: true,
+            auth: { user: account.auth_user, pass }, logger: false,
+          })
+          await client.connect()
+          await client.logout()
+          return true
+        } catch { return false }
+      })(),
+    ])
 
     return { smtp, imap }
   })

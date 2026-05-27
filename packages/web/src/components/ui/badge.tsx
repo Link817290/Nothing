@@ -14,7 +14,7 @@ const badgeVariants = cva(
         success: 'border-transparent bg-emerald-500/10 text-emerald-400',
         warning: 'border-transparent bg-amber-500/10 text-amber-400',
         brand: 'border-transparent bg-brand/10 text-brand',
-        nmp: 'border-brand/30 bg-brand/10 text-brand shadow-[0_0_8px_rgba(245,158,11,0.15)]',
+        nmp: 'border-border bg-brand/10 text-brand',
       },
     },
     defaultVariants: {
