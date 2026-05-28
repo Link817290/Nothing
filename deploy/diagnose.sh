@@ -75,7 +75,7 @@ echo ""
 echo "── JMAP session ──"
 if [ -n "$MAIL_IP" ]; then
   for proto_port in "https://$MAIL_IP:443" "http://$MAIL_IP:8080" "https://$MAIL_IP:8443"; do
-    RES=$(curl -sk -u "$ADMIN_USER:$ADMIN_PASS" --connect-timeout 3 "$proto_port/.well-known/jmap" 2>/dev/null)
+    RES=$(curl -skL -u "$ADMIN_USER:$ADMIN_PASS" --connect-timeout 3 "$proto_port/.well-known/jmap" 2>/dev/null)
     if echo "$RES" | grep -q 'primaryAccounts'; then
       echo "  ✓ JMAP OK at $proto_port"
       echo "  $(echo "$RES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'accountId: {list(d.get(\"primaryAccounts\",{}).values())[0] if d.get(\"primaryAccounts\") else \"?\"}')" 2>/dev/null)"
