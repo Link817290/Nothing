@@ -36,7 +36,7 @@ services:
       - DATABASE_URL=postgres://nothing:${DB_PASSWORD:-nothing}@db:5432/nothing
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - ENCRYPT_KEY=${ENCRYPT_KEY:-change-me-in-production}
-      - MAIL_ADMIN_URL=https://mail:443
+      - MAIL_ADMIN_URL=http://mail:8080
       - MAIL_ADMIN_USER=${MAIL_ADMIN_USER:-admin}
       - MAIL_ADMIN_PASS=${MAIL_ADMIN_PASS:-changeme}
       - SERVER_IP=${SERVER_IP:-}

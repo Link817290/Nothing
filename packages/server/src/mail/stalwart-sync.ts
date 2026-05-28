@@ -5,7 +5,7 @@
 import { queryAll, queryOne, run } from '../repositories/db.js'
 import { decrypt } from '../services/accounts.js'
 
-const MAIL_URL = process.env.MAIL_ADMIN_URL || 'https://mail:443'
+const MAIL_URL = process.env.MAIL_ADMIN_URL || 'http://mail:8080'
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 const activeListeners = new Map<string, AbortController>()

@@ -3,9 +3,8 @@
  * Stalwart uses JMAP-style method calls on POST /api
  */
 
-// Stalwart in normal mode uses HTTPS with self-signed cert
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-const MAIL_URL = process.env.MAIL_ADMIN_URL || 'https://mail:443'
+// Internal Docker network uses HTTP — no TLS needed
+const MAIL_URL = process.env.MAIL_ADMIN_URL || 'http://mail:8080'
 const MAIL_USER = process.env.MAIL_ADMIN_USER || 'admin'
 const MAIL_PASS = process.env.MAIL_ADMIN_PASS || 'changeme'
 
