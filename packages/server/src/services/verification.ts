@@ -66,39 +66,10 @@ export async function sendVerificationEmail(toEmail: string, code: string): Prom
   if (!domains?.length) throw new Error('No mail domain configured')
 
   const domainName = domains[0].name
-
-  // Find a stalwart user to send from — query existing mailbox accounts
-  const { listMailboxes } = await import('./mailengine.js')
-  const mailboxes = await listMailboxes()
-  let fromEmail: string
-  let authUser: string
-  let authPass: string
-
-  if (mailboxes.length > 0) {
-    // Use first existing mailbox user
-    const mb = mailboxes[0]
-    fromEmail = mb.emailAddress || `${mb.name}@${domainName}`
-    // We need the user's Stalwart credentials — get from our DB
-    const { queryOne } = await import('../repositories/db.js')
-    const account = await queryOne(
-      "SELECT auth_user, auth_pass_encrypted FROM email_accounts WHERE provider = 'stalwart' LIMIT 1"
-    )
-    if (account) {
-      const { decrypt } = await import('./accounts.js')
-      authUser = account.auth_user
-      authPass = decrypt(account.auth_pass_encrypted)
-    } else {
-      // Fallback to admin
-      authUser = process.env.MAIL_ADMIN_USER || 'admin'
-      authPass = process.env.MAIL_ADMIN_PASS || ''
-      fromEmail = `${authUser}@${domainName}`
-    }
-  } else {
-    // No mailboxes yet — use admin
-    authUser = process.env.MAIL_ADMIN_USER || 'admin'
-    authPass = process.env.MAIL_ADMIN_PASS || ''
-    fromEmail = `${authUser}@${domainName}`
-  }
+  const fromEmail = `noreply@${domainName}`
+  // noreply account created when domain was added, password = MAIL_ADMIN_PASS
+  const authUser = `noreply@${domainName}`
+  const authPass = process.env.MAIL_ADMIN_PASS || ''
 
   const { createTransport } = await import('nodemailer')
   const transporter = createTransport({

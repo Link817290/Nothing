@@ -26,7 +26,21 @@ export async function mailEngineRoutes(app: FastifyInstance) {
     if (!body.name) return reply.code(400).send({ error: 'Domain name required' })
     try {
       await createDomain(body.name)
-      // Return DNS records that need to be configured
+
+      // Auto-create system noreply mailbox for sending verification emails
+      try {
+        await createMailbox({
+          name: 'noreply',
+          type: 'individual',
+          secrets: [process.env.MAIL_ADMIN_PASS || 'noreply'],
+          emails: [`noreply@${body.name}`],
+          description: 'System (do not reply)',
+        })
+        console.log(`[mail] Created noreply@${body.name}`)
+      } catch (e) {
+        console.warn(`[mail] Failed to create noreply mailbox: ${(e as Error).message}`)
+      }
+
       const dns = await getDomainDnsRecords(body.name)
       return { success: true, domain: body.name, dns }
     } catch (err) {
