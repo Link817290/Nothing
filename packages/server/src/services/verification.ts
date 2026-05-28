@@ -71,8 +71,8 @@ export async function sendVerificationEmail(toEmail: string, code: string): Prom
   const { createTransport } = await import('nodemailer')
   const transporter = createTransport({
     host: process.env.MAIL_SMTP_HOST || 'mail',
-    port: parseInt(process.env.MAIL_SMTP_PORT || '587'),
-    secure: false,
+    port: parseInt(process.env.MAIL_SMTP_PORT || '465'),
+    secure: true,
     auth: {
       user: process.env.MAIL_ADMIN_USER || 'admin',
       pass: process.env.MAIL_ADMIN_PASS || '',
