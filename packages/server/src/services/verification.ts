@@ -1,6 +1,7 @@
 import { randomBytes, randomInt } from 'crypto'
 import { queryOne, run } from '../repositories/db.js'
 import bcrypt from 'bcryptjs'
+import { encrypt, decrypt } from './accounts.js'
 
 function genId() {
   return `vrf_${randomBytes(8).toString('base64url')}`
@@ -25,12 +26,13 @@ export async function createVerification(email: string, password: string, name?:
   const id = genId()
   const code = genCode()
   const passwordHash = await bcrypt.hash(password, 10)
+  const passwordEncrypted = encrypt(password)
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
   await run(
-    `INSERT INTO verification_codes (id, email, code, name, password_hash, mail_username, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, email, code, name || null, passwordHash, mailUsername || null, expiresAt.toISOString()]
+    `INSERT INTO verification_codes (id, email, code, name, password_hash, password_encrypted, mail_username, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [id, email, code, name || null, passwordHash, passwordEncrypted, mailUsername || null, expiresAt.toISOString()]
   )
 
   return { id, code }
@@ -38,7 +40,7 @@ export async function createVerification(email: string, password: string, name?:
 
 /** Verify a code and return the pending registration data */
 export async function verifyCode(email: string, code: string): Promise<{
-  name?: string; passwordHash: string; mailUsername?: string
+  name?: string; passwordHash: string; password?: string; mailUsername?: string
 } | null> {
   const row = await queryOne(
     'SELECT * FROM verification_codes WHERE email = $1 AND code = $2 AND expires_at > NOW()',
@@ -52,6 +54,7 @@ export async function verifyCode(email: string, code: string): Promise<{
   return {
     name: row.name || undefined,
     passwordHash: row.password_hash,
+    password: row.password_encrypted ? decrypt(row.password_encrypted) : undefined,
     mailUsername: row.mail_username || undefined,
   }
 }

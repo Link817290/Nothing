@@ -68,7 +68,7 @@ export async function authRoutes(app: FastifyInstance) {
     try {
       // Create user with pre-hashed password
       const { registerWithHash } = await import('../services/auth.js')
-      const user = await registerWithHash(body.email, data.passwordHash, data.name, data.mailUsername)
+      const user = await registerWithHash(body.email, data.passwordHash, data.name, data.mailUsername, data.password)
       const perms = user.is_admin ? ['read', 'write', 'admin'] as const : ['read', 'write'] as const
       const { key } = await createApiKey(user.id, 'default', [...perms])
 

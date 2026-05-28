@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS verification_codes (
   code TEXT NOT NULL,
   name TEXT,
   password_hash TEXT NOT NULL,
+  password_encrypted TEXT,
   mail_username TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
