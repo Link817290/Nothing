@@ -251,8 +251,8 @@ export async function createMailbox(account: {
   const domainId = domain?.id || ''
   if (!domainId) throw new Error(`Domain "${domainName}" not found in Stalwart`)
 
-  // Step 1: Create user + Step 2: Set password — in one JMAP request
-  const res = await jmapCall([
+  // Step 1: Create user
+  const createRes = await jmapCall([
     ['x:Account/set', {
       accountId: adminAccountId,
       create: {
@@ -264,20 +264,37 @@ export async function createMailbox(account: {
         },
       },
     }, 'c1'],
-    ['x:AccountPassword/set', {
-      accountId: adminAccountId,
-      update: {
-        '#new1/singleton': { secret: account.secrets[0] },
-      },
-    }, 'c2'],
   ], ADMIN_USING)
 
-  const createResult = getMethodResult(res, 'c1')
+  const createResult = getMethodResult(createRes, 'c1')
   if (createResult?.notCreated) {
     const err = Object.values(createResult.notCreated)[0] as any
     throw new Error(err?.description || 'Failed to create mailbox')
   }
   const newId = createResult?.created?.new1?.id
+  if (!newId) throw new Error('Failed to get new account ID')
+
+  // Step 2: Set password via x:Account/set update with credentials object map
+  const password = account.secrets[0]
+  if (password) {
+    const pwRes = await jmapCall([
+      ['x:Account/set', {
+        accountId: adminAccountId,
+        update: {
+          [newId]: {
+            credentials: { '0': { '@type': 'Password', secret: password } },
+          },
+        },
+      }, 'p1'],
+    ], ADMIN_USING)
+
+    const pwResult = getMethodResult(pwRes, 'p1')
+    if (pwResult?.notUpdated) {
+      const err = Object.values(pwResult.notUpdated)[0] as any
+      console.warn(`[mail] Password set failed for ${account.name}: ${err?.description}`)
+    }
+  }
+
   const mailEmail = `${account.name}@${domainName}`
   return { id: newId, email: mailEmail }
 }
