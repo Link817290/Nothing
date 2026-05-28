@@ -10,18 +10,18 @@ run() {
   echo ""
 }
 
-# Step 1: Create user without credentials
-run "Step 1: Create user (no creds)" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"new1":{"@type":"User","name":"link","domainId":"b","aliases":[{"enabled":true,"name":"link","domainId":"b"}]}}},"c1"]]}'
+# Test 1: Bare minimum — just @type, name, domainId
+run "T1: bare minimum" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"a1":{"@type":"User","name":"alice","domainId":"b"}}},"c1"]]}'
 
-# Step 2: Set password via x:AccountPassword/set (update singleton on the new account)
-# Need the account ID from step 1 — try with "c" (previous test created b, c)
-# Let's try with a backreference
-run "Step 2a: Set password (singleton update)" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"pw1":{"@type":"User","name":"linkpw","domainId":"b"}}},"c1"],["x:AccountPassword/set",{"accountId":"#pw1","update":{"singleton":{"secret":"mypassword123"}}},"c2"]]}'
+# Test 2: With description
+run "T2: with description" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"a2":{"@type":"User","name":"bob","domainId":"b","description":"Bob"}}},"c1"]]}'
 
-# Step 3: Alternative — set password on existing account "c" from previous test
-run "Step 3: Set password on existing account c" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:AccountPassword/set",{"accountId":"c","update":{"singleton":{"secret":"mypassword123"}}},"c1"]]}'
+# Test 3: Set password on newly created account (use accountId from T1 result)
+# Previous no-cred creates returned id "b" and "c", next should be "d" or similar
+# Try setting password on the admin's own account first to test format
+run "T3: list all accounts to find IDs" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/query",{"filter":{}},"q1"],["x:Account/get",{"#ids":{"resultOf":"q1","name":"x:Account/query","path":"/ids"}},"g1"]]}'
 
 echo "=== Done ==="
