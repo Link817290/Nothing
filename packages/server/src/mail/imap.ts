@@ -16,7 +16,7 @@ async function syncAll(): Promise<number> {
   let total = 0
 
   try {
-    const accounts = await queryAll('SELECT * FROM email_accounts WHERE is_active = TRUE')
+    const accounts = await queryAll("SELECT * FROM email_accounts WHERE is_active = TRUE AND provider != 'stalwart'")
     for (const acc of accounts) {
       try {
         total += await syncAccount(acc, 'nmp')
