@@ -262,6 +262,9 @@ export default function LoginPage() {
                 placeholder="--------"
                 required
               />
+              {mode === 'register' && password && password.length < 8 && (
+                <p className="text-xs text-muted-foreground">Min 8 chars, with uppercase, lowercase and number</p>
+              )}
             </div>
 
             {error && (

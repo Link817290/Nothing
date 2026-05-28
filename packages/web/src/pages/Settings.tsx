@@ -467,9 +467,10 @@ function ClaimMailboxCard({ onClaimed }: { onClaimed: () => void }) {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mailbox password"
+          placeholder="Mailbox password (min 8 chars, A-z, 0-9)"
         />
-        <Button size="sm" onClick={handleClaim} disabled={claiming || !password}>
+        <p className="text-xs text-muted-foreground">Must contain uppercase, lowercase and number</p>
+        <Button size="sm" onClick={handleClaim} disabled={claiming || password.length < 8}>
           {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Claim mailbox'}
         </Button>
       </CardContent>

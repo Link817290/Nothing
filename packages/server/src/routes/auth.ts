@@ -4,6 +4,14 @@ import { createApiKey, listApiKeys, deleteApiKey } from '../services/apikeys.js'
 import { authenticate } from '../middleware/auth.js'
 import type { RegisterRequest, LoginRequest } from '../types/index.js'
 
+function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters'
+  if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter'
+  if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter'
+  if (!/[0-9]/.test(password)) return 'Password must contain a number'
+  return null
+}
+
 export async function authRoutes(app: FastifyInstance) {
   // ─── Public: Register & Login ──────────────────────────────────
 
@@ -13,6 +21,8 @@ export async function authRoutes(app: FastifyInstance) {
     if (!body.email || !body.password) {
       return reply.code(400).send({ error: 'Email and password required' })
     }
+    const pwErr = validatePassword(body.password)
+    if (pwErr) return reply.code(400).send({ error: pwErr })
 
     // Check if email already registered
     const { queryOne } = await import('../repositories/db.js')
@@ -112,6 +122,8 @@ export async function authRoutes(app: FastifyInstance) {
     const user = (req as any).user as { id: string; email: string; name?: string }
     const body = req.body as { username?: string; password: string }
     if (!body.password) return reply.code(400).send({ error: 'Password required' })
+    const pwErr = validatePassword(body.password)
+    if (pwErr) return reply.code(400).send({ error: pwErr })
 
     try {
       // Check if user already has a stalwart account
