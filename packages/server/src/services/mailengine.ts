@@ -12,10 +12,24 @@ const MAIL_PASS = process.env.MAIL_ADMIN_PASS || 'changeme'
 const ADMIN_USING = ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap']
 const PRINCIPAL_USING = ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:principals']
 
+/** Fetch with retry — Stalwart may not be ready after restart */
+async function fetchRetry(url: string, init: RequestInit, retries = 3): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, { ...init, redirect: 'follow' })
+      return res
+    } catch (err) {
+      if (i === retries - 1) throw err
+      // Wait before retry: 1s, 3s, 5s
+      await new Promise(r => setTimeout(r, (i + 1) * 2000))
+    }
+  }
+  throw new Error('fetchRetry exhausted')
+}
+
 async function jmapCall(methodCalls: any[], using?: string[]): Promise<any> {
   const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-  const res = await fetch(`${MAIL_URL}/jmap/`, {
-    redirect: 'follow',
+  const res = await fetchRetry(`${MAIL_URL}/jmap/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -46,8 +60,7 @@ let cachedAccountId: string | null = null
 async function getAccountId(): Promise<string> {
   if (cachedAccountId) return cachedAccountId
   const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-  const res = await fetch(`${MAIL_URL}/.well-known/jmap`, {
-    redirect: 'follow',
+  const res = await fetchRetry(`${MAIL_URL}/.well-known/jmap`, {
     headers: { 'Authorization': `Basic ${auth}` },
   })
   if (!res.ok) throw new Error('Failed to get JMAP session')
@@ -355,11 +368,10 @@ export async function mailEngineHealthy(): Promise<boolean> {
   try {
     // Try a simple JMAP call to check connectivity
     const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-    const res = await fetch(`${MAIL_URL}/.well-known/jmap`, {
-      redirect: 'follow',
+    const res = await fetchRetry(`${MAIL_URL}/.well-known/jmap`, {
       signal: AbortSignal.timeout(5000),
       headers: { 'Authorization': `Basic ${auth}` },
-    })
+    }, 2)
     return res.ok
   } catch {
     return false

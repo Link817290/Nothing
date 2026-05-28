@@ -10,13 +10,26 @@ const MAIL_URL = process.env.MAIL_ADMIN_URL || 'https://mail:443'
 let pollTimer: ReturnType<typeof setInterval> | null = null
 const activeListeners = new Map<string, AbortController>()
 
+// ─── Fetch with retry ───────────────────────────────────────────
+
+async function fetchRetry(url: string, init: RequestInit, retries = 3): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fetch(url, { ...init, redirect: 'follow' })
+    } catch (err) {
+      if (i === retries - 1) throw err
+      await new Promise(r => setTimeout(r, (i + 1) * 2000))
+    }
+  }
+  throw new Error('fetchRetry exhausted')
+}
+
 // ─── JMAP Helper ────────────────────────────────────────────────
 
 async function jmapRequest(authUser: string, authPass: string, methodCalls: any[]): Promise<any> {
   const auth = Buffer.from(`${authUser}:${authPass}`).toString('base64')
-  const res = await fetch(`${MAIL_URL}/jmap/`, {
+  const res = await fetchRetry(`${MAIL_URL}/jmap/`, {
     method: 'POST',
-    redirect: 'follow',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${auth}`,
@@ -47,8 +60,7 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
   // Get JMAP session
   let accountId: string
   try {
-    const sessionRes = await fetch(`${MAIL_URL}/.well-known/jmap`, {
-      redirect: 'follow',
+    const sessionRes = await fetchRetry(`${MAIL_URL}/.well-known/jmap`, {
       headers: { 'Authorization': `Basic ${Buffer.from(`${authUser}:${password}`).toString('base64')}` },
     })
     if (!sessionRes.ok) return 0
@@ -131,8 +143,7 @@ async function startEventSource(acc: Record<string, any>): Promise<boolean> {
   const url = `${MAIL_URL}/jmap/eventsource/?types=*&closeafter=no&ping=30`
 
   try {
-    const res = await fetch(url, {
-      redirect: 'follow',
+    const res = await fetchRetry(url, {
       headers: { 'Authorization': `Basic ${auth}` },
       signal: controller.signal,
     })
