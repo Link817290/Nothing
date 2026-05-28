@@ -9,6 +9,7 @@ import { messageRoutes } from './routes/messages.js'
 import { adminRoutes } from './routes/admin.js'
 import { mailEngineRoutes } from './routes/mailengine.js'
 import { startImapPolling, stopImapPolling } from './mail/imap.js'
+import { startStalwartPolling, stopStalwartPolling } from './mail/stalwart-sync.js'
 
 async function main() {
   const config = loadServerConfig()
@@ -52,12 +53,14 @@ async function main() {
   await app.register(adminRoutes)
   await app.register(mailEngineRoutes)
 
-  // Start IMAP polling
+  // Start polling (non-blocking)
   startImapPolling(30000)
+  startStalwartPolling(15000).catch(() => {})
 
   // Graceful shutdown
   const shutdown = async () => {
     stopImapPolling()
+    stopStalwartPolling()
     closeDb()
     await app.close()
     process.exit(0)

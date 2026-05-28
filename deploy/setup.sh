@@ -1,5 +1,6 @@
 #!/bin/bash
 # Nothing — One-click deployment setup
+# Usage: cd ~/Nothing/deploy && bash setup.sh
 set -e
 
 echo ""
@@ -18,8 +19,13 @@ else
   read -p "  Server IP: " SERVER_IP
 fi
 
-# Use domain or localhost
-DOMAIN=${DOMAIN:-localhost}
+# Use domain or :80
+if [ -z "$DOMAIN" ]; then
+  DOMAIN=":80"
+  URL="http://$SERVER_IP"
+else
+  URL="https://$DOMAIN"
+fi
 
 # Generate random secrets
 DB_PASS=$(openssl rand -base64 16 | tr -d '/+=' | head -c 20)
@@ -40,30 +46,57 @@ MAIL_DOMAIN=
 EOF
 
 echo ""
-echo "  ✓ Config generated"
+echo "  ✓ Config generated (.env)"
 echo ""
 echo "  Starting services..."
 echo ""
 
 docker compose up -d --build
 
+# Wait for services
 echo ""
-echo "  Waiting for services..."
-sleep 10
+echo "  Waiting for services to start..."
+for i in $(seq 1 30); do
+  if curl -sf http://localhost/health >/dev/null 2>&1; then
+    echo "  ✓ Server is ready"
+    break
+  fi
+  sleep 1
+done
 
-if [ "$DOMAIN" = "localhost" ]; then
-  URL="http://$SERVER_IP"
-else
-  URL="https://$DOMAIN"
+# Check mail engine
+sleep 3
+MAIL_IP=$(docker inspect deploy-mail-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 2>/dev/null || echo "")
+if [ -n "$MAIL_IP" ]; then
+  JMAP=$(curl -skL -u "admin:$MAIL_PASS" --connect-timeout 5 "https://$MAIL_IP:443/.well-known/jmap" 2>/dev/null)
+  if echo "$JMAP" | grep -q 'primaryAccounts'; then
+    echo "  ✓ Mail engine connected"
+  else
+    echo "  ⚠ Mail engine not ready yet (may need a minute)"
+  fi
 fi
 
 echo ""
+echo "  ══════════════════════════════════════"
 echo "  ✓ Nothing is running!"
 echo ""
 echo "  Open:  $URL"
 echo ""
-echo "  1. Register admin account"
-echo "  2. Admin → Domains → Add your domain"
-echo "  3. Settings → Claim mailbox"
-echo "  4. Done! New users will get verification codes on registration"
+echo "  Next steps:"
+echo "    1. Register admin account (first user = admin)"
+echo "    2. Admin → Domains → Add your domain"
+echo "    3. Click 'Verify DNS' after setting DNS records"
+echo "    4. Settings → Claim your @domain mailbox"
+echo "    5. Done! Send your first email"
+echo ""
+echo "  Useful commands:"
+echo "    bash deploy/diagnose.sh     — check all services"
+echo "    bash deploy/update.sh       — pull + rebuild all"
+echo "    bash deploy/update.sh server — rebuild server only"
+echo "    docker compose logs -f       — watch logs"
+echo ""
+echo "  If HTTPS fails (rate limit), temporarily use HTTP:"
+echo "    sed -i 's/DOMAIN=.*/DOMAIN=:80/' .env"
+echo "    docker compose up -d --force-recreate caddy"
+echo "  ══════════════════════════════════════"
 echo ""
