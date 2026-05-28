@@ -293,7 +293,7 @@ export async function createMailbox(account: {
     const pwResult = getMethodResult(pwRes, 'p1')
     if (pwResult?.notUpdated) {
       const err = Object.values(pwResult.notUpdated)[0] as any
-      console.warn(`[mail] Password set failed for ${account.name}: ${err?.description}`)
+      throw new Error(`Password rejected by mail server: ${err?.description || 'unknown error'}`)
     }
   }
 
