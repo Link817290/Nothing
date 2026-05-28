@@ -243,16 +243,24 @@ export async function createMailbox(account: {
   description?: string
 }): Promise<void> {
   const accountId = await getAccountId()
+  // Resolve domain IDs for email aliases
+  const domains = await listDomains()
+  const aliases = account.emails.map(email => {
+    const [localPart, domainName] = email.split('@')
+    const domain = domains.find((d: any) => d.name === domainName)
+    return { enabled: true, name: localPart, domainId: domain?.id || domainName }
+  })
+
   const res = await jmapCall([
     ['x:Account/set', {
       accountId,
       create: {
         new1: {
+          '@type': 'User',
           name: account.name,
-          type: account.type || 'individual',
-          secrets: account.secrets,
-          emails: account.emails,
-          description: account.description || '',
+          credentials: [{ '@type': 'Password', secret: account.secrets[0] }],
+          aliases,
+          description: account.description || undefined,
         },
       },
     }, 'c1'],
