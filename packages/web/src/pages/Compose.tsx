@@ -58,10 +58,10 @@ export default function Compose() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="px-10 py-8 fade-in">
+      <div className="px-4 py-6 md:px-10 md:py-8 fade-in">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold tracking-tight">{t('compose.title')}</h1>
             {accounts.length > 1 && (

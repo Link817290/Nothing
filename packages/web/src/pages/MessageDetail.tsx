@@ -105,28 +105,28 @@ export default function MessageDetail() {
   return (
     <>
       {/* Top bar */}
-      <div className="flex items-center gap-3 border-b border-border px-6 py-3">
+      <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:gap-3 md:px-6">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/inbox"><ArrowLeft className="h-4 w-4" /> {t('nav.inbox')}</Link>
         </Button>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto sm:ml-auto">
           <Button size="sm" onClick={() => setPanel(panel === 'reply' ? null : 'reply')}>
-            <Reply className="h-3.5 w-3.5" /> {t('message.reply')}
+            <Reply className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('message.reply')}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={() => setPanel(panel === 'forward' ? null : 'forward')}>
-            <Forward className="h-3.5 w-3.5" /> {t('message.forward')}
+            <Forward className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('message.forward')}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleToggleRead}>
-            {msg.unread ? <><Eye className="h-3.5 w-3.5" /> {t('message.mark_read')}</> : <><EyeOff className="h-3.5 w-3.5" /> {t('message.mark_unread')}</>}
+            {msg.unread ? <><Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('message.mark_read')}</span></> : <><EyeOff className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('message.mark_unread')}</span></>}
           </Button>
           <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive border-destructive/30">
-            <Trash2 className="h-3.5 w-3.5" /> {t('message.delete')}
+            <Trash2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('message.delete')}</span>
           </Button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-10 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-10 md:py-6">
         <div className="fade-in">
           {/* Header */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -145,21 +145,23 @@ export default function MessageDetail() {
 
           {/* From / To */}
           <div className={cn(
-            'mt-6 flex items-center gap-4 rounded-xl p-4',
+            'mt-4 md:mt-6 flex flex-col gap-3 rounded-xl p-3 md:p-4 sm:flex-row sm:items-center sm:gap-4',
             isNmp ? 'bg-accent/30' : 'bg-accent/30',
           )}>
-            <Avatar name={parseAddress(msg.from).name} isNmp={isNmp} />
-            <div className="text-sm min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{parseAddress(msg.from).name}</span>
-                <span className="text-muted-foreground/40">&rarr;</span>
-                <span className="text-muted-foreground">{parseAddress(msg.to).name}</span>
-              </div>
-              <div className="text-xs text-muted-foreground/60 truncate">
-                {parseAddress(msg.from).email} &middot; {parseAddress(msg.to).email}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Avatar name={parseAddress(msg.from).name} isNmp={isNmp} />
+              <div className="text-sm min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-foreground">{parseAddress(msg.from).name}</span>
+                  <span className="text-muted-foreground/40">&rarr;</span>
+                  <span className="text-muted-foreground">{parseAddress(msg.to).name}</span>
+                </div>
+                <div className="text-xs text-muted-foreground/60 truncate">
+                  {parseAddress(msg.from).email} &middot; {parseAddress(msg.to).email}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
               {msg.project && <Badge variant="outline">{msg.project}</Badge>}
               {msg.labels?.map((l) => (
                 <Badge key={l} variant="secondary" className="text-xs uppercase tracking-wider">{l}</Badge>

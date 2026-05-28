@@ -47,7 +47,7 @@ export default function Sent() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-10 py-5">
+      <div className="flex items-center justify-between border-b border-border px-4 md:px-10 py-4 md:py-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight">{t('sent.title')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('sent.subtitle')}</p>
@@ -83,7 +83,7 @@ export default function Sent() {
           return (
             <Link key={m.id} to={`/messages/${m.id}`} className="block">
               <div className={cn(
-                'flex items-start gap-4 border-b border-border px-10 py-4 transition-all duration-200 hover:bg-accent/50',
+                'flex items-start gap-3 md:gap-4 border-b border-border px-4 md:px-10 py-3 md:py-4 transition-all duration-200 hover:bg-accent/50',
                 m.status === 'failed' && 'bg-destructive/5',
               )}>
                 <div className="min-w-0 flex-1">

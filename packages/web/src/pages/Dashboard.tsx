@@ -51,14 +51,14 @@ export default function Dashboard() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="px-10 py-8 space-y-8 fade-in">
+      <div className="px-4 py-6 md:px-10 md:py-8 space-y-6 md:space-y-8 fade-in">
 
         {/* Welcome */}
         <div>
-          <h1 className="text-4xl font-bold tracking-tighter leading-tight">
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tighter leading-tight">
             {user?.name ? t('dashboard.welcome', { name: user.name }) : t('dashboard.welcome_new')}
           </h1>
-          <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
+          <p className="mt-2 md:mt-3 text-sm md:text-lg text-muted-foreground leading-relaxed">
             {hasNoAccounts
               ? t('dashboard.connect_hint')
               : hasNoMessages
@@ -71,7 +71,7 @@ export default function Dashboard() {
         {/* Onboarding — only if no accounts */}
         {hasNoAccounts && (
           <Card className="border-border bg-accent">
-            <CardContent className="flex items-center gap-5 p-6">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 md:p-6">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand/10">
                 <Zap className="h-6 w-6 text-brand" />
               </div>
@@ -99,7 +99,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard icon={<Inbox className="h-4 w-4" />} label={t('stat.unread')} value={unread} highlight={unread > 0} />
           <StatCard icon={<Send className="h-4 w-4" />} label={t('stat.sent')} value={summary.sent} />
           <StatCard icon={<Mail className="h-4 w-4" />} label={t('stat.received')} value={summary.received} />
@@ -163,7 +163,7 @@ function StatCard({ icon, label, value, highlight, warn }: {
           {icon}
           <span className="text-sm">{label}</span>
         </div>
-        <p className={`mt-3 text-4xl font-bold tabular-nums ${
+        <p className={`mt-2 md:mt-3 text-2xl md:text-4xl font-bold tabular-nums ${
           warn ? 'text-destructive' : highlight ? 'text-brand' : ''
         }`}>
           {value}

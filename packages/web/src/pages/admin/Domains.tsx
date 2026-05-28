@@ -111,9 +111,9 @@ export default function AdminDomains() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-10 py-5">
+      <div className="flex items-center justify-between border-b border-border px-4 md:px-10 py-4 md:py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">{t('admin.domains_title')}</h1>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('admin.domains_title')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">Manage domains and DNS records for self-hosted email</p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
@@ -121,7 +121,7 @@ export default function AdminDomains() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-10 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">
         <div className="space-y-4">
           {showAdd && (
             <Card>
@@ -166,11 +166,11 @@ export default function AdminDomains() {
                 <Card key={name}>
                   <CardContent className="p-5">
                     {/* Domain header */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-base font-semibold text-foreground">{name}</p>
                         {dns && (
-                          <div className="mt-2 flex items-center gap-4">
+                          <div className="mt-2 flex items-center gap-3 md:gap-4 flex-wrap">
                             <span className="flex items-center gap-1.5 text-sm"><DnsIcon ok={dns.mx} /> MX</span>
                             <span className="flex items-center gap-1.5 text-sm"><DnsIcon ok={dns.spf} /> SPF</span>
                             <span className="flex items-center gap-1.5 text-sm"><DnsIcon ok={dns.dkim} /> DKIM</span>
@@ -178,7 +178,7 @@ export default function AdminDomains() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={() => handleShowRecords(name)}>
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           DNS Records
@@ -197,8 +197,8 @@ export default function AdminDomains() {
                     {isExpanded && records && records.length > 0 && (
                       <div className="mt-4 border-t border-border pt-4">
                         <p className="text-xs font-medium text-muted-foreground mb-3">Add these records at your domain registrar:</p>
-                        <div className="rounded-lg border border-border overflow-hidden">
-                          <table className="w-full text-sm">
+                        <div className="rounded-lg border border-border overflow-x-auto">
+                          <table className="w-full text-sm min-w-[500px]">
                             <thead>
                               <tr className="border-b border-border bg-muted/50">
                                 <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Type</th>

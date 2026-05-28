@@ -131,12 +131,12 @@ export default function Settings() {
 
   return (
     <>
-      <div className="border-b border-border px-10 py-5">
-        <h1 className="text-xl font-bold tracking-tight">{t('settings.title')}</h1>
+      <div className="border-b border-border px-4 md:px-10 py-4 md:py-5">
+        <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('settings.title')}</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">{t('settings.subtitle')}</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-10 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">
         <div className="space-y-8 fade-in">
 
           {/* Profile */}
@@ -212,7 +212,7 @@ export default function Settings() {
             <CardContent className="space-y-3">
               {showAdd && (
                 <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-3 fade-in">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <select
                       value={provider}
                       onChange={(e) => setProvider(e.target.value)}
@@ -257,7 +257,7 @@ export default function Settings() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
+                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-border">
                     <Button variant="outline" size="sm" disabled={testingId === acc.id} onClick={() => handleTestAccount(acc.id)}>
                       {testingId === acc.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TestTube2 className="h-3.5 w-3.5" />} {t('settings.test')}
                     </Button>

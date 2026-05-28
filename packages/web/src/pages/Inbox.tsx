@@ -93,13 +93,13 @@ export default function Inbox() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-10 py-4">
-        <div>
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-10 md:py-4">
+        <div className="min-w-0">
           {q ? (
-            <h1 className="text-xl font-bold tracking-tight">Search: <span className="text-brand">{q}</span></h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight truncate">Search: <span className="text-brand">{q}</span></h1>
           ) : (
             <>
-              <h1 className="text-xl font-bold tracking-tight">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight">
                 {t('inbox.title')}
                 {project && <span className="ml-2 font-normal text-muted-foreground">/ {project}</span>}
               </h1>
@@ -107,13 +107,13 @@ export default function Inbox() {
             </>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto">
           {/* Account selector */}
           {!q && accounts.length > 1 && (
             <select
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/30"
+              className="shrink-0 rounded-lg border border-border bg-background px-2 md:px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-ring/30"
             >
               <option value="all">{t('inbox.all_accounts')}</option>
               {accounts.map((a) => (
@@ -124,14 +124,14 @@ export default function Inbox() {
 
           {/* Filter tabs */}
           {!q && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <FilterTab label={t('inbox.filter.unread')} active={filter === 'unread'} count={totalUnread} onClick={() => setFilter('unread')} />
               <FilterTab label={t('inbox.filter.all')} active={filter === 'all'} onClick={() => setFilter('all')} />
               <FilterTab label={t('inbox.filter.nmp')} active={filter === 'nmp'} onClick={() => setFilter('nmp')} />
             </div>
           )}
 
-          <Button size="sm" asChild>
+          <Button size="sm" asChild className="shrink-0">
             <Link to="/compose">{t('nav.compose')}</Link>
           </Button>
         </div>
@@ -172,7 +172,7 @@ export default function Inbox() {
           <div
             key={m.id}
             className={cn(
-              'flex items-start gap-4 border-b border-border px-10 py-4 transition-all duration-200 hover:bg-accent/50 group',
+              'flex items-start gap-3 md:gap-4 border-b border-border px-4 md:px-10 py-3 md:py-4 transition-all duration-200 hover:bg-accent/50 group',
               m.unread && 'bg-accent/20',
               
               selectedIds.has(m.id) && 'bg-accent',

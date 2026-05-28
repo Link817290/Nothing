@@ -96,9 +96,9 @@ export default function AdminMailboxes() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-10 py-5">
+      <div className="flex items-center justify-between border-b border-border px-4 md:px-10 py-4 md:py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">{t('admin.mailboxes_title')}</h1>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('admin.mailboxes_title')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">Manage mailbox accounts for self-hosted domains</p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
@@ -106,13 +106,13 @@ export default function AdminMailboxes() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-10 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">
         <div className="space-y-4">
           {showAdd && (
             <Card>
               <CardContent className="p-5 space-y-3">
                 <p className="text-sm font-medium">Create a new mailbox</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
                   <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@yourdomain.com" />
                   <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" />
@@ -147,11 +147,11 @@ export default function AdminMailboxes() {
               return (
                 <Card key={name}>
                   <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Mail className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{name}</p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
                           <div className="mt-1 flex items-center gap-2 flex-wrap">
                             {emails.map((e: string) => (
                               <Badge key={e} variant="secondary" className="text-xs">{e}</Badge>
@@ -165,7 +165,7 @@ export default function AdminMailboxes() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <Button variant="outline" size="sm" onClick={() => setExpandedMb(isExpanded ? null : name)}>
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           Manage

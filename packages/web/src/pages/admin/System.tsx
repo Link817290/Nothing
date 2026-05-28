@@ -72,9 +72,9 @@ export default function AdminSystem() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-10 py-5">
+      <div className="flex items-center justify-between border-b border-border px-4 md:px-10 py-4 md:py-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">{t('admin.system_title')}</h1>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('admin.system_title')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.system_subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={load}>
@@ -82,7 +82,7 @@ export default function AdminSystem() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-10 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">
         <div className="space-y-6 fade-in">
           {/* Server Status */}
           {status && (
@@ -155,8 +155,8 @@ export default function AdminSystem() {
             <CardContent>
               <div className="space-y-4">
                 {Object.entries(editSettings).map(([key, value]) => (
-                  <div key={key} className="flex items-center gap-4">
-                    <div className="w-48 shrink-0">
+                  <div key={key} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="sm:w-48 sm:shrink-0">
                       <p className="text-sm font-medium">{settingLabel(key, t)}</p>
                       <p className="text-xs text-muted-foreground">{settingDesc(key, t)}</p>
                     </div>
