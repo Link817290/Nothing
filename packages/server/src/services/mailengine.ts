@@ -241,36 +241,45 @@ export async function createMailbox(account: {
   secrets: string[]
   emails: string[]
   description?: string
-}): Promise<void> {
-  const accountId = await getAccountId()
-  // Resolve domain IDs for email aliases
+}): Promise<{ id: string; email: string }> {
+  const adminAccountId = await getAccountId()
+  // Resolve domain ID
   const domains = await listDomains()
-  const aliases = account.emails.map(email => {
-    const [localPart, domainName] = email.split('@')
-    const domain = domains.find((d: any) => d.name === domainName)
-    return { enabled: true, name: localPart, domainId: domain?.id || domainName }
-  })
+  const email = account.emails[0] || ''
+  const domainName = email.split('@')[1]
+  const domain = domains.find((d: any) => d.name === domainName)
+  const domainId = domain?.id || ''
+  if (!domainId) throw new Error(`Domain "${domainName}" not found in Stalwart`)
 
+  // Step 1: Create user + Step 2: Set password — in one JMAP request
   const res = await jmapCall([
     ['x:Account/set', {
-      accountId,
+      accountId: adminAccountId,
       create: {
         new1: {
           '@type': 'User',
           name: account.name,
-          domainId: aliases[0]?.domainId || '',
-          credentials: [{ '@type': 'Password', secret: account.secrets[0] }],
-          aliases,
+          domainId,
           description: account.description || null,
         },
       },
     }, 'c1'],
+    ['x:AccountPassword/set', {
+      accountId: adminAccountId,
+      update: {
+        '#new1/singleton': { secret: account.secrets[0] },
+      },
+    }, 'c2'],
   ], ADMIN_USING)
-  const result = getMethodResult(res, 'c1')
-  if (result?.notCreated) {
-    const err = Object.values(result.notCreated)[0] as any
+
+  const createResult = getMethodResult(res, 'c1')
+  if (createResult?.notCreated) {
+    const err = Object.values(createResult.notCreated)[0] as any
     throw new Error(err?.description || 'Failed to create mailbox')
   }
+  const newId = createResult?.created?.new1?.id
+  const mailEmail = `${account.name}@${domainName}`
+  return { id: newId, email: mailEmail }
 }
 
 export async function getMailbox(name: string): Promise<any> {
