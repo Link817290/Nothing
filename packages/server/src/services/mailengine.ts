@@ -258,9 +258,12 @@ export async function createMailbox(account: {
         new1: {
           '@type': 'User',
           name: account.name,
+          domainId: aliases[0]?.domainId || '',
           credentials: [{ '@type': 'Password', secret: account.secrets[0] }],
           aliases,
           description: account.description || undefined,
+          roles: { '@type': 'User' },
+          permissions: { '@type': 'Inherit' },
         },
       },
     }, 'c1'],
