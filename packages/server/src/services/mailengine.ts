@@ -12,23 +12,10 @@ const MAIL_PASS = process.env.MAIL_ADMIN_PASS || 'changeme'
 const ADMIN_USING = ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap']
 const PRINCIPAL_USING = ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:principals']
 
-/** Follow redirects manually, rewriting hostname back to MAIL_URL */
-async function mailFetch(url: string, init: RequestInit): Promise<Response> {
-  const res = await fetch(url, { ...init, redirect: 'manual' })
-  if (res.status >= 300 && res.status < 400) {
-    const location = res.headers.get('location')
-    if (location) {
-      // Rewrite redirect URL to use our MAIL_URL base (Stalwart may use container hostname)
-      const redirectPath = new URL(location).pathname + new URL(location).search
-      return fetch(`${MAIL_URL}${redirectPath}`, { ...init, redirect: 'follow' })
-    }
-  }
-  return res
-}
-
 async function jmapCall(methodCalls: any[], using?: string[]): Promise<any> {
   const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-  const res = await mailFetch(`${MAIL_URL}/jmap/`, {
+  const res = await fetch(`${MAIL_URL}/jmap/`, {
+    redirect: 'follow',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +46,8 @@ let cachedAccountId: string | null = null
 async function getAccountId(): Promise<string> {
   if (cachedAccountId) return cachedAccountId
   const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-  const res = await mailFetch(`${MAIL_URL}/.well-known/jmap`, {
+  const res = await fetch(`${MAIL_URL}/.well-known/jmap`, {
+    redirect: 'follow',
     headers: { 'Authorization': `Basic ${auth}` },
   })
   if (!res.ok) throw new Error('Failed to get JMAP session')
@@ -367,7 +355,8 @@ export async function mailEngineHealthy(): Promise<boolean> {
   try {
     // Try a simple JMAP call to check connectivity
     const auth = Buffer.from(`${MAIL_USER}:${MAIL_PASS}`).toString('base64')
-    const res = await mailFetch(`${MAIL_URL}/.well-known/jmap`, {
+    const res = await fetch(`${MAIL_URL}/.well-known/jmap`, {
+      redirect: 'follow',
       signal: AbortSignal.timeout(5000),
       headers: { 'Authorization': `Basic ${auth}` },
     })
