@@ -13,13 +13,14 @@ SERVICE="${1:-}"
 
 if [ -z "$SERVICE" ]; then
   echo "=== Rebuilding all ==="
-  docker compose build && docker compose up -d
+  docker compose build && docker compose down && docker compose up -d
 else
   echo "=== Rebuilding $SERVICE ==="
-  docker compose up -d --build --force-recreate "$SERVICE"
+  docker compose build "$SERVICE" && docker compose down && docker compose up -d
 fi
 
 echo ""
+sleep 5
 docker compose ps
 echo ""
 echo "=== Done ==="
