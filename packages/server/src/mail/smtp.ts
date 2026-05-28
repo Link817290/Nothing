@@ -24,6 +24,7 @@ export async function smtpSend(opts: SmtpSendOptions): Promise<{ messageId: stri
     port: opts.account.smtp_port,
     secure: opts.account.smtp_port === 465,
     auth: { user: opts.account.auth_user, pass },
+    tls: { rejectUnauthorized: false },
   })
 
   // Use NmpBuilder to construct the email

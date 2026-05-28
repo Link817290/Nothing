@@ -64,6 +64,7 @@ export async function accountRoutes(app: FastifyInstance) {
             secure: account.smtp_port === 465,
             auth: { user: account.auth_user, pass },
             connectionTimeout: 5000,
+            tls: { rejectUnauthorized: false },
           })
           await t.verify()
           t.close()
@@ -76,6 +77,7 @@ export async function accountRoutes(app: FastifyInstance) {
           const client = new ImapFlow({
             host: account.imap_host, port: account.imap_port, secure: true,
             auth: { user: account.auth_user, pass }, logger: false,
+            tls: { rejectUnauthorized: false },
           })
           await client.connect()
           await client.logout()

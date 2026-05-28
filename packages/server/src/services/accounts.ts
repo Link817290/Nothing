@@ -122,6 +122,7 @@ async function testConnection(smtpHost: string, smtpPort: number, imapHost: stri
     const t = createTransport({
       host: smtpHost, port: smtpPort, secure: smtpPort === 465,
       auth: { user: email, pass }, connectionTimeout: 10000,
+      tls: { rejectUnauthorized: false },
     })
     await t.verify()
     t.close()
@@ -134,6 +135,7 @@ async function testConnection(smtpHost: string, smtpPort: number, imapHost: stri
     const client = new ImapFlow({
       host: imapHost, port: imapPort, secure: true,
       auth: { user: email, pass }, logger: false,
+      tls: { rejectUnauthorized: false },
     })
     await client.connect()
     await client.logout()
