@@ -244,7 +244,7 @@ export async function createMailbox(account: {
 }): Promise<void> {
   const accountId = await getAccountId()
   const res = await jmapCall([
-    ['Principal/set', {
+    ['x:Account/set', {
       accountId,
       create: {
         new1: {
@@ -275,7 +275,7 @@ export async function deleteMailbox(name: string): Promise<void> {
 
   const accountId = await getAccountId()
   await jmapCall([
-    ['Principal/set', { accountId, destroy: [mailbox.id] }, 'd1'],
+    ['x:Account/set', { accountId, destroy: [mailbox.id] }, 'd1'],
   ], ADMIN_USING)
 }
 
@@ -287,7 +287,7 @@ export async function addAlias(mailboxName: string, alias: string): Promise<void
   const accountId = await getAccountId()
   const emails = [...(mailbox.emails || []), alias]
   await jmapCall([
-    ['Principal/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
+    ['x:Account/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
   ], ADMIN_USING)
 }
 
@@ -297,7 +297,7 @@ export async function removeAlias(mailboxName: string, alias: string): Promise<v
   const accountId = await getAccountId()
   const emails = (mailbox.emails || []).filter((e: string) => e !== alias)
   await jmapCall([
-    ['Principal/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
+    ['x:Account/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
   ], ADMIN_USING)
 }
 
@@ -308,7 +308,7 @@ export async function setMailboxQuota(mailboxName: string, quotaBytes: number): 
   if (!mailbox) throw new Error('Mailbox not found')
   const accountId = await getAccountId()
   await jmapCall([
-    ['Principal/set', { accountId, update: { [mailbox.id]: { quota: quotaBytes } } }, 'u1'],
+    ['x:Account/set', { accountId, update: { [mailbox.id]: { quota: quotaBytes } } }, 'u1'],
   ], ADMIN_USING)
 }
 
