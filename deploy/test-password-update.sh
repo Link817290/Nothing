@@ -10,18 +10,17 @@ run() {
   echo ""
 }
 
-# Try updating account b (noreply) to add credentials via x:Account/set update
-run "Update account with credentials via x:Account/set" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","update":{"b":{"credentials":[{"@type":"Password","secret":"testpass123"}]}}},"c1"]]}'
+# Use MAIL_ADMIN_PASS as the strong password
+STRONG_PASS="$PASS"
+echo "Using password: $STRONG_PASS"
+echo ""
 
-run "Update with credentials as object map" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","update":{"b":{"credentials":{"0":{"@type":"Password","secret":"testpass123"}}}}},"c1"]]}'
+# Set password on noreply (id=b) using object map format
+run "Set strong password on noreply" \
+  "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:stalwart:jmap\"],\"methodCalls\":[[\"x:Account/set\",{\"accountId\":\"d333333\",\"update\":{\"b\":{\"credentials\":{\"0\":{\"@type\":\"Password\",\"secret\":\"${STRONG_PASS}\"}}}}},\"c1\"]]}"
 
-run "Update with credentials/0 path" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","update":{"b":{"credentials/0":{"@type":"Password","secret":"testpass123"}}}},"c1"]]}'
-
-# Check result
-run "Check account b" \
+# Check credentials
+run "Check account" \
   '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/get",{"accountId":"d333333","ids":["b"]},"g1"]]}'
 
 # Test SMTP
@@ -33,7 +32,7 @@ try:
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     s = smtplib.SMTP_SSL("${MAIL_IP}", 465, context=ctx)
-    s.login("noreply@nothingmail.shop", "testpass123")
+    s.login("noreply@nothingmail.shop", "${STRONG_PASS}")
     print("SMTP login SUCCESS")
     s.quit()
 except Exception as e:
