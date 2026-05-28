@@ -10,20 +10,18 @@ run() {
   echo ""
 }
 
-# Test credentials formats
-run "credentials as empty array" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"t1":{"@type":"User","name":"cred1","domainId":"b","credentials":[]}}},"c1"]]}'
+# Step 1: Create user without credentials
+run "Step 1: Create user (no creds)" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"new1":{"@type":"User","name":"link","domainId":"b","aliases":[{"enabled":true,"name":"link","domainId":"b"}]}}},"c1"]]}'
 
-run "credentials with password string" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"t2":{"@type":"User","name":"cred2","domainId":"b","credentials":["mypassword"]}}},"c1"]]}'
+# Step 2: Set password via x:AccountPassword/set (update singleton on the new account)
+# Need the account ID from step 1 — try with "c" (previous test created b, c)
+# Let's try with a backreference
+run "Step 2a: Set password (singleton update)" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"pw1":{"@type":"User","name":"linkpw","domainId":"b"}}},"c1"],["x:AccountPassword/set",{"accountId":"#pw1","update":{"singleton":{"secret":"mypassword123"}}},"c2"]]}'
 
-run "credentials with secret only" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"t3":{"@type":"User","name":"cred3","domainId":"b","credentials":[{"secret":"mypassword"}]}}},"c1"]]}'
-
-run "credentials with @type PasswordCredential" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"t4":{"@type":"User","name":"cred4","domainId":"b","credentials":[{"@type":"PasswordCredential","secret":"mypassword"}]}}},"c1"]]}'
-
-run "no creds then set password via AccountPassword" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"t5":{"@type":"User","name":"cred5","domainId":"b"}}},"c1"]]}'
+# Step 3: Alternative — set password on existing account "c" from previous test
+run "Step 3: Set password on existing account c" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:AccountPassword/set",{"accountId":"c","update":{"singleton":{"secret":"mypassword123"}}},"c1"]]}'
 
 echo "=== Done ==="
