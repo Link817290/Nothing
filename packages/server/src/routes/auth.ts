@@ -162,10 +162,10 @@ export async function authRoutes(app: FastifyInstance) {
         provider: 'stalwart',
         email: mailEmail,
         smtp_host: 'mail',
-        smtp_port: 587,
+        smtp_port: 465,
         imap_host: 'mail',
         imap_port: 993,
-        auth_user: username,
+        auth_user: mailEmail,
         auth_pass: body.password,
       })
 

@@ -112,7 +112,7 @@ async function autoProvisionMailbox(user: User, password: string, customUsername
       smtp_port: 465,
       imap_host: 'mail',
       imap_port: 993,
-      auth_user: username,
+      auth_user: mailEmail,
       auth_pass: password,
     })
 
