@@ -256,7 +256,7 @@ export async function createMailbox(account: {
         },
       },
     }, 'c1'],
-  ], PRINCIPAL_USING)
+  ], ADMIN_USING)
   const result = getMethodResult(res, 'c1')
   if (result?.notCreated) {
     const err = Object.values(result.notCreated)[0] as any
@@ -276,7 +276,7 @@ export async function deleteMailbox(name: string): Promise<void> {
   const accountId = await getAccountId()
   await jmapCall([
     ['Principal/set', { accountId, destroy: [mailbox.id] }, 'd1'],
-  ], PRINCIPAL_USING)
+  ], ADMIN_USING)
 }
 
 // ─── Aliases ───────────────────────────────────────────────────
@@ -288,7 +288,7 @@ export async function addAlias(mailboxName: string, alias: string): Promise<void
   const emails = [...(mailbox.emails || []), alias]
   await jmapCall([
     ['Principal/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
-  ], PRINCIPAL_USING)
+  ], ADMIN_USING)
 }
 
 export async function removeAlias(mailboxName: string, alias: string): Promise<void> {
@@ -298,7 +298,7 @@ export async function removeAlias(mailboxName: string, alias: string): Promise<v
   const emails = (mailbox.emails || []).filter((e: string) => e !== alias)
   await jmapCall([
     ['Principal/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
-  ], PRINCIPAL_USING)
+  ], ADMIN_USING)
 }
 
 // ─── Quota ─────────────────────────────────────────────────────
@@ -309,7 +309,7 @@ export async function setMailboxQuota(mailboxName: string, quotaBytes: number): 
   const accountId = await getAccountId()
   await jmapCall([
     ['Principal/set', { accountId, update: { [mailbox.id]: { quota: quotaBytes } } }, 'u1'],
-  ], PRINCIPAL_USING)
+  ], ADMIN_USING)
 }
 
 // ─── Health ────────────────────────────────────────────────────
