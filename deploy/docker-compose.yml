@@ -67,6 +67,7 @@ services:
   # ─── Stalwart (mail server, optional) ──────────────────────
   mail:
     image: stalwartlabs/stalwart:latest
+    user: "0"
     entrypoint: ["stalwart", "-c", "/opt/stalwart-mail/etc/config.json"]
     ports:
       - "25:25"
