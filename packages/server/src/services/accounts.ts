@@ -23,7 +23,7 @@ function deriveKey(): Buffer {
   return createHash('sha256').update(secret).digest()
 }
 
-function encrypt(plain: string): string {
+export function encrypt(plain: string): string {
   const key = deriveKey()
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', key, iv)
