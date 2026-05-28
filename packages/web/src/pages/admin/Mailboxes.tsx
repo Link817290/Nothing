@@ -76,15 +76,19 @@ export default function AdminMailboxes() {
     toast({ title: 'Alias removed', variant: 'success' });
   };
 
+  const [quotaInput, setQuotaInput] = useState('');
+  const [quotaFor, setQuotaFor] = useState<string | null>(null);
+
   const handleSetQuota = async (mbName: string) => {
-    const input = prompt('Quota in MB (0 = unlimited):');
-    if (input === null) return;
-    const mb = parseInt(input);
+    if (!quotaInput) return;
+    const mb = parseInt(quotaInput);
     if (isNaN(mb)) return;
     try {
       await api.adminSetQuota(mbName, mb);
       load();
       toast({ title: `Quota set to ${mb} MB`, variant: 'success' });
+      setQuotaFor(null);
+      setQuotaInput('');
     } catch (err: any) {
       toast({ title: 'Failed', description: err.message, variant: 'error' });
     }
@@ -207,10 +211,26 @@ export default function AdminMailboxes() {
                         <div>
                           <p className="text-xs font-medium text-muted-foreground mb-2">
                             <HardDrive className="h-3 w-3 inline mr-1" /> Storage quota
+                            {quota ? ` — ${Math.round(quota / 1024 / 1024)} MB` : ''}
                           </p>
-                          <Button variant="outline" size="sm" onClick={() => handleSetQuota(name)}>
-                            {quota ? `${Math.round(quota / 1024 / 1024)} MB — Change` : 'Set quota'}
-                          </Button>
+                          {quotaFor === name ? (
+                            <div className="flex gap-2">
+                              <Input
+                                value={quotaInput}
+                                onChange={(e) => setQuotaInput(e.target.value.replace(/\D/g, ''))}
+                                placeholder="MB (0 = unlimited)"
+                                className="w-40"
+                                autoFocus
+                                onKeyDown={(e) => e.key === 'Enter' && handleSetQuota(name)}
+                              />
+                              <Button variant="outline" size="sm" onClick={() => handleSetQuota(name)}>Save</Button>
+                              <Button variant="ghost" size="sm" onClick={() => { setQuotaFor(null); setQuotaInput(''); }}>Cancel</Button>
+                            </div>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => { setQuotaFor(name); setQuotaInput(quota ? String(Math.round(quota / 1024 / 1024)) : ''); }}>
+                              {quota ? 'Change' : 'Set quota'}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}
