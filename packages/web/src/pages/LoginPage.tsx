@@ -39,6 +39,8 @@ export default function LoginPage() {
   const [mailbox, setMailbox] = useState<string | null>(null);
   const [needsEmailSetup, setNeedsEmailSetup] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [verifyStep, setVerifyStep] = useState(false);
+  const [verifyCode, setVerifyCode] = useState('');
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -47,10 +49,13 @@ export default function LoginPage() {
     try {
       if (mode === 'register') {
         const res = await api.register(email, password, name || undefined, mailUsername || undefined);
-        setAuth(res.api_key, res.user);
-        setApiKey(res.api_key);
-        setMailbox(res.mailbox || null);
-        setNeedsEmailSetup(res.needs_email_setup ?? false);
+        if (res.needs_verification) {
+          setVerifyStep(true);
+        } else {
+          setAuth(res.api_key, res.user);
+          setApiKey(res.api_key);
+          setMailbox(res.mailbox || null);
+        }
       } else {
         const res = await api.login(email, password);
         setAuth(res.token, res.user);
@@ -68,6 +73,75 @@ export default function LoginPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Verification code step
+  if (verifyStep) {
+    const handleVerify = async (e: FormEvent) => {
+      e.preventDefault();
+      setError('');
+      setLoading(true);
+      try {
+        const res = await api.verify(email, verifyCode);
+        setAuth(res.api_key, res.user);
+        setApiKey(res.api_key);
+        setMailbox(res.mailbox || null);
+        setVerifyStep(false);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="relative z-10 w-full max-w-sm fade-in">
+          <CardHeader className="items-center text-center pb-2">
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-2xl font-bold tracking-tight">nothing</span>
+              <span className="h-2 w-2 rounded-full bg-brand" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {t('login.verify_hint') || `Verification code sent to ${email}`}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Verification Code</label>
+                <Input
+                  value={verifyCode}
+                  onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  required
+                  autoFocus
+                  className="text-center text-2xl tracking-[0.5em] font-mono"
+                  maxLength={6}
+                />
+              </div>
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+              <Button type="submit" className="w-full" disabled={loading || verifyCode.length !== 6}>
+                {loading ? <Loader2 className="animate-spin" /> : 'Verify'}
+              </Button>
+            </form>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => { setVerifyStep(false); setVerifyCode(''); setError(''); }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Back
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // API key reveal after registration
   if (apiKey) {

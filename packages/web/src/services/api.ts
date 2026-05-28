@@ -25,6 +25,8 @@ export const api = {
   // ── Auth ──────────────────────────────────────────────
   register: (email: string, password: string, name?: string, mailUsername?: string) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name, mail_username: mailUsername }) }),
+  verify: (email: string, code: string) =>
+    request('/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) }),
   login: (email: string, password: string) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => request('/me'),

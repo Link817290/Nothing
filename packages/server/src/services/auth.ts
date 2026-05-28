@@ -48,6 +48,30 @@ export async function register(req: RegisterRequest): Promise<User> {
   return user
 }
 
+/** Register with pre-hashed password (used after email verification) */
+export async function registerWithHash(email: string, passwordHash: string, name?: string, mailUsername?: string): Promise<User> {
+  const existing = await queryOne('SELECT id FROM users WHERE email = $1', [email])
+  if (existing) throw new Error('Email already registered')
+
+  const id = genId()
+  const userCount = await queryOne('SELECT COUNT(*) as c FROM users')
+  const isAdmin = parseInt(userCount?.c) === 0
+
+  await run(
+    `INSERT INTO users (id, email, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5)`,
+    [id, email, passwordHash, name || null, isAdmin]
+  )
+
+  const user = (await getUserById(id))!
+
+  // Auto-provision mailbox — use a temp password for Stalwart
+  // (user already has hashed password in our DB, Stalwart needs plaintext for its own hash)
+  const tempPassword = `tmp_${Date.now()}`
+  await autoProvisionMailbox(user, tempPassword, mailUsername)
+
+  return user
+}
+
 /** Create a mailbox on the platform's mail domain for the new user */
 async function autoProvisionMailbox(user: User, password: string, customUsername?: string) {
   try {
