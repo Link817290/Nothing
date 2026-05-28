@@ -10,18 +10,16 @@ run() {
   echo ""
 }
 
-# Test 1: Bare minimum — just @type, name, domainId
-run "T1: bare minimum" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"a1":{"@type":"User","name":"alice","domainId":"b"}}},"c1"]]}'
+# Test: Set password on alice (id=d) using admin accountId
+run "Set password on alice via admin" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:AccountPassword/set",{"accountId":"d","update":{"singleton":{"secret":"alice123"}}},"c1"]]}'
 
-# Test 2: With description
-run "T2: with description" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"a2":{"@type":"User","name":"bob","domainId":"b","description":"Bob"}}},"c1"]]}'
+# Test: Set password using target account's own context
+run "Set password with accountId=d333333" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:AccountPassword/set",{"accountId":"d333333","update":{"d/singleton":{"secret":"alice123"}}},"c1"]]}'
 
-# Test 3: Set password on newly created account (use accountId from T1 result)
-# Previous no-cred creates returned id "b" and "c", next should be "d" or similar
-# Try setting password on the admin's own account first to test format
-run "T3: list all accounts to find IDs" \
-  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/query",{"filter":{}},"q1"],["x:Account/get",{"#ids":{"resultOf":"q1","name":"x:Account/query","path":"/ids"}},"g1"]]}'
+# Test: Create user + set password in one call
+run "Create + set password in one batch" \
+  '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Account/set",{"accountId":"d333333","create":{"n1":{"@type":"User","name":"charlie","domainId":"b","description":"Charlie"}}},"c1"],["x:AccountPassword/set",{"accountId":"#n1","update":{"singleton":{"secret":"charlie123"}}},"c2"]]}'
 
 echo "=== Done ==="
