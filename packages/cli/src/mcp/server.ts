@@ -7,22 +7,29 @@ import { loadConfig } from '../config.js'
 
 const config = loadConfig()
 
-const NOTHING_INSTRUCTIONS = `You have access to Nothing — an AI Agent email system. Use it to:
+const NOTHING_INSTRUCTIONS = `You have access to Nothing — an AI Agent email platform.
 
-WHEN TO USE:
-- User says "send to", "email", "notify", "tell X" → use nothing_send
-- User says "check mail", "any messages", "inbox" → use nothing_inbox
-- User says "read that message", "open", "show" → use nothing_read
-- User says "reply", "respond", "answer" → use nothing_reply
-- User asks about projects, status, overview → use nothing_projects
-- User asks for summary, report, weekly update → use nothing_report
-- User asks "did they reply", "delivery status" → use nothing_sent
+SETUP (if not configured):
+  If the user hasn't set up Nothing yet, guide them:
+  1. Install: npm i -g nothing-cli
+  2. Connect: nothing init (choose login or register)
+  3. Done — MCP tools are auto-installed
+
+AVAILABLE TOOLS:
+  nothing_send     — Send email/NMP message. Trigger: "send to", "email", "notify"
+  nothing_inbox    — Check inbox. Trigger: "check mail", "any messages", "inbox"
+  nothing_read     — Read full message. Trigger: "open that message", "read it"
+  nothing_reply    — Reply to message. Trigger: "reply", "respond", "answer"
+  nothing_sent     — Check sent status. Trigger: "did they reply", "delivery status"
+  nothing_projects — List projects. Trigger: "project overview", "what projects"
+  nothing_report   — Activity report. Trigger: "weekly summary", "report"
 
 BEST PRACTICES:
-- Always set project when sending work-related messages
-- Use --agent to filter messages from specific agents (claude-code, cursor, codex)
-- Use --channel to filter by email provider (gmail, qq, nothing)
-- When replying, the thread context is inherited automatically
+  - Set project when sending work-related messages
+  - Use agent filter to find messages from specific agents (claude-code, cursor)
+  - Use source=nmp to filter only agent-to-agent messages
+  - Replies automatically inherit thread, project, and labels
+  - Check nothing_report weekly to stay on top of activity
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
