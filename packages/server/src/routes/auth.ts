@@ -60,6 +60,62 @@ export async function authRoutes(app: FastifyInstance) {
     return { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin }
   })
 
+  // Claim a mailbox on the platform domain
+  app.post('/api/me/mailbox', { preHandler: authenticate }, async (req, reply) => {
+    const user = (req as any).user as { id: string; email: string; name?: string }
+    const body = req.body as { username?: string; password: string }
+    if (!body.password) return reply.code(400).send({ error: 'Password required' })
+
+    try {
+      // Check if user already has a stalwart account
+      const { listAccounts } = await import('../services/accounts.js')
+      const accounts = await listAccounts(user.id)
+      if (accounts.some(a => a.provider === 'stalwart')) {
+        return reply.code(409).send({ error: 'You already have a mailbox' })
+      }
+
+      // Get domain from Stalwart
+      const { listDomains, createMailbox, mailEngineHealthy } = await import('../services/mailengine.js')
+      if (!await mailEngineHealthy()) {
+        return reply.code(502).send({ error: 'Mail engine not available' })
+      }
+      const domains = await listDomains()
+      if (!domains?.length) {
+        return reply.code(400).send({ error: 'No mail domain configured' })
+      }
+
+      const mailDomain = domains[0].name
+      const username = body.username?.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+        || user.name?.toLowerCase().replace(/[^a-z0-9]/g, '')
+        || user.email.split('@')[0].replace(/[^a-z0-9]/g, '')
+      const mailEmail = `${username}@${mailDomain}`
+
+      await createMailbox({
+        name: username,
+        type: 'individual',
+        secrets: [body.password],
+        emails: [mailEmail],
+        description: user.name || username,
+      })
+
+      const { addAccountInternal } = await import('../services/accounts.js')
+      await addAccountInternal(user.id, {
+        provider: 'stalwart',
+        email: mailEmail,
+        smtp_host: 'mail',
+        smtp_port: 587,
+        imap_host: 'mail',
+        imap_port: 993,
+        auth_user: username,
+        auth_pass: body.password,
+      })
+
+      return { success: true, email: mailEmail }
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message })
+    }
+  })
+
   app.put('/api/me', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user as { id: string }
     const body = req.body as { name?: string; password?: string }

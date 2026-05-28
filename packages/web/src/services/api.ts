@@ -30,6 +30,8 @@ export const api = {
   me: () => request('/me'),
   updateProfile: (data: { name?: string; password?: string }) =>
     request('/me', { method: 'PUT', body: JSON.stringify(data) }),
+  claimMailbox: (data: { username?: string; password: string }) =>
+    request('/me/mailbox', { method: 'POST', body: JSON.stringify(data) }),
 
   // ── API Keys ─────────────────────────────────────────
   listKeys: () => request('/keys'),

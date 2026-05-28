@@ -172,6 +172,11 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* Claim Mailbox — show if no stalwart account */}
+          {!accounts.some(a => a.provider === 'stalwart') && (
+            <ClaimMailboxCard onClaimed={load} />
+          )}
+
           {/* Theme */}
           <Card>
             <CardHeader>
@@ -409,5 +414,65 @@ export default function Settings() {
         </div>
       </div>
     </>
+  );
+}
+
+function ClaimMailboxCard({ onClaimed }: { onClaimed: () => void }) {
+  const { t } = useTranslation();
+  const [mailDomain, setMailDomain] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [claiming, setClaiming] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/setup/status').then(r => r.json()).then(data => {
+      if (data.mail_domain) setMailDomain(data.mail_domain);
+    }).catch(() => {});
+  }, []);
+
+  if (!mailDomain) return null;
+
+  const handleClaim = async () => {
+    if (!password) return;
+    setClaiming(true);
+    try {
+      const res = await api.claimMailbox({ username: username || undefined, password });
+      toast({ title: `Mailbox created: ${res.email}`, variant: 'success' });
+      onClaimed();
+    } catch (err: any) {
+      toast({ title: 'Failed', description: err.message, variant: 'error' });
+    }
+    setClaiming(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Mailbox</CardTitle>
+        <CardDescription>Claim your @{mailDomain} email address</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-0">
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
+            placeholder="username"
+            className="rounded-r-none"
+          />
+          <span className="flex h-10 items-center rounded-r-lg border border-l-0 border-border bg-muted px-3 text-sm text-muted-foreground">
+            @{mailDomain}
+          </span>
+        </div>
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Mailbox password"
+        />
+        <Button size="sm" onClick={handleClaim} disabled={claiming || !password}>
+          {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Claim mailbox'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
