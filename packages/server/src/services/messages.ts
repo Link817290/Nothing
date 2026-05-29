@@ -73,7 +73,7 @@ export async function getInbox(userId: string, query: InboxQuery) {
   const p: unknown[] = [userId]
   let idx = 2
 
-  if (query.unread !== false) { sql += ` AND is_read = FALSE` }
+  if (query.unread === true) { sql += ` AND is_read = FALSE` }
   if (query.project) { sql += ` AND project = $${idx}`; p.push(query.project); idx++ }
   if (query.label) { sql += ` AND labels @> $${idx}::jsonb`; p.push(JSON.stringify([query.label])); idx++ }
   if (query.source) { sql += ` AND source = $${idx}`; p.push(query.source); idx++ }

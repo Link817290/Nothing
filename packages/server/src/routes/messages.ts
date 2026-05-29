@@ -29,7 +29,7 @@ export async function messageRoutes(app: FastifyInstance) {
     const user = (req as any).user as { id: string }
     const q = req.query as Record<string, string>
     return getInbox(user.id, {
-      unread: q.unread !== 'false',
+      unread: q.unread === 'true' ? true : q.unread === 'false' ? false : undefined,
       project: q.project,
       label: q.label,
       channel: q.channel,
