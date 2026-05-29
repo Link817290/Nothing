@@ -54,6 +54,8 @@ export async function accountRoutes(app: FastifyInstance) {
     const { decrypt } = await import('../services/accounts.js')
     const pass = decrypt(account.auth_pass_encrypted)
 
+    const { tlsOptions } = await import('../services/accounts.js')
+
     // Test SMTP and IMAP in parallel
     const [smtp, imap] = await Promise.all([
       (async () => {
@@ -64,7 +66,7 @@ export async function accountRoutes(app: FastifyInstance) {
             secure: account.smtp_port === 465,
             auth: { user: account.auth_user, pass },
             connectionTimeout: 5000,
-            tls: { rejectUnauthorized: false },
+            tls: tlsOptions(account.smtp_host),
           })
           await t.verify()
           t.close()
@@ -77,7 +79,7 @@ export async function accountRoutes(app: FastifyInstance) {
           const client = new ImapFlow({
             host: account.imap_host, port: account.imap_port, secure: true,
             auth: { user: account.auth_user, pass }, logger: false,
-            tls: { rejectUnauthorized: false },
+            tls: tlsOptions(account.imap_host),
           })
           await client.connect()
           await client.logout()

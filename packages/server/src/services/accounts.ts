@@ -1,4 +1,5 @@
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto'
+import { isIP } from 'net'
 import { queryAll, queryOne, run } from '../repositories/db.js'
 import type { AddAccountRequest, EmailAccount } from '../types/index.js'
 
@@ -7,6 +8,38 @@ const PROVIDERS: Record<string, { smtp_host: string; smtp_port: number; imap_hos
   outlook: { smtp_host: 'smtp.office365.com',   smtp_port: 587, imap_host: 'outlook.office365.com', imap_port: 993 },
   qq:      { smtp_host: 'smtp.qq.com',          smtp_port: 465, imap_host: 'imap.qq.com',          imap_port: 993 },
   '163':   { smtp_host: 'smtp.163.com',         smtp_port: 465, imap_host: 'imap.163.com',         imap_port: 993 },
+}
+
+// Internal hosts: skip TLS verification for self-signed certs
+const SELF_HOSTED_HOSTS = new Set([
+  'mail', 'localhost', '127.0.0.1',
+  ...(process.env.SELF_HOSTED_MAIL_HOSTS?.split(',') ?? []),
+])
+
+/** TLS config: only skip cert verification for internal hosts */
+export function tlsOptions(host: string) {
+  return { rejectUnauthorized: !SELF_HOSTED_HOSTS.has(host) }
+}
+
+/** SSRF prevention: block private IPs for user-provided hosts */
+const PRIVATE_RANGES = [
+  /^10\./, /^172\.(1[6-9]|2\d|3[01])\./, /^192\.168\./,
+  /^127\./, /^169\.254\./, /^0\./, /^::1$/, /^fc[0-9a-f]{2}:/i, /^fe80:/i,
+]
+
+async function assertPublicHost(host: string) {
+  if (SELF_HOSTED_HOSTS.has(host)) return
+  if (isIP(host)) {
+    if (PRIVATE_RANGES.some(r => r.test(host))) throw new Error('Private IP not allowed')
+    return
+  }
+  const dns = await import('dns/promises')
+  const addrs = await dns.lookup(host, { all: true })
+  for (const a of addrs) {
+    if (PRIVATE_RANGES.some(r => r.test(a.address))) {
+      throw new Error(`Host ${host} resolves to private address`)
+    }
+  }
 }
 
 function genId() {
@@ -117,12 +150,16 @@ export async function getFirstAccount(userId: string): Promise<EmailAccount | nu
 // ─── Connection test ───────────────────────────────────────────
 
 async function testConnection(smtpHost: string, smtpPort: number, imapHost: string, imapPort: number, email: string, pass: string) {
+  // SSRF check for user-provided hosts
+  await assertPublicHost(smtpHost)
+  await assertPublicHost(imapHost)
+
   try {
     const { createTransport } = await import('nodemailer')
     const t = createTransport({
       host: smtpHost, port: smtpPort, secure: smtpPort === 465,
       auth: { user: email, pass }, connectionTimeout: 10000,
-      tls: { rejectUnauthorized: false },
+      tls: tlsOptions(smtpHost),
     })
     await t.verify()
     t.close()
@@ -135,7 +172,7 @@ async function testConnection(smtpHost: string, smtpPort: number, imapHost: stri
     const client = new ImapFlow({
       host: imapHost, port: imapPort, secure: true,
       auth: { user: email, pass }, logger: false,
-      tls: { rejectUnauthorized: false },
+      tls: tlsOptions(imapHost),
     })
     await client.connect()
     await client.logout()

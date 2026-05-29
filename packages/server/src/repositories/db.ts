@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS messages (
   direction TEXT NOT NULL DEFAULT 'outbound',
   has_attachments BOOLEAN NOT NULL DEFAULT FALSE,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  error_message TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ
 );
@@ -119,6 +120,14 @@ CREATE TABLE IF NOT EXISTS attachments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
+
+-- Trigram index for full-text search (safe if extension not available)
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS pg_trgm;
+  CREATE INDEX IF NOT EXISTS idx_messages_subject_trgm ON messages USING gin (subject gin_trgm_ops);
+  CREATE INDEX IF NOT EXISTS idx_messages_content_trgm ON messages USING gin (content gin_trgm_ops);
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 `
 
 export async function initDb(databaseUrl: string): Promise<void> {

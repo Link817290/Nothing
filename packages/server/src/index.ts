@@ -21,7 +21,16 @@ async function main() {
   const app = Fastify({ logger: true })
 
   // Plugins
-  await app.register(cors, { origin: true })
+  const corsOrigins = (process.env.CORS_ORIGINS ?? '').split(',').filter(Boolean)
+  await app.register(cors, {
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true)  // same-origin / server-to-server
+      if (corsOrigins.length === 0) return cb(null, true)  // no restriction configured
+      if (corsOrigins.includes(origin)) return cb(null, true)
+      cb(new Error('Not allowed by CORS'), false)
+    },
+    credentials: true,
+  })
   await app.register(jwt, { secret: config.jwtSecret })
 
   // Health check (public)
@@ -56,6 +65,11 @@ async function main() {
   // Start polling (non-blocking)
   startImapPolling(30000)
   startStalwartPolling(15000).catch(() => {})
+
+  // Periodic cleanup: expired verification codes
+  setInterval(() => {
+    import('./services/verification.js').then(m => m.cleanupExpiredCodes()).catch(() => {})
+  }, 60 * 60 * 1000) // every hour
 
   // Graceful shutdown
   const shutdown = async () => {

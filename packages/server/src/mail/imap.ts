@@ -87,6 +87,10 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp', onP
           const to = parsed.to?.text || acc.email
           const subject = parsed.subject || '(no subject)'
 
+          // Skip auto-submitted messages (RFC 3834) to prevent loops
+          const autoSubmitted = parsed.headers?.get('auto-submitted')
+          if (autoSubmitted && String(autoSubmitted) !== 'no') continue
+
           // Use NMP parser for detection and extraction
           const nmpResult = parseNmpEmail({
             from: parsed.from?.text,

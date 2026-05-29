@@ -60,6 +60,11 @@ export async function verifyCode(externalEmail: string, code: string): Promise<{
   }
 }
 
+/** Clean up expired verification codes */
+export async function cleanupExpiredCodes() {
+  await run('DELETE FROM verification_codes WHERE expires_at < NOW()')
+}
+
 /** Send verification code via Stalwart SMTP */
 export async function sendVerificationEmail(toEmail: string, code: string): Promise<void> {
   const { listDomains, mailEngineHealthy } = await import('./mailengine.js')
@@ -79,7 +84,7 @@ export async function sendVerificationEmail(toEmail: string, code: string): Prom
     port: parseInt(process.env.MAIL_SMTP_PORT || '465'),
     secure: true,
     auth: { user: authUser, pass: authPass },
-    tls: { rejectUnauthorized: false },
+    tls: { rejectUnauthorized: false },  // Internal Stalwart always self-signed
   })
 
   await transporter.sendMail({

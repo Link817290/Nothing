@@ -57,12 +57,15 @@ export async function register(opts: {
 
   const id = genId()
   const hash = await bcrypt.hash(opts.password, 10)
-  const userCount = await queryOne('SELECT COUNT(*) as c FROM users')
-  const isAdmin = parseInt(userCount?.c) === 0
 
+  // Insert as non-admin first, then atomically promote if truly first user
   await run(
-    `INSERT INTO users (id, email, username, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5, $6)`,
-    [id, email, username, hash, opts.name || null, isAdmin]
+    `INSERT INTO users (id, email, username, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5, FALSE)`,
+    [id, email, username, hash, opts.name || null]
+  )
+  await run(
+    `UPDATE users SET is_admin = TRUE WHERE id = $1 AND (SELECT COUNT(*) FROM users) = 1`,
+    [id]
   )
 
   const user = (await getUserById(id))!

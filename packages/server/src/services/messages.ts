@@ -54,8 +54,11 @@ export async function sendMessage(userId: string, req: SendRequest) {
     }))
     const result = await smtpSend({ account, from, to: req.to, subject, text: req.text, payload, userAttachments })
     status = result.accepted ? 'sent' : 'failed'
-  } catch {
+  } catch (e) {
     status = 'failed'
+    const errMsg = (e as Error).message
+    await run(`UPDATE messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`, [errMsg, id])
+    return { success: false, message_id: id, status, error: errMsg }
   }
 
   await run(`UPDATE messages SET status = $1, updated_at = NOW() WHERE id = $2`, [status, id])
@@ -72,7 +75,7 @@ export async function getInbox(userId: string, query: InboxQuery) {
 
   if (query.unread !== false) { sql += ` AND is_read = FALSE` }
   if (query.project) { sql += ` AND project = $${idx}`; p.push(query.project); idx++ }
-  if (query.label) { sql += ` AND labels::text LIKE $${idx}`; p.push(`%${query.label}%`); idx++ }
+  if (query.label) { sql += ` AND labels @> $${idx}::jsonb`; p.push(JSON.stringify([query.label])); idx++ }
   if (query.source) { sql += ` AND source = $${idx}`; p.push(query.source); idx++ }
   if (query.agent) { sql += ` AND agent = $${idx}`; p.push(query.agent); idx++ }
   if (query.channel) { sql += ` AND channel_id = $${idx}`; p.push(query.channel); idx++ }
