@@ -46,11 +46,41 @@ async function apiJson(path: string, opts: RequestInit = {}): Promise<any> {
   return res.json().catch(() => null)
 }
 
-/** Hash password with SHA-512 crypt (Stalwart expects this for secrets) */
-function hashPassword(password: string): string {
-  // Stalwart accepts plain text passwords prefixed with certain markers,
-  // or SHA-512 hashed. For simplicity, send as plain — Stalwart hashes internally.
-  return password
+// ─── JMAP Helper ─────────────────────────────────────────────
+
+const ADMIN_USING = ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap']
+
+async function jmapCall(methodCalls: any[], using?: string[]): Promise<any> {
+  const res = await api('/jmap/', {
+    method: 'POST',
+    body: JSON.stringify({ using: using || ADMIN_USING, methodCalls }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Stalwart JMAP error (${res.status}): ${text}`)
+  }
+  return res.json()
+}
+
+function getMethodResult(response: any, callId: string): any {
+  if (!response?.methodResponses) return null
+  for (const [, result, id] of response.methodResponses) {
+    if (id === callId) return result
+  }
+  return null
+}
+
+let cachedAccountId: string | null = null
+async function getAccountId(): Promise<string> {
+  if (cachedAccountId) return cachedAccountId
+  const res = await api('/.well-known/jmap')
+  if (!res.ok) throw new Error('Failed to get JMAP session')
+  const session = await res.json()
+  const id = session.primaryAccounts?.['urn:stalwart:jmap']
+    || Object.keys(session.accounts || {})[0]
+  if (!id) throw new Error('No account found in JMAP session')
+  cachedAccountId = id
+  return id
 }
 
 // ─── Health ───────────────────────────────────────────────────
@@ -229,11 +259,16 @@ export async function verifyDomainDns(domain: string): Promise<{
   return { mx, spf, dkim, dmarc, required: records }
 }
 
-// ─── Mailboxes (REST API) ─────────────────────────────────────
+// ─── Mailboxes (JMAP) ─────────────────────────────────────────
 
 export async function listMailboxes(): Promise<any[]> {
-  const data = await apiJson('/api/principal?types=individual&limit=100')
-  return data?.items || []
+  const accountId = await getAccountId()
+  const res = await jmapCall([
+    ['Principal/query', { accountId }, 'q1'],
+    ['Principal/get', { accountId, '#ids': { resultOf: 'q1', name: 'Principal/query', path: '/ids' } }, 'g1'],
+  ], ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:principals'])
+  const result = getMethodResult(res, 'g1')
+  return (result?.list || []).filter((p: any) => p.type === 'individual' || p.emails?.length > 0)
 }
 
 export async function createMailbox(account: {
@@ -243,41 +278,61 @@ export async function createMailbox(account: {
   emails: string[]
   description?: string
 }): Promise<{ id: string; email: string }> {
-  // Single REST call — creates user with password in one step
-  const res = await api('/api/principal', {
-    method: 'POST',
-    body: JSON.stringify({
-      type: 'individual',
-      name: account.name,
-      description: account.description || account.name,
-      secrets: account.secrets.map(s => hashPassword(s)),
-      emails: account.emails,
-    }),
-  })
+  const adminAccountId = await getAccountId()
+  const domains = await listDomains()
+  const email = account.emails[0] || ''
+  const domainName = email.split('@')[1]
+  const domain = domains.find((d: any) => d.name === domainName)
+  if (!domain?.id) throw new Error(`Domain "${domainName}" not found in Stalwart`)
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    const detail = data?.detail || data?.title || `HTTP ${res.status}`
-    throw new Error(`Failed to create mailbox: ${detail}`)
+  // Step 1: Create user
+  const createRes = await jmapCall([
+    ['x:Account/set', {
+      accountId: adminAccountId,
+      create: {
+        new1: { '@type': 'User', name: account.name, domainId: domain.id, description: account.description || null },
+      },
+    }, 'c1'],
+  ])
+  const createResult = getMethodResult(createRes, 'c1')
+  if (createResult?.notCreated) {
+    const err = Object.values(createResult.notCreated)[0] as any
+    throw new Error(err?.description || 'Failed to create mailbox')
+  }
+  const newId = createResult?.created?.new1?.id
+  if (!newId) throw new Error('Failed to get new account ID')
+
+  // Step 2: Set password
+  const password = account.secrets[0]
+  if (password) {
+    const pwRes = await jmapCall([
+      ['x:Account/set', {
+        accountId: adminAccountId,
+        update: { [newId]: { credentials: { '0': { '@type': 'Password', secret: password } } } },
+      }, 'p1'],
+    ])
+    const pwResult = getMethodResult(pwRes, 'p1')
+    if (pwResult?.notUpdated) {
+      const err = Object.values(pwResult.notUpdated)[0] as any
+      throw new Error(`Password rejected by mail server: ${err?.description || 'unknown error'}`)
+    }
   }
 
-  const email = account.emails[0] || `${account.name}@unknown`
-  return { id: account.name, email }
+  return { id: newId, email: `${account.name}@${domainName}` }
 }
 
 export async function getMailbox(name: string): Promise<any> {
-  try {
-    return await apiJson(`/api/principal/${encodeURIComponent(name)}`)
-  } catch {
-    return null
-  }
+  const mailboxes = await listMailboxes()
+  return mailboxes.find((m: any) => m.name === name) || null
 }
 
 export async function deleteMailbox(name: string): Promise<void> {
-  const res = await api(`/api/principal/${encodeURIComponent(name)}`, { method: 'DELETE' })
-  if (!res.ok && res.status !== 404) {
-    throw new Error('Failed to delete mailbox')
-  }
+  const mailbox = await getMailbox(name)
+  if (!mailbox) throw new Error('Mailbox not found')
+  const accountId = await getAccountId()
+  await jmapCall([
+    ['x:Account/set', { accountId, destroy: [mailbox.id] }, 'd1'],
+  ])
 }
 
 // ─── Aliases ──────────────────────────────────────────────────
@@ -285,28 +340,30 @@ export async function deleteMailbox(name: string): Promise<void> {
 export async function addAlias(mailboxName: string, alias: string): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
+  const accountId = await getAccountId()
   const emails = [...(mailbox.emails || []), alias]
-  await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ emails }),
-  })
+  await jmapCall([
+    ['x:Account/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
+  ])
 }
 
 export async function removeAlias(mailboxName: string, alias: string): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
+  const accountId = await getAccountId()
   const emails = (mailbox.emails || []).filter((e: string) => e !== alias)
-  await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ emails }),
-  })
+  await jmapCall([
+    ['x:Account/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
+  ])
 }
 
 // ─── Quota ────────────────────────────────────────────────────
 
 export async function setMailboxQuota(mailboxName: string, quotaBytes: number): Promise<void> {
-  await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ quota: quotaBytes }),
-  })
+  const mailbox = await getMailbox(mailboxName)
+  if (!mailbox) throw new Error('Mailbox not found')
+  const accountId = await getAccountId()
+  await jmapCall([
+    ['x:Account/set', { accountId, update: { [mailbox.id]: { quota: quotaBytes } } }, 'u1'],
+  ])
 }
