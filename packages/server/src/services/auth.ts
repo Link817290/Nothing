@@ -185,6 +185,21 @@ export async function updateProfile(userId: string, updates: { name?: string; pa
   if (updates.password) {
     const hash = await bcrypt.hash(updates.password, 10)
     await run('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, userId])
+
+    // Sync password to Stalwart mailbox and email_accounts
+    try {
+      const { listAccounts, encrypt } = await import('./accounts.js')
+      const accounts = await listAccounts(userId)
+      const stalwartAcc = accounts.find(a => a.provider === 'stalwart')
+      if (stalwartAcc) {
+        const { updateMailboxPassword } = await import('./mailengine.js')
+        await updateMailboxPassword(user.username, updates.password)
+        const encPass = encrypt(updates.password)
+        await run('UPDATE email_accounts SET auth_pass_encrypted = $1 WHERE id = $2', [encPass, stalwartAcc.id])
+      }
+    } catch (err) {
+      console.warn('[updateProfile] Failed to sync password to mail:', (err as Error).message)
+    }
   }
 
   return (await getUserById(userId))!

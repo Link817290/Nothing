@@ -289,7 +289,10 @@ export async function forwardMessage(userId: string, id: string, req: { to: stri
   let status = 'sent'
   try {
     const { smtpSend } = await import('../mail/smtp.js')
-    await smtpSend({ account, from, to: req.to, subject, text: content, payload })
+    const result = await smtpSend({ account, from, to: req.to, subject, text: content, payload })
+    if (result.messageId) {
+      await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, fwdId])
+    }
   } catch {
     status = 'failed'
   }

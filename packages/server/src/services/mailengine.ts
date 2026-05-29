@@ -438,3 +438,25 @@ export async function setMailboxQuota(mailboxName: string, quotaBytes: number): 
     ['x:Account/set', { accountId, update: { [mailbox.id]: { quota: quotaBytes } } }, 'u1'],
   ])
 }
+
+// ─── Password Update ──────────────────────────────────────────
+
+export async function updateMailboxPassword(mailboxName: string, newPassword: string): Promise<void> {
+  if (await isRestAvailable()) {
+    const res = await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ secrets: [newPassword] }),
+    })
+    if (res.ok) return
+  }
+  // JMAP fallback
+  const mailbox = await getMailbox(mailboxName)
+  if (!mailbox) throw new Error('Mailbox not found')
+  const accountId = await getAccountId()
+  await jmapCall([
+    ['x:Account/set', {
+      accountId,
+      update: { [mailbox.id]: { credentials: { '0': { '@type': 'Password', secret: newPassword } } } },
+    }, 'p1'],
+  ])
+}
