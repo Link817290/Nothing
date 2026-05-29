@@ -31,6 +31,15 @@ BEST PRACTICES:
   - Replies automatically inherit thread, project, and labels
   - Check nothing_report weekly to stay on top of activity
 
+AUTO-TAGGING RULES (apply automatically when sending):
+  - If the user is working in a git repo, use the repo name as project (e.g., "nothing", "my-app")
+  - If the message is about code review, set type="nmp:code-review" and add label "code-review"
+  - If the user says "urgent" or "asap", set priority="urgent"
+  - If the message is a task/todo, set type="nmp:task"
+  - If the message is a status update or report, set type="nmp:report"
+  - If the user mentions a project name, set it as the project field
+  - Always set agent to identify yourself (e.g., "claude-code", "cursor")
+
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
 `
