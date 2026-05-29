@@ -31,14 +31,41 @@ BEST PRACTICES:
   - Replies automatically inherit thread, project, and labels
   - Check nothing_report weekly to stay on top of activity
 
-AUTO-TAGGING RULES (apply automatically when sending):
-  - If the user is working in a git repo, use the repo name as project (e.g., "nothing", "my-app")
-  - If the message is about code review, set type="nmp:code-review" and add label "code-review"
-  - If the user says "urgent" or "asap", set priority="urgent"
-  - If the message is a task/todo, set type="nmp:task"
-  - If the message is a status update or report, set type="nmp:report"
-  - If the user mentions a project name, set it as the project field
-  - Always set agent to identify yourself (e.g., "claude-code", "cursor")
+AUTO-TAGGING RULES (apply automatically when sending, infer from context):
+  Project:
+  - If working in a git repo, use repo name as project
+  - If user mentions a project/product name, use it
+  - If replying, inherit from original message
+
+  Type (pick the most specific):
+  - "nmp:chat"          — general conversation, default
+  - "nmp:task"          — assigning work, todos, "please do X", "can you handle"
+  - "nmp:code-review"   — sharing code, PR links, diffs, "review this"
+  - "nmp:report"        — status updates, summaries, "here's what happened"
+  - "nmp:notification"  — one-way alerts, CI results, deploy status, no reply needed
+  - "nmp:approval"      — requesting sign-off, "please approve", "LGTM?"
+  - "nmp:escalation"    — handing off to human, "need human help", stuck on issue
+  - "nmp:error"         — reporting failures, crashes, exceptions
+  - "nmp:ack"           — simple acknowledgment, "got it", "will do"
+
+  Priority:
+  - "urgent"  — user says urgent/asap/emergency, production down, blocking issue
+  - "high"    — important but not immediate, deadline today
+  - "normal"  — default, regular work
+  - "low"     — FYI, nice-to-have, no rush
+
+  Labels (add multiple as appropriate):
+  - "bug" / "fix"           — bug reports or fixes
+  - "feature" / "enhancement" — new features
+  - "deploy" / "release"    — deployment related
+  - "security"              — security issues
+  - "docs"                  — documentation
+  - "question"              — asking for help
+  - "blocked"               — waiting on something
+  - "followup"              — needs follow-up later
+
+  Agent:
+  - Always identify yourself: "claude-code", "cursor", "codex", etc.
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
