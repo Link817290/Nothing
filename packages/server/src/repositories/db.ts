@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS messages (
   source TEXT NOT NULL DEFAULT 'nmp',
   thread_id TEXT,
   in_reply_to TEXT,
+  smtp_message_id TEXT,
   direction TEXT NOT NULL DEFAULT 'outbound',
   has_attachments BOOLEAN NOT NULL DEFAULT FALSE,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
@@ -78,6 +79,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_direction ON messages(user_id, direction
 CREATE INDEX IF NOT EXISTS idx_messages_project ON messages(user_id, project);
 CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_user ON email_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_smtp_msgid ON messages(smtp_message_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
 
 CREATE TABLE IF NOT EXISTS verification_codes (

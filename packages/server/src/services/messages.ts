@@ -54,6 +54,10 @@ export async function sendMessage(userId: string, req: SendRequest) {
     }))
     const result = await smtpSend({ account, from, to: req.to, subject, text: req.text, payload, userAttachments })
     status = result.accepted ? 'sent' : 'failed'
+    // Store SMTP Message-ID for thread matching
+    if (result.messageId) {
+      await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, id])
+    }
   } catch (e) {
     status = 'failed'
     const errMsg = (e as Error).message
@@ -167,7 +171,12 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   let status = 'sent'
   try {
     const { smtpSend } = await import('../mail/smtp.js')
-    await smtpSend({ account, from, to: original.from_address, subject, text: req.text, payload, inReplyTo: id, references: [id] })
+    // Use original smtp_message_id for proper In-Reply-To threading
+    const origSmtpId = original.smtp_message_id || original.id
+    const result = await smtpSend({ account, from, to: original.from_address, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId] })
+    if (result.messageId) {
+      await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, replyId])
+    }
   } catch {
     status = 'failed'
   }

@@ -139,10 +139,34 @@ async function syncAccount(acc: Record<string, any>, mode: SyncMode = 'nmp', onP
           const rawAttachments = (parsed.attachments || [])
             .filter(a => a.filename && a.filename !== 'nmp.md' && a.filename !== 'nmp.json')
 
+          // Thread matching by In-Reply-To / References
+          let threadId = imapId
+          let inReplyTo: string | null = null
+          const smtpMessageId = parsed.messageId || null
+          const replyToHeader = parsed.inReplyTo
+          const refsHeader = parsed.references
+
+          const refIds = [
+            ...(replyToHeader ? [typeof replyToHeader === 'string' ? replyToHeader : ''] : []),
+            ...(Array.isArray(refsHeader) ? refsHeader : refsHeader ? [refsHeader] : []),
+          ].filter(Boolean)
+
+          for (const refId of refIds) {
+            const parent = await queryOne(
+              `SELECT id, thread_id FROM messages WHERE smtp_message_id = $1 AND user_id = $2`,
+              [refId, acc.user_id]
+            )
+            if (parent) {
+              threadId = parent.thread_id || parent.id
+              inReplyTo = parent.id
+              break
+            }
+          }
+
           await run(
-            `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, direction, has_attachments, is_read)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, 'inbound', $15, FALSE)`,
-            [imapId, acc.user_id, acc.id, from, to, subject, body, jsonPayload ? JSON.stringify(jsonPayload) : null, agent, project, JSON.stringify(labels), acc.provider, source, imapId, rawAttachments.length > 0]
+            `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, in_reply_to, smtp_message_id, direction, has_attachments, is_read)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, $15, $16, 'inbound', $17, FALSE)`,
+            [imapId, acc.user_id, acc.id, from, to, subject, body, jsonPayload ? JSON.stringify(jsonPayload) : null, agent, project, JSON.stringify(labels), acc.provider, source, threadId, inReplyTo, smtpMessageId, rawAttachments.length > 0]
           )
 
           // Save attachments to disk

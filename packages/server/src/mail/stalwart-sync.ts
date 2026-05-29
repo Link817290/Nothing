@@ -115,6 +115,7 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
     let labels: string[] = []
     let source = 'external'
     let hasUserAttachments = false
+    let parsedEmail: any = null
 
     if (email.blobId && downloadUrl) {
       try {
@@ -140,6 +141,7 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
           const rawBuffer = Buffer.from(await rawRes.arrayBuffer())
           const { simpleParser } = await import('mailparser')
           const parsed = await simpleParser(rawBuffer)
+          parsedEmail = parsed
 
           // Skip auto-submitted messages (RFC 3834)
           const autoSubmitted = parsed.headers?.get('auto-submitted')
@@ -201,13 +203,43 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
     if (!body) body = email.preview || subject
     if (body.length > 20000) body = body.slice(0, 20000)
 
+    // Thread matching: find parent message by In-Reply-To or References
+    let threadId = msgId
+    let inReplyTo: string | null = null
+    let smtpMessageId: string | null = null
+
+    if (parsedEmail) {
+      smtpMessageId = parsedEmail.messageId || null
+      const replyTo = parsedEmail.inReplyTo
+      const refs = parsedEmail.references
+
+      // Try to find parent by SMTP Message-ID
+      const refIds = [
+        ...(replyTo ? [typeof replyTo === 'string' ? replyTo : ''] : []),
+        ...(Array.isArray(refs) ? refs : refs ? [refs] : []),
+      ].filter(Boolean)
+
+      for (const refId of refIds) {
+        const parent = await queryOne(
+          `SELECT id, thread_id FROM messages WHERE smtp_message_id = $1 AND user_id = $2`,
+          [refId, acc.user_id]
+        )
+        if (parent) {
+          threadId = parent.thread_id || parent.id
+          inReplyTo = parent.id
+          break
+        }
+      }
+    }
+
     await run(
-      `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, direction, has_attachments, is_read)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, 'inbound', $15, FALSE)`,
+      `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, in_reply_to, smtp_message_id, direction, has_attachments, is_read)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, $15, $16, 'inbound', $17, FALSE)`,
       [msgId, acc.user_id, acc.id, fromAddr, toAddr, subject, body,
        jsonPayload ? JSON.stringify(jsonPayload) : null,
        agent, project, JSON.stringify(labels),
-       'stalwart', source, msgId, hasUserAttachments || email.hasAttachment || false]
+       'stalwart', source, threadId, inReplyTo, smtpMessageId,
+       hasUserAttachments || email.hasAttachment || false]
     )
     newCount++
   }
