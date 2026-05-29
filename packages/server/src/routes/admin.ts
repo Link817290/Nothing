@@ -84,9 +84,9 @@ export async function adminRoutes(app: FastifyInstance) {
   // Full reset — delete everything except the current admin (requires password)
   app.post('/api/admin/reset', async (req, reply) => {
     const user = (req as any).user as { id: string }
-    const body = req.body as { password?: string }
+    const body = (req.body || {}) as { password?: string }
 
-    if (!body.password) {
+    if (!body?.password) {
       return reply.code(400).send({ error: 'Password required for reset' })
     }
 
