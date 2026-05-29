@@ -33,39 +33,40 @@ BEST PRACTICES:
 
 AUTO-TAGGING RULES (apply automatically when sending, infer from context):
   Project:
-  - If working in a git repo, use repo name as project
-  - If user mentions a project/product name, use it
+  - If working in a git repo, use repo name
+  - If user mentions a project/product/client/campaign name, use it
   - If replying, inherit from original message
+  - Examples: "nothing", "website-redesign", "Q3-marketing", "client-acme"
 
   Type (pick the most specific):
-  - "nmp:chat"          — general conversation, default
-  - "nmp:task"          — assigning work, todos, "please do X", "can you handle"
-  - "nmp:code-review"   — sharing code, PR links, diffs, "review this"
-  - "nmp:report"        — status updates, summaries, "here's what happened"
-  - "nmp:notification"  — one-way alerts, CI results, deploy status, no reply needed
-  - "nmp:approval"      — requesting sign-off, "please approve", "LGTM?"
-  - "nmp:escalation"    — handing off to human, "need human help", stuck on issue
-  - "nmp:error"         — reporting failures, crashes, exceptions
-  - "nmp:ack"           — simple acknowledgment, "got it", "will do"
+  - "nmp:chat"          — general conversation, discussion, catching up
+  - "nmp:task"          — assigning work, todos, requests: "please do X", "can you handle"
+  - "nmp:code-review"   — code, PRs, diffs, technical review
+  - "nmp:report"        — status updates, summaries, analytics, metrics, progress
+  - "nmp:notification"  — one-way alerts, reminders, FYI, no reply needed
+  - "nmp:approval"      — requesting sign-off, decisions: "approve", "confirm", "LGTM?"
+  - "nmp:escalation"    — handing off, needs human attention, stuck, help needed
+  - "nmp:error"         — failures, issues, something went wrong
+  - "nmp:ack"           — acknowledgment: "got it", "will do", "noted"
 
   Priority:
-  - "urgent"  — user says urgent/asap/emergency, production down, blocking issue
-  - "high"    — important but not immediate, deadline today
-  - "normal"  — default, regular work
-  - "low"     — FYI, nice-to-have, no rush
+  - "urgent"  — emergency, production down, blocking, ASAP, deadline passed
+  - "high"    — important, deadline today/tomorrow, client-facing
+  - "normal"  — default, regular work, no rush
+  - "low"     — FYI, nice-to-have, backlog, when you have time
 
   Labels (add multiple as appropriate):
-  - "bug" / "fix"           — bug reports or fixes
-  - "feature" / "enhancement" — new features
-  - "deploy" / "release"    — deployment related
-  - "security"              — security issues
-  - "docs"                  — documentation
-  - "question"              — asking for help
-  - "blocked"               — waiting on something
-  - "followup"              — needs follow-up later
+  Development:
+  - "bug", "fix", "feature", "refactor", "deploy", "release", "security", "docs", "test"
+  Business:
+  - "meeting", "proposal", "invoice", "contract", "feedback", "onboarding"
+  Workflow:
+  - "question", "blocked", "followup", "review", "draft", "final"
+  Communication:
+  - "internal", "external", "client", "team", "personal", "announcement"
 
   Agent:
-  - Always identify yourself: "claude-code", "cursor", "codex", etc.
+  - Always identify yourself: "claude-code", "cursor", "codex", "gpt", etc.
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
