@@ -4,6 +4,7 @@
  */
 import { queryAll, queryOne, run } from '../repositories/db.js'
 import { decrypt } from '../services/accounts.js'
+import { parseNmpEmail } from '@nothingmail/nmp'
 
 const MAIL_URL = process.env.MAIL_ADMIN_URL || 'http://mail:8080'
 
@@ -24,7 +25,7 @@ async function fetchRetry(url: string, init: RequestInit, retries = 3): Promise<
   throw new Error('fetchRetry exhausted')
 }
 
-// ─── JMAP Helper ────────────────────────────────────────────────
+// ─── JMAP Helpers ───────────────────────────────────────────────
 
 async function jmapRequest(authUser: string, authPass: string, methodCalls: any[]): Promise<any> {
   const auth = Buffer.from(`${authUser}:${authPass}`).toString('base64')
@@ -56,21 +57,25 @@ function getResult(response: any, callId: string): any {
 async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
   const password = decrypt(acc.auth_pass_encrypted)
   const authUser = acc.email
+  const basicAuth = Buffer.from(`${authUser}:${password}`).toString('base64')
 
-  // Get JMAP session
+  // Get JMAP session (need accountId + download URL template)
   let accountId: string
+  let downloadUrl: string
   try {
     const sessionRes = await fetchRetry(`${MAIL_URL}/.well-known/jmap`, {
-      headers: { 'Authorization': `Basic ${Buffer.from(`${authUser}:${password}`).toString('base64')}` },
+      headers: { 'Authorization': `Basic ${basicAuth}` },
     })
     if (!sessionRes.ok) return 0
     const session = await sessionRes.json()
     accountId = session.primaryAccounts?.['urn:ietf:params:jmap:mail']
+    downloadUrl = session.downloadUrl || ''
     if (!accountId) return 0
   } catch {
     return 0
   }
 
+  // Query recent emails — get IDs + blobId for raw download
   const res = await jmapRequest(authUser, password, [
     ['Email/query', {
       accountId,
@@ -80,8 +85,7 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
     ['Email/get', {
       accountId,
       '#ids': { resultOf: 'q1', name: 'Email/query', path: '/ids' },
-      properties: ['id', 'from', 'to', 'subject', 'receivedAt', 'preview', 'hasAttachment', 'bodyValues', 'textBody', 'htmlBody'],
-      fetchTextBodyValues: true,
+      properties: ['id', 'blobId', 'from', 'to', 'subject', 'receivedAt', 'preview', 'hasAttachment', 'size'],
     }, 'g1'],
   ])
 
@@ -97,29 +101,107 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
     const fromAddr = email.from?.[0]?.email || ''
     if (fromAddr === acc.email) continue
 
+    // Skip oversized emails (10MB limit)
+    if (email.size && email.size > 10 * 1024 * 1024) continue
+
     const toAddr = email.to?.map((t: any) => t.email).join(', ') || acc.email
     const subject = email.subject || '(no subject)'
 
+    // Download raw MIME and parse with NMP parser
     let body = ''
-    if (email.bodyValues) {
-      const htmlPart = email.htmlBody?.[0]
-      const textPart = email.textBody?.[0]
-      if (htmlPart?.partId && email.bodyValues[htmlPart.partId]) {
-        body = email.bodyValues[htmlPart.partId].value || ''
-      } else if (textPart?.partId && email.bodyValues[textPart.partId]) {
-        body = email.bodyValues[textPart.partId].value || ''
+    let jsonPayload: any = null
+    let agent: string | null = null
+    let project: string | null = null
+    let labels: string[] = []
+    let source = 'external'
+    let hasUserAttachments = false
+
+    if (email.blobId && downloadUrl) {
+      try {
+        const rawUrl = downloadUrl
+          .replace('{accountId}', accountId)
+          .replace('{blobId}', email.blobId)
+          .replace('{name}', 'email.eml')
+          .replace('{type}', 'application/octet-stream')
+        // downloadUrl might use the container hostname, rewrite to MAIL_URL
+        const finalUrl = rawUrl.startsWith('http') ? rawUrl : `${MAIL_URL}${rawUrl}`
+
+        const rawRes = await fetchRetry(finalUrl, {
+          headers: { 'Authorization': `Basic ${basicAuth}` },
+        })
+
+        if (rawRes.ok) {
+          const rawBuffer = Buffer.from(await rawRes.arrayBuffer())
+          const { simpleParser } = await import('mailparser')
+          const parsed = await simpleParser(rawBuffer)
+
+          // Skip auto-submitted messages (RFC 3834)
+          const autoSubmitted = parsed.headers?.get('auto-submitted')
+          if (autoSubmitted && String(autoSubmitted) !== 'no') continue
+
+          // Parse NMP
+          const nmpResult = parseNmpEmail({
+            from: parsed.from?.text,
+            to: parsed.to?.text,
+            subject: parsed.subject,
+            date: parsed.date,
+            messageId: parsed.messageId,
+            headers: parsed.headers as any,
+            text: parsed.text,
+            html: parsed.html,
+            textAsHtml: parsed.textAsHtml,
+            attachments: parsed.attachments?.map(a => ({
+              filename: a.filename,
+              content: a.content,
+              contentType: a.contentType,
+              size: a.size,
+            })),
+          })
+
+          if (nmpResult.isNmp && nmpResult.message) {
+            source = 'nmp'
+            body = nmpResult.message.content
+            jsonPayload = nmpResult.payload
+            agent = nmpResult.payload?.agent || null
+            project = nmpResult.payload?.project || null
+            labels = nmpResult.payload?.labels || []
+          } else {
+            body = parsed.html || parsed.textAsHtml || parsed.text || email.preview || subject
+          }
+
+          // Save user attachments (exclude nmp.md/nmp.json)
+          const rawAttachments = (parsed.attachments || [])
+            .filter(a => a.filename && a.filename !== 'nmp.md' && a.filename !== 'nmp.json')
+
+          if (rawAttachments.length > 0) {
+            hasUserAttachments = true
+            try {
+              const { saveAttachment } = await import('../services/attachments.js')
+              for (const att of rawAttachments) {
+                await saveAttachment(msgId, att.filename!, att.contentType || 'application/octet-stream', att.content)
+              }
+            } catch (e) {
+              console.warn(`[stalwart-sync] Failed to save attachments for ${msgId}:`, (e as Error).message)
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback: use preview if raw download fails
+        console.warn(`[stalwart-sync] Raw download failed for ${email.id}, using preview`)
       }
     }
+
+    // Fallback body from preview
     if (!body) body = email.preview || subject
     if (body.length > 20000) body = body.slice(0, 20000)
-
-    const isNmp = body.includes('## Message') && body.includes('## Content')
-    const source = isNmp ? 'nmp' : 'external'
 
     await run(
       `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, agent, project, labels, channel_id, status, source, thread_id, direction, has_attachments, is_read)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'delivered', $13, $14, 'inbound', $15, FALSE)`,
-      [msgId, acc.user_id, acc.id, fromAddr, toAddr, subject, body, null, null, null, '[]', 'stalwart', source, msgId, email.hasAttachment || false]
+      [msgId, acc.user_id, acc.id, fromAddr, toAddr, subject, body,
+       jsonPayload ? JSON.stringify(jsonPayload) : null,
+       agent, project, JSON.stringify(labels),
+       'stalwart', source, msgId, hasUserAttachments || email.hasAttachment || false]
     )
     newCount++
   }
