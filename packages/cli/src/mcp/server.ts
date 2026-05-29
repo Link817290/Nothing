@@ -31,42 +31,19 @@ BEST PRACTICES:
   - Replies automatically inherit thread, project, and labels
   - Check nothing_report weekly to stay on top of activity
 
-AUTO-TAGGING RULES (apply automatically when sending, infer from context):
-  Project:
-  - If working in a git repo, use repo name
-  - If user mentions a project/product/client/campaign name, use it
-  - If replying, inherit from original message
-  - Examples: "nothing", "website-redesign", "Q3-marketing", "client-acme"
+SMART TAGGING (infer from context, be natural):
+  - project: Use whatever project/product/client the user is working on. Infer from
+    git repo, conversation context, or the topic being discussed. Free-form string.
+  - type: Pick the NMP type that best fits the intent. Use "nmp:" prefix for built-in
+    types (chat, task, code-review, report, notification, approval, escalation, error, ack)
+    or create custom types like "myapp:deploy-request". Default to "nmp:chat".
+  - labels: Tag freely with any relevant keywords. No fixed list — use whatever
+    describes the message best. Multiple labels encouraged.
+  - priority: Set based on urgency cues in the conversation. Default "normal".
+  - agent: Always identify yourself (e.g., "claude-code", "cursor").
 
-  Type (pick the most specific):
-  - "nmp:chat"          — general conversation, discussion, catching up
-  - "nmp:task"          — assigning work, todos, requests: "please do X", "can you handle"
-  - "nmp:code-review"   — code, PRs, diffs, technical review
-  - "nmp:report"        — status updates, summaries, analytics, metrics, progress
-  - "nmp:notification"  — one-way alerts, reminders, FYI, no reply needed
-  - "nmp:approval"      — requesting sign-off, decisions: "approve", "confirm", "LGTM?"
-  - "nmp:escalation"    — handing off, needs human attention, stuck, help needed
-  - "nmp:error"         — failures, issues, something went wrong
-  - "nmp:ack"           — acknowledgment: "got it", "will do", "noted"
-
-  Priority:
-  - "urgent"  — emergency, production down, blocking, ASAP, deadline passed
-  - "high"    — important, deadline today/tomorrow, client-facing
-  - "normal"  — default, regular work, no rush
-  - "low"     — FYI, nice-to-have, backlog, when you have time
-
-  Labels (add multiple as appropriate):
-  Development:
-  - "bug", "fix", "feature", "refactor", "deploy", "release", "security", "docs", "test"
-  Business:
-  - "meeting", "proposal", "invoice", "contract", "feedback", "onboarding"
-  Workflow:
-  - "question", "blocked", "followup", "review", "draft", "final"
-  Communication:
-  - "internal", "external", "client", "team", "personal", "announcement"
-
-  Agent:
-  - Always identify yourself: "claude-code", "cursor", "codex", "gpt", etc.
+  The goal is to make messages searchable and filterable later. Tag generously
+  but accurately. When in doubt, add a label rather than skip it.
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
