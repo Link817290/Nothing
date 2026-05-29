@@ -64,11 +64,47 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-# Check mail engine
-sleep 3
+# Auto-initialize Stalwart (exit bootstrap mode)
+echo "  Initializing mail engine..."
+sleep 5
+
 MAIL_IP=$(docker inspect deploy-mail-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 2>/dev/null || echo "")
 if [ -n "$MAIL_IP" ]; then
-  JMAP=$(curl -skL -u "admin:$MAIL_PASS" --connect-timeout 5 "https://$MAIL_IP:443/.well-known/jmap" 2>/dev/null)
+  AUTH=$(echo -n "admin:$MAIL_PASS" | base64)
+
+  # Call x:Bootstrap/set to complete Stalwart initialization
+  BOOTSTRAP_RES=$(curl -skL -u "admin:$MAIL_PASS" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"],
+      "methodCalls": [["x:Bootstrap/set", {
+        "update": {
+          "singleton": {
+            "serverHostname": "mail.'$DOMAIN'",
+            "defaultDomain": "'$DOMAIN'",
+            "requestTlsCertificate": false,
+            "generateDkimKeys": true,
+            "dataStore": {"@type": "RocksDb", "path": "/opt/stalwart-mail/db"},
+            "blobStore": {"@type": "Default"},
+            "searchStore": {"@type": "Default"},
+            "inMemoryStore": {"@type": "Default"},
+            "directory": {"@type": "Internal"},
+            "tracer": {"@type": "Disabled"},
+            "dnsServer": {"@type": "Manual"}
+          }
+        }
+      }, "c1"]]
+    }' \
+    "http://$MAIL_IP:8080/jmap/" 2>/dev/null)
+
+  if echo "$BOOTSTRAP_RES" | grep -q 'methodResponses'; then
+    echo "  ✓ Mail engine initialized"
+  else
+    echo "  ⚠ Mail engine bootstrap may have failed (or already initialized)"
+  fi
+
+  # Verify connection
+  JMAP=$(curl -skL -u "admin:$MAIL_PASS" --connect-timeout 5 "http://$MAIL_IP:8080/.well-known/jmap" 2>/dev/null)
   if echo "$JMAP" | grep -q 'primaryAccounts'; then
     echo "  ✓ Mail engine connected"
   else
