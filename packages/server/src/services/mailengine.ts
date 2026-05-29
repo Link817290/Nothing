@@ -259,9 +259,32 @@ export async function verifyDomainDns(domain: string): Promise<{
   return { mx, spf, dkim, dmarc, required: records }
 }
 
-// ─── Mailboxes (JMAP) ─────────────────────────────────────────
+// ─── REST API check ───────────────────────────────────────────
+
+let restAvailable: boolean | null = null
+
+async function isRestAvailable(): Promise<boolean> {
+  if (restAvailable !== null) return restAvailable
+  try {
+    const res = await api('/api/principal?limit=1')
+    restAvailable = res.ok
+  } catch {
+    restAvailable = false
+  }
+  return restAvailable
+}
+
+// ─── Mailboxes (REST with JMAP fallback) ──────────────────────
 
 export async function listMailboxes(): Promise<any[]> {
+  if (await isRestAvailable()) {
+    const res = await api('/api/principal?types=individual&limit=100')
+    if (res.ok) {
+      const data = await res.json()
+      return data?.items || []
+    }
+  }
+  // JMAP fallback
   const accountId = await getAccountId()
   const res = await jmapCall([
     ['Principal/query', { accountId }, 'q1'],
@@ -278,6 +301,27 @@ export async function createMailbox(account: {
   emails: string[]
   description?: string
 }): Promise<{ id: string; email: string }> {
+  // Try REST API first (one step, includes password)
+  if (await isRestAvailable()) {
+    const res = await api('/api/principal', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'individual',
+        name: account.name,
+        description: account.description || account.name,
+        secrets: account.secrets,
+        emails: account.emails,
+      }),
+    })
+    if (res.ok) {
+      const email = account.emails[0] || `${account.name}@unknown`
+      return { id: account.name, email }
+    }
+    const data = await res.json().catch(() => ({}))
+    throw new Error(`Failed to create mailbox: ${data?.detail || res.status}`)
+  }
+
+  // JMAP fallback (two steps)
   const adminAccountId = await getAccountId()
   const domains = await listDomains()
   const email = account.emails[0] || ''
@@ -285,7 +329,6 @@ export async function createMailbox(account: {
   const domain = domains.find((d: any) => d.name === domainName)
   if (!domain?.id) throw new Error(`Domain "${domainName}" not found in Stalwart`)
 
-  // Step 1: Create user
   const createRes = await jmapCall([
     ['x:Account/set', {
       accountId: adminAccountId,
@@ -302,7 +345,6 @@ export async function createMailbox(account: {
   const newId = createResult?.created?.new1?.id
   if (!newId) throw new Error('Failed to get new account ID')
 
-  // Step 2: Set password
   const password = account.secrets[0]
   if (password) {
     const pwRes = await jmapCall([
@@ -322,11 +364,21 @@ export async function createMailbox(account: {
 }
 
 export async function getMailbox(name: string): Promise<any> {
+  if (await isRestAvailable()) {
+    try {
+      const res = await api(`/api/principal/${encodeURIComponent(name)}`)
+      if (res.ok) return res.json()
+    } catch {}
+  }
   const mailboxes = await listMailboxes()
   return mailboxes.find((m: any) => m.name === name) || null
 }
 
 export async function deleteMailbox(name: string): Promise<void> {
+  if (await isRestAvailable()) {
+    const res = await api(`/api/principal/${encodeURIComponent(name)}`, { method: 'DELETE' })
+    if (res.ok || res.status === 404) return
+  }
   const mailbox = await getMailbox(name)
   if (!mailbox) throw new Error('Mailbox not found')
   const accountId = await getAccountId()
@@ -340,6 +392,13 @@ export async function deleteMailbox(name: string): Promise<void> {
 export async function addAlias(mailboxName: string, alias: string): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
+  if (await isRestAvailable()) {
+    const emails = [...(mailbox.emails || []), alias]
+    await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
+      method: 'PATCH', body: JSON.stringify({ emails }),
+    })
+    return
+  }
   const accountId = await getAccountId()
   const emails = [...(mailbox.emails || []), alias]
   await jmapCall([
@@ -350,8 +409,14 @@ export async function addAlias(mailboxName: string, alias: string): Promise<void
 export async function removeAlias(mailboxName: string, alias: string): Promise<void> {
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
-  const accountId = await getAccountId()
   const emails = (mailbox.emails || []).filter((e: string) => e !== alias)
+  if (await isRestAvailable()) {
+    await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
+      method: 'PATCH', body: JSON.stringify({ emails }),
+    })
+    return
+  }
+  const accountId = await getAccountId()
   await jmapCall([
     ['x:Account/set', { accountId, update: { [mailbox.id]: { emails } } }, 'u1'],
   ])
@@ -360,6 +425,12 @@ export async function removeAlias(mailboxName: string, alias: string): Promise<v
 // ─── Quota ────────────────────────────────────────────────────
 
 export async function setMailboxQuota(mailboxName: string, quotaBytes: number): Promise<void> {
+  if (await isRestAvailable()) {
+    await api(`/api/principal/${encodeURIComponent(mailboxName)}`, {
+      method: 'PATCH', body: JSON.stringify({ quota: quotaBytes }),
+    })
+    return
+  }
   const mailbox = await getMailbox(mailboxName)
   if (!mailbox) throw new Error('Mailbox not found')
   const accountId = await getAccountId()
