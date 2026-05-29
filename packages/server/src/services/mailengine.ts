@@ -57,7 +57,7 @@ function hashPassword(password: string): string {
 
 export async function mailEngineHealthy(): Promise<boolean> {
   try {
-    const res = await api('/api/principal?limit=1', {
+    const res = await api('/.well-known/jmap', {
       signal: AbortSignal.timeout(5000),
     })
     return res.ok
