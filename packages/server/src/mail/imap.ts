@@ -2,7 +2,7 @@ import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 import { queryOne, queryAll, run } from '../repositories/db.js'
 import { decrypt } from '../services/accounts.js'
-import { parseNmpEmail, detectNmp } from '@nothingmail/nmp'
+import { parseNmpEmail } from '@nothingmail/nmp'
 
 export type SyncMode = 'nmp' | 'all'
 
