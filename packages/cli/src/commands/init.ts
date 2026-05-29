@@ -22,6 +22,7 @@ export async function init() {
   const url = serverUrl.replace(/\/$/, '')
 
   // Check server reachable
+  let mailDomain: string | null = null
   try {
     const res = await fetch(`${url}/health`)
     if (!res.ok) throw new Error()
@@ -30,6 +31,13 @@ export async function init() {
     return
   }
   console.log('  ✓ Server connected\n')
+
+  // Get setup status
+  try {
+    const res = await fetch(`${url}/api/setup/status`)
+    const data = await res.json() as { needs_setup?: boolean; mail_domain?: string }
+    mailDomain = data.mail_domain || null
+  } catch {}
 
   const mode = await select({
     message: 'Do you have an account?',
@@ -42,7 +50,7 @@ export async function init() {
   if (mode === 'login') {
     await loginFlow(url)
   } else {
-    await registerFlow(url)
+    await registerFlow(url, mailDomain)
   }
 }
 
@@ -73,48 +81,78 @@ async function loginFlow(url: string) {
   }
 }
 
-async function registerFlow(url: string) {
-  const email = await input({ message: 'Email' })
-  const pass = await password({ message: 'Password' })
+async function registerFlow(url: string, mailDomain: string | null) {
+  const username = await input({
+    message: 'Choose a username',
+    validate: (v) => {
+      const clean = v.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+      if (clean.length < 2) return 'Must be at least 2 characters'
+      if (!/^[a-z]/.test(clean)) return 'Must start with a letter'
+      return true
+    },
+  })
+
+  if (mailDomain) {
+    console.log(`  Your email will be: ${username}@${mailDomain}\n`)
+  }
+
+  const pass = await password({ message: 'Password (min 8, upper+lower+number)' })
   const name = await input({ message: 'Display name (optional)', default: '' })
+
+  // Check if first user (no verification needed)
+  let needsVerification = false
+  try {
+    const res = await fetch(`${url}/api/setup/status`)
+    const data = await res.json() as { needs_setup?: boolean }
+    needsVerification = !data.needs_setup
+  } catch {}
+
+  let externalEmail: string | undefined
+  if (needsVerification) {
+    externalEmail = await input({ message: 'External email (for verification code)' })
+  }
 
   console.log('\n  Registering...')
   try {
     const res = await fetch(`${url}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pass, name: name || undefined }),
+      body: JSON.stringify({
+        username,
+        password: pass,
+        name: name || undefined,
+        external_email: externalEmail,
+      }),
     })
     const data = await res.json() as any
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
 
     if (data.needs_verification) {
-      // Verification code flow
-      console.log(`  ✓ Verification code sent to ${email}\n`)
+      console.log(`  ✓ Verification code sent to ${data.external_email}\n`)
       const code = await input({ message: 'Verification code (6 digits)' })
 
       const verifyRes = await fetch(`${url}/api/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: code.trim() }),
+        body: JSON.stringify({ external_email: externalEmail, code: code.trim() }),
       })
       const verifyData = await verifyRes.json() as any
       if (!verifyRes.ok) throw new Error(verifyData.error || 'Verification failed')
 
-      saveConfig({ server_url: url, token: verifyData.api_key, email: verifyData.user?.email || email, initialized: true })
+      saveConfig({ server_url: url, token: verifyData.api_key, email: verifyData.user?.email, initialized: true })
       console.log(`  ✓ Account created\n`)
-      if (verifyData.mailbox) console.log(`  Mailbox: ${verifyData.mailbox}`)
+      if (verifyData.mailbox) console.log(`  Email: ${verifyData.mailbox}`)
       console.log(`  API Key: ${verifyData.api_key}`)
       console.log('  (Save this key — you won\'t see it again)\n')
-      await finishSetup(verifyData.user?.email || email)
+      await finishSetup(verifyData.user?.email)
     } else {
-      // First user (admin) — no verification needed
-      saveConfig({ server_url: url, token: data.api_key, email: data.user?.email || email, initialized: true })
+      // First user (admin) — no verification
+      saveConfig({ server_url: url, token: data.api_key, email: data.user?.email, initialized: true })
       console.log(`  ✓ Admin account created\n`)
-      if (data.mailbox) console.log(`  Mailbox: ${data.mailbox}`)
+      if (data.mailbox) console.log(`  Email: ${data.mailbox}`)
       console.log(`  API Key: ${data.api_key}`)
       console.log('  (Save this key — you won\'t see it again)\n')
-      await finishSetup(data.user?.email || email)
+      await finishSetup(data.user?.email)
     }
   } catch (err) {
     console.log(`  ✗ ${(err as Error).message}\n`)

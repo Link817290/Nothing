@@ -1,7 +1,9 @@
 // ─── User ──────────────────────────────────────────────────────
 export interface User {
   id: string
-  email: string
+  email: string            // platform email: link@nothingmail.shop
+  username: string         // local part: link
+  external_email?: string  // for verification: link@163.com
   password_hash: string
   name?: string
   is_admin: boolean
@@ -14,7 +16,7 @@ export interface User {
 export interface EmailAccount {
   id: string
   user_id: string
-  provider: string        // gmail | qq | outlook | 163 | custom | nothing
+  provider: string        // gmail | qq | outlook | 163 | custom | nothing | stalwart
   email: string
   smtp_host: string
   smtp_port: number
@@ -54,14 +56,14 @@ export interface Message {
 
 // ─── API Request/Response ──────────────────────────────────────
 export interface RegisterRequest {
-  email: string
+  username: string
   password: string
   name?: string
-  mail_username?: string  // custom mailbox username (e.g. 'alice' → alice@domain.com)
+  external_email?: string  // required for non-admin (verification)
 }
 
 export interface LoginRequest {
-  email: string
+  email: string            // accepts username or username@domain
   password: string
 }
 

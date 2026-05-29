@@ -8,6 +8,8 @@ const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
+  username TEXT UNIQUE NOT NULL,
+  external_email TEXT,
   password_hash TEXT NOT NULL,
   name TEXT,
   is_admin BOOLEAN NOT NULL DEFAULT FALSE,
@@ -79,17 +81,17 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
 
 CREATE TABLE IF NOT EXISTS verification_codes (
   id TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
+  username TEXT NOT NULL,
+  external_email TEXT NOT NULL,
   code TEXT NOT NULL,
   name TEXT,
   password_hash TEXT NOT NULL,
   password_encrypted TEXT,
-  mail_username TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_verification_email ON verification_codes(email);
+CREATE INDEX IF NOT EXISTS idx_verification_external ON verification_codes(external_email);
 
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,

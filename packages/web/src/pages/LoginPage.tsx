@@ -18,9 +18,26 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [mailDomain, setMailDomain] = useState<string | null>(null);
-  const [mailUsername, setMailUsername] = useState('');
 
-  // Check if this is first-time setup
+  // Registration fields
+  const [username, setUsername] = useState('');
+  const [externalEmail, setExternalEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [mailbox, setMailbox] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [verifyStep, setVerifyStep] = useState(false);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyEmail, setVerifyEmail] = useState('');
+
   useEffect(() => {
     fetch('/api/setup/status').then(r => r.json()).then(data => {
       if (data.needs_setup) {
@@ -30,37 +47,41 @@ export default function LoginPage() {
       if (data.mail_domain) setMailDomain(data.mail_domain);
     }).catch(() => {});
   }, []);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [mailbox, setMailbox] = useState<string | null>(null);
-  const [needsEmailSetup, setNeedsEmailSetup] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [verifyStep, setVerifyStep] = useState(false);
-  const [verifyCode, setVerifyCode] = useState('');
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleRegister(e: FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      if (mode === 'register') {
-        const res = await api.register(email, password, name || undefined, mailUsername || undefined);
-        if (res.needs_verification) {
-          setVerifyStep(true);
-        } else {
-          setAuth(res.api_key, res.user);
-          setApiKey(res.api_key);
-          setMailbox(res.mailbox || null);
-        }
+      const res = await api.register(
+        username,
+        password,
+        name || undefined,
+        isFirstTime ? undefined : externalEmail || undefined,
+      );
+      if (res.needs_verification) {
+        setVerifyStep(true);
+        setVerifyEmail(res.external_email);
       } else {
-        const res = await api.login(email, password);
-        setAuth(res.token, res.user);
-        navigate(from, { replace: true });
+        setAuth(res.api_key, res.user);
+        setApiKey(res.api_key);
+        setMailbox(res.mailbox || null);
       }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleLogin(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await api.login(loginEmail, loginPassword);
+      setAuth(res.token, res.user);
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -81,7 +102,7 @@ export default function LoginPage() {
       setError('');
       setLoading(true);
       try {
-        const res = await api.verify(email, verifyCode);
+        const res = await api.verify(verifyEmail, verifyCode);
         setAuth(res.api_key, res.user);
         setApiKey(res.api_key);
         setMailbox(res.mailbox || null);
@@ -102,7 +123,7 @@ export default function LoginPage() {
               <span className="h-2 w-2 rounded-full bg-brand" />
             </div>
             <p className="text-sm text-muted-foreground">
-              {t('login.verify_hint') || `Verification code sent to ${email}`}
+              Verification code sent to {verifyEmail}
             </p>
           </CardHeader>
           <CardContent>
@@ -147,24 +168,18 @@ export default function LoginPage() {
   if (apiKey) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        {/* Subtle gradient accent */}
-          <Card className="relative z-10 w-full max-w-md fade-in">
+        <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-4">
             <div className="flex items-center gap-2.5">
               <span className="text-2xl font-bold tracking-tight">nothing</span>
-              <span className="h-2 w-2 rounded-full bg-brand " />
+              <span className="h-2 w-2 rounded-full bg-brand" />
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
             {mailbox && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your mailbox</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your email</p>
                 <p className="mt-1 text-lg font-semibold text-foreground">{mailbox}</p>
-              </div>
-            )}
-            {needsEmailSetup && (
-              <div className="rounded-xl border border-border bg-accent p-4">
-                <p className="text-sm text-muted-foreground">No email service configured on this server. Go to Settings to connect your Gmail, QQ, or Outlook account.</p>
               </div>
             )}
             <div>
@@ -195,13 +210,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      {/* Subtle gradient accent */}
-
       <Card className="relative z-10 w-full max-w-sm fade-in">
         <CardHeader className="items-center text-center pb-2">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="text-2xl font-bold tracking-tight">nothing</span>
-            <span className="h-2 w-2 rounded-full bg-brand " />
+            <span className="h-2 w-2 rounded-full bg-brand" />
           </div>
           <p className="text-sm text-muted-foreground">
             {isFirstTime
@@ -211,79 +224,116 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'register' && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">{t('login.name')}</label>
+          {mode === 'register' ? (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">{t('login.name')}</label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('login.name_hint')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Username</label>
+                {mailDomain ? (
+                  <div className="flex items-center gap-0">
+                    <Input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
+                      placeholder="username"
+                      required
+                      autoFocus
+                      className="rounded-r-none"
+                    />
+                    <span className="flex h-10 items-center rounded-r-lg border border-l-0 border-border bg-muted px-3 text-sm text-muted-foreground">
+                      @{mailDomain}
+                    </span>
+                  </div>
+                ) : (
                   <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('login.name_hint')}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
+                    placeholder="username"
+                    required
+                    autoFocus
+                  />
+                )}
+              </div>
+
+              {!isFirstTime && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Email (for verification)</label>
+                  <Input
+                    type="email"
+                    value={externalEmail}
+                    onChange={(e) => setExternalEmail(e.target.value)}
+                    placeholder="you@gmail.com"
+                    required
                   />
                 </div>
-                {mailDomain && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Mailbox</label>
-                    <div className="flex items-center gap-0">
-                      <Input
-                        value={mailUsername}
-                        onChange={(e) => setMailUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
-                        placeholder="username"
-                        className="rounded-r-none"
-                      />
-                      <span className="flex h-10 items-center rounded-r-lg border border-l-0 border-border bg-muted px-3 text-sm text-muted-foreground">
-                        @{mailDomain}
-                      </span>
-                    </div>
-                  </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">{t('login.password')}</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="--------"
+                  required
+                />
+                {password && password.length < 8 && (
+                  <p className="text-xs text-muted-foreground">Min 8 chars, with uppercase, lowercase and number</p>
                 )}
-              </>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">{t('login.email')}</label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">{t('login.password')}</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="--------"
-                required
-              />
-              {mode === 'register' && password && password.length < 8 && (
-                <p className="text-xs text-muted-foreground">Min 8 chars, with uppercase, lowercase and number</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
-                <p className="text-sm text-destructive">{error}</p>
               </div>
-            )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <>
-                  {mode === 'login' ? t('login.submit_login') : t('login.submit_register')}
-                  <ArrowRight />
-                </>
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
               )}
-            </Button>
-          </form>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : <>{t('login.submit_register')} <ArrowRight /></>}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Username or email</label>
+                <Input
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder={mailDomain ? `username or user@${mailDomain}` : 'username'}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">{t('login.password')}</label>
+                <Input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="--------"
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : <>{t('login.submit_login')} <ArrowRight /></>}
+              </Button>
+            </form>
+          )}
 
           <div className="mt-6 text-center">
             <button

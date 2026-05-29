@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto'
 import bcrypt from 'bcryptjs'
 import { queryOne, queryAll, run } from '../repositories/db.js'
-import type { RegisterRequest, LoginRequest, User } from '../types/index.js'
+import type { User } from '../types/index.js'
 
 function genId() {
   return `usr_${randomBytes(8).toString('base64url')}`
@@ -11,6 +11,8 @@ function rowToUser(row: Record<string, any>): User {
   return {
     id: row.id,
     email: row.email,
+    username: row.username,
+    external_email: row.external_email || undefined,
     password_hash: row.password_hash,
     name: row.name || undefined,
     is_admin: row.is_admin,
@@ -20,117 +22,141 @@ function rowToUser(row: Record<string, any>): User {
   }
 }
 
-export async function register(req: RegisterRequest): Promise<User> {
+/** Get the mail domain (from Stalwart or MAIL_DOMAIN env) */
+async function getMailDomain(): Promise<string | null> {
+  // Try env var first
+  const envDomain = process.env.MAIL_DOMAIN
+  if (envDomain) return envDomain
+
+  // Try Stalwart
+  try {
+    const { listDomains, mailEngineHealthy } = await import('./mailengine.js')
+    if (await mailEngineHealthy()) {
+      const domains = await listDomains()
+      if (domains?.length > 0) return domains[0].name
+    }
+  } catch {}
+  return null
+}
+
+/** Register first user (admin) — no verification needed */
+export async function register(opts: {
+  username: string; password: string; name?: string
+}): Promise<User> {
   const setting = await queryOne("SELECT value FROM server_settings WHERE key = 'open_registration'")
-  if (setting && setting.value === 'false') {
-    throw new Error('Registration is closed')
+  if (setting && setting.value === 'false') throw new Error('Registration is closed')
+
+  const username = opts.username.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+  if (username.length < 2) throw new Error('Username must be at least 2 characters')
+
+  const existing = await queryOne('SELECT id FROM users WHERE username = $1', [username])
+  if (existing) throw new Error('Username already taken')
+
+  const domain = await getMailDomain()
+  const email = domain ? `${username}@${domain}` : username
+
+  const id = genId()
+  const hash = await bcrypt.hash(opts.password, 10)
+  const userCount = await queryOne('SELECT COUNT(*) as c FROM users')
+  const isAdmin = parseInt(userCount?.c) === 0
+
+  await run(
+    `INSERT INTO users (id, email, username, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, email, username, hash, opts.name || null, isAdmin]
+  )
+
+  const user = (await getUserById(id))!
+
+  // Auto-provision mailbox
+  if (domain) {
+    await autoProvisionMailbox(user, opts.password)
   }
 
-  const existing = await queryOne('SELECT id FROM users WHERE email = $1', [req.email])
-  if (existing) throw new Error('Email already registered')
-
-  const id = genId()
-  const hash = await bcrypt.hash(req.password, 10)
-
-  const userCount = await queryOne('SELECT COUNT(*) as c FROM users')
-  const isAdmin = parseInt(userCount?.c) === 0
-
-  await run(
-    `INSERT INTO users (id, email, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5)`,
-    [id, req.email, hash, req.name || null, isAdmin]
-  )
-
-  const user = (await getUserById(id))!
-
-  // Auto-provision mailbox on self-hosted domain
-  await autoProvisionMailbox(user, req.password, req.mail_username)
-
   return user
 }
 
-/** Register with pre-hashed password (used after email verification) */
-export async function registerWithHash(email: string, passwordHash: string, name?: string, mailUsername?: string, password?: string): Promise<User> {
-  const existing = await queryOne('SELECT id FROM users WHERE email = $1', [email])
-  if (existing) throw new Error('Email already registered')
+/** Register after email verification */
+export async function registerWithHash(opts: {
+  username: string; passwordHash: string; password?: string;
+  name?: string; externalEmail?: string
+}): Promise<User> {
+  const username = opts.username.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+
+  const existing = await queryOne('SELECT id FROM users WHERE username = $1', [username])
+  if (existing) throw new Error('Username already taken')
+
+  const domain = await getMailDomain()
+  if (!domain) throw new Error('No mail domain configured')
+  const email = `${username}@${domain}`
 
   const id = genId()
   const userCount = await queryOne('SELECT COUNT(*) as c FROM users')
   const isAdmin = parseInt(userCount?.c) === 0
 
   await run(
-    `INSERT INTO users (id, email, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5)`,
-    [id, email, passwordHash, name || null, isAdmin]
+    `INSERT INTO users (id, email, username, external_email, password_hash, name, is_admin) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [id, email, username, opts.externalEmail || null, opts.passwordHash, opts.name || null, isAdmin]
   )
 
   const user = (await getUserById(id))!
 
-  // Auto-provision mailbox with actual password
-  const mailPassword = password || `tmp_${Date.now()}`
-  await autoProvisionMailbox(user, mailPassword, mailUsername)
+  // Auto-provision mailbox with real password
+  const mailPassword = opts.password || `Tmp_${Date.now()}_X1`
+  await autoProvisionMailbox(user, mailPassword)
 
   return user
 }
 
-/** Create a mailbox on the platform's mail domain for the new user */
-async function autoProvisionMailbox(user: User, password: string, customUsername?: string) {
+/** Create Stalwart mailbox for user */
+async function autoProvisionMailbox(user: User, password: string) {
   try {
-    // Get mail domain from Stalwart's configured domains (not env var)
-    const { listDomains, createMailbox, mailEngineHealthy } = await import('./mailengine.js')
-    const healthy = await mailEngineHealthy()
-    if (!healthy) {
+    const { createMailbox, mailEngineHealthy } = await import('./mailengine.js')
+    if (!await mailEngineHealthy()) {
       console.warn(`[auto-provision] Stalwart not available, skipping`)
       return
     }
 
-    const domains = await listDomains()
-    if (!domains || domains.length === 0) {
-      console.warn(`[auto-provision] No domains configured in Stalwart, skipping`)
-      return
-    }
-
-    // Use first domain
-    const mailDomain = domains[0].name
-    const username = customUsername?.toLowerCase().replace(/[^a-z0-9._-]/g, '')
-      || user.name?.toLowerCase().replace(/[^a-z0-9]/g, '')
-      || user.email.split('@')[0].replace(/[^a-z0-9]/g, '')
-    const mailEmail = `${username}@${mailDomain}`
-
     await createMailbox({
-      name: username,
+      name: user.username,
       type: 'individual',
       secrets: [password],
-      emails: [mailEmail],
-      description: user.name || username,
+      emails: [user.email],
+      description: user.name || user.username,
     })
 
     // Auto-bind as email account
     const { addAccountInternal } = await import('./accounts.js')
     await addAccountInternal(user.id, {
       provider: 'stalwart',
-      email: mailEmail,
+      email: user.email,
       smtp_host: 'mail',
       smtp_port: 465,
       imap_host: 'mail',
       imap_port: 993,
-      auth_user: mailEmail,
+      auth_user: user.email,
       auth_pass: password,
     })
 
-    console.log(`[auto-provision] Created mailbox ${mailEmail} for user ${user.id}`)
+    console.log(`[auto-provision] Created mailbox ${user.email}`)
   } catch (err) {
-    // Don't fail registration if mailbox creation fails
-    console.error(`[auto-provision] Failed for ${mailEmail}:`, (err as Error).message)
+    console.error(`[auto-provision] Failed for ${user.email}:`, (err as Error).message)
   }
 }
 
-export async function login(req: LoginRequest): Promise<User> {
-  const row = await queryOne('SELECT * FROM users WHERE email = $1', [req.email])
+/** Login — accepts username or username@domain */
+export async function login(email: string, password: string): Promise<User> {
+  let row
+  if (email.includes('@')) {
+    row = await queryOne('SELECT * FROM users WHERE email = $1', [email])
+  } else {
+    row = await queryOne('SELECT * FROM users WHERE username = $1', [email])
+  }
   if (!row) throw new Error('Invalid credentials')
 
   const user = rowToUser(row)
   if (user.is_banned) throw new Error('Account is banned')
 
-  const valid = await bcrypt.compare(req.password, user.password_hash)
+  const valid = await bcrypt.compare(password, user.password_hash)
   if (!valid) throw new Error('Invalid credentials')
 
   return user

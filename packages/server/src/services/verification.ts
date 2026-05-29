@@ -7,7 +7,6 @@ function genId() {
   return `vrf_${randomBytes(8).toString('base64url')}`
 }
 
-/** Generate a 6-digit verification code */
 function genCode(): string {
   return String(randomInt(100000, 999999))
 }
@@ -19,9 +18,11 @@ export async function isVerificationRequired(): Promise<boolean> {
 }
 
 /** Create a pending registration with verification code */
-export async function createVerification(email: string, password: string, name?: string, mailUsername?: string): Promise<{ id: string; code: string }> {
-  // Delete any existing codes for this email
-  await run('DELETE FROM verification_codes WHERE email = $1', [email])
+export async function createVerification(
+  username: string, externalEmail: string, password: string, name?: string
+): Promise<{ id: string; code: string }> {
+  // Delete any existing codes for this external email
+  await run('DELETE FROM verification_codes WHERE external_email = $1', [externalEmail])
 
   const id = genId()
   const code = genCode()
@@ -30,38 +31,37 @@ export async function createVerification(email: string, password: string, name?:
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
   await run(
-    `INSERT INTO verification_codes (id, email, code, name, password_hash, password_encrypted, mail_username, expires_at)
+    `INSERT INTO verification_codes (id, username, external_email, code, name, password_hash, password_encrypted, expires_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [id, email, code, name || null, passwordHash, passwordEncrypted, mailUsername || null, expiresAt.toISOString()]
+    [id, username, externalEmail, code, name || null, passwordHash, passwordEncrypted, expiresAt.toISOString()]
   )
 
   return { id, code }
 }
 
 /** Verify a code and return the pending registration data */
-export async function verifyCode(email: string, code: string): Promise<{
-  name?: string; passwordHash: string; password?: string; mailUsername?: string
+export async function verifyCode(externalEmail: string, code: string): Promise<{
+  username: string; name?: string; passwordHash: string; password?: string
 } | null> {
   const row = await queryOne(
-    'SELECT * FROM verification_codes WHERE email = $1 AND code = $2 AND expires_at > NOW()',
-    [email, code]
+    'SELECT * FROM verification_codes WHERE external_email = $1 AND code = $2 AND expires_at > NOW()',
+    [externalEmail, code]
   )
   if (!row) return null
 
   // Delete used code
-  await run('DELETE FROM verification_codes WHERE email = $1', [email])
+  await run('DELETE FROM verification_codes WHERE external_email = $1', [externalEmail])
 
   return {
+    username: row.username,
     name: row.name || undefined,
     passwordHash: row.password_hash,
     password: row.password_encrypted ? decrypt(row.password_encrypted) : undefined,
-    mailUsername: row.mail_username || undefined,
   }
 }
 
 /** Send verification code via Stalwart SMTP */
 export async function sendVerificationEmail(toEmail: string, code: string): Promise<void> {
-  // Get the first domain's email to send from
   const { listDomains, mailEngineHealthy } = await import('./mailengine.js')
   if (!await mailEngineHealthy()) throw new Error('Mail engine not available')
 
@@ -70,7 +70,6 @@ export async function sendVerificationEmail(toEmail: string, code: string): Prom
 
   const domainName = domains[0].name
   const fromEmail = `noreply@${domainName}`
-  // noreply account created when domain was added, password = MAIL_ADMIN_PASS
   const authUser = `noreply@${domainName}`
   const authPass = process.env.MAIL_ADMIN_PASS || ''
 
