@@ -136,8 +136,20 @@ export async function getUserAccount(userId: string, accountId: string): Promise
 }
 
 export async function removeAccount(userId: string, accountId: string): Promise<boolean> {
-  const existing = await queryOne('SELECT id FROM email_accounts WHERE id = $1 AND user_id = $2', [accountId, userId])
-  if (!existing) return false
+  const acc = await queryOne('SELECT * FROM email_accounts WHERE id = $1 AND user_id = $2', [accountId, userId])
+  if (!acc) return false
+
+  // Delete Stalwart mailbox if it's a stalwart account
+  if (acc.provider === 'stalwart') {
+    try {
+      const username = acc.email.split('@')[0]
+      const { deleteMailbox } = await import('./mailengine.js')
+      await deleteMailbox(username)
+    } catch (err) {
+      console.warn(`[removeAccount] Failed to delete Stalwart mailbox ${acc.email}:`, (err as Error).message)
+    }
+  }
+
   await run('DELETE FROM email_accounts WHERE id = $1', [accountId])
   return true
 }

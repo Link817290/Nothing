@@ -51,6 +51,13 @@ export async function mailEngineRoutes(app: FastifyInstance) {
   app.delete('/api/admin/domains/:name', async (req, reply) => {
     const { name } = req.params as { name: string }
     try {
+      // Disable email_accounts on this domain
+      const { run } = await import('../repositories/db.js')
+      await run(
+        `UPDATE email_accounts SET is_active = FALSE WHERE email LIKE $1`,
+        [`%@${name}`]
+      )
+
       await deleteDomain(name)
       return { success: true }
     } catch (err) {

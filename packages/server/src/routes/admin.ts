@@ -99,6 +99,20 @@ export async function adminRoutes(app: FastifyInstance) {
 
     console.warn(`[ADMIN-RESET] Executed by user=${user.id} at ${new Date().toISOString()}`)
 
+    // Delete Stalwart mailboxes (except admin's)
+    try {
+      const { listMailboxes, deleteMailbox } = await import('../services/mailengine.js')
+      const mailboxes = await listMailboxes()
+      const adminUser = await queryOne('SELECT username FROM users WHERE id = $1', [user.id])
+      for (const mb of mailboxes) {
+        if (mb.name !== adminUser?.username && mb.name !== 'admin' && mb.name !== 'noreply') {
+          try { await deleteMailbox(mb.name) } catch {}
+        }
+      }
+    } catch (err) {
+      console.warn('[ADMIN-RESET] Stalwart cleanup failed:', (err as Error).message)
+    }
+
     await run('DELETE FROM messages')
     await run('DELETE FROM email_accounts')
     await run('DELETE FROM api_keys WHERE user_id != $1', [user.id])
