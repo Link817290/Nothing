@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto'
 import { writeFileSync, mkdirSync, existsSync, readFileSync, unlinkSync } from 'fs'
-import { join, dirname } from 'path'
+import { join, dirname, basename } from 'path'
 import { queryAll, queryOne, run } from '../repositories/db.js'
 
 const STORAGE_DIR = process.env.ATTACHMENT_DIR || '/data/attachments'
@@ -18,7 +18,9 @@ function ensureDir(path: string) {
 export async function saveAttachment(messageId: string, filename: string, contentType: string, content: Buffer): Promise<string> {
   const id = genId()
   const subdir = messageId.replace(/[^a-zA-Z0-9_-]/g, '_')
-  const storagePath = join(STORAGE_DIR, subdir, `${id}_${filename}`)
+  // Sanitize filename: strip path components and dangerous characters
+  const safeName = basename(filename || 'unnamed').replace(/[^\w.\-]/g, '_').slice(0, 200)
+  const storagePath = join(STORAGE_DIR, subdir, `${id}_${safeName}`)
 
   ensureDir(storagePath)
   writeFileSync(storagePath, content)
@@ -39,9 +41,13 @@ export async function listAttachments(messageId: string) {
   )
 }
 
-/** Get attachment file content */
-export async function getAttachment(id: string): Promise<{ filename: string; contentType: string; content: Buffer } | null> {
-  const row = await queryOne('SELECT * FROM attachments WHERE id = $1', [id])
+/** Get attachment file content (with ownership check) */
+export async function getAttachment(id: string, userId?: string): Promise<{ filename: string; contentType: string; content: Buffer } | null> {
+  const sql = userId
+    ? `SELECT a.* FROM attachments a JOIN messages m ON m.id = a.message_id WHERE a.id = $1 AND m.user_id = $2`
+    : `SELECT * FROM attachments WHERE id = $1`
+  const params = userId ? [id, userId] : [id]
+  const row = await queryOne(sql, params)
   if (!row) return null
 
   try {

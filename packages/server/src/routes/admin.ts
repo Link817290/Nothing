@@ -81,9 +81,24 @@ export async function adminRoutes(app: FastifyInstance) {
     return { success: true, message: 'All messages deleted' }
   })
 
-  // Full reset — delete everything except the current admin
-  app.post('/api/admin/reset', async (req) => {
+  // Full reset — delete everything except the current admin (requires password)
+  app.post('/api/admin/reset', async (req, reply) => {
     const user = (req as any).user as { id: string }
+    const body = req.body as { password?: string }
+
+    if (!body.password) {
+      return reply.code(400).send({ error: 'Password required for reset' })
+    }
+
+    const row = await queryOne('SELECT password_hash FROM users WHERE id = $1', [user.id])
+    if (!row) return reply.code(404).send({ error: 'User not found' })
+
+    const bcrypt = await import('bcryptjs')
+    const valid = await bcrypt.compare(body.password, row.password_hash)
+    if (!valid) return reply.code(403).send({ error: 'Invalid password' })
+
+    console.warn(`[ADMIN-RESET] Executed by user=${user.id} at ${new Date().toISOString()}`)
+
     await run('DELETE FROM messages')
     await run('DELETE FROM email_accounts')
     await run('DELETE FROM api_keys WHERE user_id != $1', [user.id])

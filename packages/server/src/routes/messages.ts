@@ -134,10 +134,11 @@ export async function messageRoutes(app: FastifyInstance) {
     return { attachments: await listAttachments(id) }
   })
 
-  app.get('/api/attachments/:id/download', async (req, reply) => {
+  app.get('/api/attachments/:id/download', { preHandler: authenticate }, async (req, reply) => {
+    const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
     const { getAttachment } = await import('../services/attachments.js')
-    const att = await getAttachment(id)
+    const att = await getAttachment(id, user.id)
     if (!att) return reply.code(404).send({ error: 'Attachment not found' })
     reply.header('Content-Type', att.contentType)
     reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(att.filename)}"`)

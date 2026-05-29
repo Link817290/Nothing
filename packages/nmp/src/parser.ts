@@ -1,5 +1,5 @@
 import {
-  NMP_VERSION, NMP_ATTACHMENT_NAME, resolveType,
+  NMP_VERSION, NMP_ATTACHMENT_NAME, NMP_LIMITS, resolveType,
   type NmpPayload, type NmpMessage, type NmpAttachment, type NmpType,
 } from './types.js'
 import { parseMarkdown } from './markdown.js'
@@ -60,11 +60,14 @@ export function parseNmpEmail(parsed: ParsedEmailInput): NmpParseResult {
 
   const detectedBy = hasHeader && hasAttachment ? 'both' : hasHeader ? 'header' : 'attachment'
 
-  // Parse nmp.json payload
+  // Parse nmp.json payload (with size limit)
   let payload: NmpPayload | null = null
   if (nmpJsonAttachment) {
     try {
       const raw = bufferToString(nmpJsonAttachment.content)
+      if (raw.length > NMP_LIMITS.maxJsonSize) {
+        return { isNmp: false, detectedBy: 'none' as const, message: null, errors: [`nmp.json exceeds ${NMP_LIMITS.maxJsonSize} bytes`] }
+      }
       payload = JSON.parse(raw) as NmpPayload
       // Normalize legacy types
       if (payload.type) payload.type = resolveType(payload.type)
