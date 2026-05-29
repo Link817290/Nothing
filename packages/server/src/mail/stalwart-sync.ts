@@ -123,8 +123,14 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
           .replace('{blobId}', email.blobId)
           .replace('{name}', 'email.eml')
           .replace('{type}', 'application/octet-stream')
-        // downloadUrl might use the container hostname, rewrite to MAIL_URL
-        const finalUrl = rawUrl.startsWith('http') ? rawUrl : `${MAIL_URL}${rawUrl}`
+        // Rewrite URL to use MAIL_URL (downloadUrl uses container hostname which is unreachable)
+        let finalUrl: string
+        try {
+          const parsed = new URL(rawUrl)
+          finalUrl = `${MAIL_URL}${parsed.pathname}${parsed.search}`
+        } catch {
+          finalUrl = `${MAIL_URL}${rawUrl}`
+        }
 
         const rawRes = await fetchRetry(finalUrl, {
           headers: { 'Authorization': `Basic ${basicAuth}` },
