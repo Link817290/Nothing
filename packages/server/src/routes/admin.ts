@@ -77,6 +77,14 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Delete all messages (keeps users and accounts)
   app.delete('/api/admin/messages', async () => {
+    // Clean up attachment files
+    try {
+      const attachments = await queryAll('SELECT DISTINCT message_id FROM attachments')
+      const { deleteAttachments } = await import('../services/attachments.js')
+      for (const row of attachments) {
+        try { await deleteAttachments(row.message_id) } catch {}
+      }
+    } catch {}
     await run('DELETE FROM messages')
     return { success: true, message: 'All messages deleted' }
   })

@@ -177,8 +177,11 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
     if (result.messageId) {
       await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, replyId])
     }
-  } catch {
+  } catch (e) {
     status = 'failed'
+    const errMsg = (e as Error).message
+    await run(`UPDATE messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`, [errMsg, replyId])
+    return { success: false, message_id: replyId, status, error: errMsg }
   }
 
   await run(`UPDATE messages SET status = $1, updated_at = NOW() WHERE id = $2`, [status, replyId])
@@ -246,6 +249,11 @@ export async function getReport(userId: string, query: { period?: string; projec
 export async function deleteMessage(userId: string, id: string): Promise<boolean> {
   const existing = await queryOne(`SELECT id FROM messages WHERE id = $1 AND user_id = $2`, [id, userId])
   if (!existing) return false
+  // Delete attachments from disk first
+  try {
+    const { deleteAttachments } = await import('./attachments.js')
+    await deleteAttachments(id)
+  } catch {}
   await run(`DELETE FROM messages WHERE id = $1`, [id])
   return true
 }
@@ -293,8 +301,11 @@ export async function forwardMessage(userId: string, id: string, req: { to: stri
     if (result.messageId) {
       await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, fwdId])
     }
-  } catch {
+  } catch (e) {
     status = 'failed'
+    const errMsg = (e as Error).message
+    await run(`UPDATE messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`, [errMsg, fwdId])
+    return { success: false, message_id: fwdId, status, error: errMsg }
   }
 
   await run(`UPDATE messages SET status = $1, updated_at = NOW() WHERE id = $2`, [status, fwdId])

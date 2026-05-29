@@ -110,13 +110,13 @@ export async function registerWithHash(opts: {
   return user
 }
 
-/** Create Stalwart mailbox for user */
-async function autoProvisionMailbox(user: User, password: string) {
+/** Create Stalwart mailbox for user. Returns true if successful. */
+async function autoProvisionMailbox(user: User, password: string): Promise<boolean> {
   try {
-    const { createMailbox, mailEngineHealthy } = await import('./mailengine.js')
+    const { createMailbox, mailEngineHealthy, deleteMailbox } = await import('./mailengine.js')
     if (!await mailEngineHealthy()) {
       console.warn(`[auto-provision] Stalwart not available, skipping`)
-      return
+      return false
     }
 
     await createMailbox({
@@ -128,21 +128,30 @@ async function autoProvisionMailbox(user: User, password: string) {
     })
 
     // Auto-bind as email account
-    const { addAccountInternal } = await import('./accounts.js')
-    await addAccountInternal(user.id, {
-      provider: 'stalwart',
-      email: user.email,
-      smtp_host: 'mail',
-      smtp_port: 465,
-      imap_host: 'mail',
-      imap_port: 993,
-      auth_user: user.email,
-      auth_pass: password,
-    })
+    try {
+      const { addAccountInternal } = await import('./accounts.js')
+      await addAccountInternal(user.id, {
+        provider: 'stalwart',
+        email: user.email,
+        smtp_host: 'mail',
+        smtp_port: 465,
+        imap_host: 'mail',
+        imap_port: 993,
+        auth_user: user.email,
+        auth_pass: password,
+      })
+    } catch (dbErr) {
+      // Rollback: delete Stalwart mailbox if DB insert fails
+      console.error(`[auto-provision] DB insert failed, rolling back Stalwart mailbox:`, (dbErr as Error).message)
+      try { await deleteMailbox(user.username) } catch {}
+      throw dbErr
+    }
 
     console.log(`[auto-provision] Created mailbox ${user.email}`)
+    return true
   } catch (err) {
     console.error(`[auto-provision] Failed for ${user.email}:`, (err as Error).message)
+    return false
   }
 }
 
