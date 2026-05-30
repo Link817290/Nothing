@@ -160,6 +160,76 @@ export async function startMcpServer() {
           return { content: [{ type: 'text', text }] }
         }
 
+        // ─── Capsule Tools ──────────────────────────────────────
+
+        case 'nothing_capsule_inspect': {
+          const capsule = await client.getCapsule(a.id as string)
+          const sm = capsule.state_machine
+          let text = `Capsule: ${capsule.name} v${capsule.version}\n`
+          if (capsule.description) text += `${capsule.description}\n`
+          text += `\nApplies to: ${capsule.activation.task_types.join(', ')}\n`
+          text += `\nState Machine: ${sm.initial} → ${sm.final.join(', ')}\n`
+          for (const [name, state] of Object.entries(sm.states)) {
+            text += `  ${name}: ${(state as any).goal}\n`
+          }
+          text += `\nTool Policy: allow=[${capsule.tool_policy.allow.join(',')}]`
+          if (capsule.tool_policy.deny?.length) text += ` deny=[${capsule.tool_policy.deny.join(',')}]`
+          text += `\nValidators: ${capsule.validators?.length || 0}`
+          if (capsule.artifacts?.length) text += `\nArtifacts: ${capsule.artifacts.map((a: any) => a.name).join(', ')}`
+          return { content: [{ type: 'text', text }] }
+        }
+
+        case 'nothing_capsule_start': {
+          const result = await client.startCapsule(a.capsule_id as string, a.inputs as Record<string, unknown> | undefined)
+          const state = result.capsule?.state_machine?.states?.[result.current_state]
+          let text = `Run started: ${result.id}\nState: ${result.current_state}\n`
+          if (state) {
+            text += `\nGoal: ${state.goal}\n`
+            if (state.instructions) text += `Instructions: ${state.instructions}\n`
+            if (state.allowed_tools?.length) text += `Tools: ${state.allowed_tools.join(', ')}\n`
+            if (state.expected_outputs?.length) text += `Expected: ${state.expected_outputs.join(', ')}\n`
+          }
+          return { content: [{ type: 'text', text }] }
+        }
+
+        case 'nothing_capsule_next': {
+          const step = await client.getNextStep(a.run_id as string)
+          if (step.is_final) return { content: [{ type: 'text', text: `Run completed (state: ${step.current_state})` }] }
+          let text = `State: ${step.current_state} [${step.status}]\n\nGoal: ${step.goal}\n`
+          if (step.instructions) text += `Instructions: ${step.instructions}\n`
+          if (step.allowed_tools?.length) text += `Tools: ${step.allowed_tools.join(', ')}\n`
+          if (step.expected_outputs?.length) text += `Expected: ${step.expected_outputs.join(', ')}\n`
+          if (step.transitions?.length) {
+            text += `\nTransitions:\n`
+            step.transitions.forEach((t: any) => { text += `  → ${t.to} when ${t.when}\n` })
+          }
+          return { content: [{ type: 'text', text }] }
+        }
+
+        case 'nothing_capsule_guard': {
+          const result = await client.guardCommand(a.run_id as string, a.command as string)
+          return { content: [{ type: 'text', text: `${result.effect.toUpperCase()}: ${a.command}\nReason: ${result.reason}` }] }
+        }
+
+        case 'nothing_capsule_event': {
+          const result = await client.appendCapsuleEvent(a.run_id as string, {
+            type: a.type as string, state: a.state as string | undefined,
+            message: a.message as string | undefined, data: a.data as Record<string, unknown> | undefined,
+          })
+          return { content: [{ type: 'text', text: `Event recorded: ${result.event_id}` }] }
+        }
+
+        case 'nothing_capsule_validate': {
+          const result = await client.validateArtifact(
+            a.run_id as string, a.artifact_name as string, a.artifact_path as string | undefined
+          )
+          let text = `Artifact: ${result.artifact}\nResult: ${result.passed ? 'PASSED' : 'FAILED'}\n`
+          for (const r of result.results) {
+            text += `  ${r.passed ? '✓' : '✗'} ${r.id}: ${r.message}\n`
+          }
+          return { content: [{ type: 'text', text }] }
+        }
+
         default:
           return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true }
       }

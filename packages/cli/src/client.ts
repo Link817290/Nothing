@@ -152,4 +152,46 @@ export class NothingClient {
     const qs = params.toString()
     return this.request<any>('GET', `/api/reports${qs ? '?' + qs : ''}`)
   }
+
+  // ─── Capsules ──────────────────────────────────────────────────
+
+  listCapsules() {
+    return this.request<{ capsules: any[] }>('GET', '/api/capsules')
+  }
+
+  getCapsule(id: string) {
+    return this.request<any>('GET', `/api/capsules/${id}`)
+  }
+
+  startCapsule(capsuleId: string, inputs?: Record<string, unknown>) {
+    return this.request<any>('POST', '/api/capsule-runs', { capsule_id: capsuleId, inputs })
+  }
+
+  getRun(runId: string) {
+    return this.request<any>('GET', `/api/capsule-runs/${runId}`)
+  }
+
+  getNextStep(runId: string) {
+    return this.request<any>('GET', `/api/capsule-runs/${runId}/next`)
+  }
+
+  transitionState(runId: string, to: string, reason?: string) {
+    return this.request<any>('POST', `/api/capsule-runs/${runId}/transition`, { to, reason })
+  }
+
+  guardCommand(runId: string, command: string) {
+    return this.request<{ effect: string; reason: string }>('POST', `/api/capsule-runs/${runId}/guard`, { command })
+  }
+
+  appendCapsuleEvent(runId: string, event: { type: string; state?: string; message?: string; data?: Record<string, unknown> }) {
+    return this.request<{ event_id: string }>('POST', `/api/capsule-runs/${runId}/events`, event)
+  }
+
+  listCapsuleEvents(runId: string) {
+    return this.request<{ events: any[] }>('GET', `/api/capsule-runs/${runId}/events`)
+  }
+
+  validateArtifact(runId: string, artifactName: string, artifactPath?: string, size?: number) {
+    return this.request<any>('POST', `/api/capsule-runs/${runId}/validate`, { artifact_name: artifactName, artifact_path: artifactPath, size })
+  }
 }
