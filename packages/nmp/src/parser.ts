@@ -66,7 +66,7 @@ export function parseNmpEmail(parsed: ParsedEmailInput): NmpParseResult {
     try {
       const raw = bufferToString(nmpJsonAttachment.content)
       if (raw.length > NMP_LIMITS.maxJsonSize) {
-        return { isNmp: false, detectedBy: 'none' as const, message: null, errors: [`nmp.json exceeds ${NMP_LIMITS.maxJsonSize} bytes`] }
+        return { isNmp: false, detectedBy: null, message: null, payload: null }
       }
       payload = JSON.parse(raw) as NmpPayload
       // Normalize legacy types
