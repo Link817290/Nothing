@@ -46,6 +46,11 @@ export async function smtpSend(opts: SmtpSendOptions): Promise<{ messageId: stri
   if (opts.payload.require?.length) builder.require(opts.payload.require)
   if (opts.payload.reply_schema) builder.replySchema(opts.payload.reply_schema)
   if (opts.payload.ack) builder.ack()
+  if (opts.payload.help_request) builder.helpRequest(opts.payload.help_request)
+  if (opts.payload.execution_capsule) builder.executionCapsule(opts.payload.execution_capsule)
+  if (opts.payload.capsule_run) builder.capsuleRun(opts.payload.capsule_run)
+  if (opts.payload.capsule_event) builder.capsuleEvent(opts.payload.capsule_event)
+  if (opts.payload.artifact) builder.artifactCreated(opts.payload.artifact)
   if (opts.inReplyTo) builder.inReplyTo(opts.inReplyTo)
   if (opts.references) builder.references(opts.references)
 

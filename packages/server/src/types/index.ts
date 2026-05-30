@@ -100,6 +100,8 @@ export interface SendRequest {
   priority?: string
   require?: string[]
   attachments?: SendAttachment[]
+  help_request?: any
+  execution_capsule?: any
 }
 
 export interface InboxQuery {

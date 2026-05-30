@@ -52,6 +52,55 @@ export function generateMarkdown(
     if (schemaLines.length) sections.push(`## Reply Schema\n\n${schemaLines.join('\n')}`)
   }
 
+  // ## Help Request (optional)
+  if (payload.help_request) {
+    const hr = payload.help_request
+    const parts: string[] = [`- goal: ${hr.goal}`]
+    if (hr.background) parts.push(`- background: ${hr.background}`)
+    if (hr.constraints?.length) parts.push(`- constraints: ${hr.constraints.join(', ')}`)
+    if (hr.expected_artifacts?.length) {
+      parts.push(`- expected: ${hr.expected_artifacts.map(a => `${a.name} (${a.type})`).join(', ')}`)
+    }
+    sections.push(`## Help Request\n\n${parts.join('\n')}`)
+  }
+
+  // ## Execution Capsule (optional — summary for AI reading)
+  if (payload.execution_capsule) {
+    const cap = payload.execution_capsule
+    const sm = cap.state_machine
+    const parts: string[] = [
+      `- id: ${cap.id}`,
+      `- name: ${cap.name}`,
+      `- version: ${cap.version}`,
+      `- applies_to: ${cap.activation.task_types.join(', ')}`,
+      `- entry_state: ${sm.initial}`,
+    ]
+    if (cap.description) parts.push(`- description: ${cap.description}`)
+    sections.push(`## Execution Capsule\n\n${parts.join('\n')}`)
+
+    // State Machine
+    const smParts: string[] = []
+    for (const [name, state] of Object.entries(sm.states)) {
+      for (const t of state.transitions) {
+        smParts.push(`- ${name} -> ${t.to}`)
+      }
+    }
+    if (smParts.length) sections.push(`## State Machine\n\n${smParts.join('\n')}`)
+
+    // Tool Policy
+    const tp = cap.tool_policy
+    const tpParts = [`- allow: ${tp.allow.join(', ')}`]
+    if (tp.deny?.length) tpParts.push(`- deny: ${tp.deny.join(', ')}`)
+    if (tp.require_confirm?.length) tpParts.push(`- require_confirm: ${tp.require_confirm.join(', ')}`)
+    sections.push(`## Tool Policy\n\n${tpParts.join('\n')}`)
+
+    // Validators
+    if (cap.validators?.length) {
+      const vParts = cap.validators.map(v => `- ${v.rule}`)
+      sections.push(`## Validators\n\n${vParts.join('\n')}`)
+    }
+  }
+
   return sections.join('\n\n') + '\n'
 }
 

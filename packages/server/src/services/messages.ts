@@ -25,6 +25,8 @@ export async function sendMessage(userId: string, req: SendRequest) {
     nmp: 1, type: (req.type as any) || 'nmp:chat',
     agent: req.agent, project: req.project, labels: req.labels,
     priority: (req.priority as any), require: req.require,
+    help_request: req.help_request,
+    execution_capsule: req.execution_capsule,
   }
 
   const hasAttachments = (req.attachments?.length || 0) > 0
