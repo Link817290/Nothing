@@ -136,49 +136,57 @@ export async function listEvents(userId: string, runId: string) {
 
 // ─── Guard Command ────────────────────────────────────────────
 
+/** Safe regex test — catches invalid patterns */
+function safeRegexTest(pattern: string, input: string): boolean {
+  try {
+    return new RegExp(pattern).test(input)
+  } catch {
+    return input.includes(pattern)
+  }
+}
+
 export function guardCommand(capsule: NmpExecutionCapsule, currentState: string, command: string): { effect: 'allow' | 'deny' | 'confirm'; reason: string } {
   const policy = capsule.tool_policy
   const state = capsule.state_machine.states[currentState]
   const cmd = command.trim().replace(/\s+/g, ' ')
+  const tool = cmd.split(' ')[0]
 
   // Check command rules first (most specific)
   if (policy.command_rules) {
     for (const rule of policy.command_rules) {
-      if (new RegExp(rule.pattern).test(cmd)) {
+      if (safeRegexTest(rule.pattern, cmd)) {
         return { effect: rule.effect, reason: rule.reason }
       }
     }
   }
 
-  // Check deny list
+  // Check deny list (literal string match)
   if (policy.deny) {
     for (const d of policy.deny) {
-      if (cmd.includes(d) || new RegExp(d).test(cmd)) {
+      if (cmd.includes(d)) {
         return { effect: 'deny', reason: `Blocked by deny rule: ${d}` }
       }
     }
   }
 
-  // Check require_confirm
+  // Check require_confirm (literal string match)
   if (policy.require_confirm) {
     for (const c of policy.require_confirm) {
-      if (cmd.includes(c) || new RegExp(c).test(cmd)) {
+      if (cmd.includes(c)) {
         return { effect: 'confirm', reason: `Requires confirmation: ${c}` }
       }
     }
   }
 
-  // Check state-level allowed tools
+  // Check state-level allowed tools (exact match)
   if (state?.allowed_tools?.length) {
-    const tool = cmd.split(' ')[0]
-    if (!state.allowed_tools.some(t => tool.includes(t))) {
+    if (!state.allowed_tools.includes(tool)) {
       return { effect: 'deny', reason: `Tool "${tool}" not allowed in state "${currentState}". Allowed: ${state.allowed_tools.join(', ')}` }
     }
   }
 
-  // Check global allow list
-  const tool = cmd.split(' ')[0]
-  if (policy.allow.length > 0 && !policy.allow.some(a => tool.includes(a))) {
+  // Check global allow list (exact match)
+  if (policy.allow.length > 0 && !policy.allow.includes(tool)) {
     return { effect: 'deny', reason: `Tool "${tool}" not in allow list: ${policy.allow.join(', ')}` }
   }
 

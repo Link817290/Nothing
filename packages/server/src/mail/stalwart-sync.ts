@@ -174,12 +174,18 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
             project = nmpResult.payload?.project || null
             labels = nmpResult.payload?.labels || []
 
-            // Auto-save Execution Capsule if present
+            // Auto-save Execution Capsule if present and valid
             if (nmpResult.payload?.execution_capsule) {
               try {
-                const { saveCapsule } = await import('../services/capsules.js')
-                await saveCapsule(acc.user_id, msgId, nmpResult.payload.execution_capsule)
-                console.log(`[stalwart-sync] Saved capsule: ${nmpResult.payload.execution_capsule.name}`)
+                const { validateExecutionCapsule } = await import('@nothingmail/nmp')
+                const validation = validateExecutionCapsule(nmpResult.payload.execution_capsule)
+                if (validation.valid) {
+                  const { saveCapsule } = await import('../services/capsules.js')
+                  await saveCapsule(acc.user_id, msgId, nmpResult.payload.execution_capsule)
+                  console.log(`[stalwart-sync] Saved capsule: ${nmpResult.payload.execution_capsule.name}`)
+                } else {
+                  console.warn(`[stalwart-sync] Invalid capsule:`, validation.errors)
+                }
               } catch (e) {
                 console.warn(`[stalwart-sync] Failed to save capsule:`, (e as Error).message)
               }

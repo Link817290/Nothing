@@ -103,6 +103,7 @@ export async function capsuleRoutes(app: FastifyInstance) {
       type: 'state_completed',
       state: data.current_state,
       message: body.reason || `Completed "${data.current_state}", moving to "${body.to}"`,
+      data: { from_state: data.current_state, to_state: body.to },
       created_at: new Date().toISOString(),
     })
 
@@ -111,6 +112,7 @@ export async function capsuleRoutes(app: FastifyInstance) {
       type: 'state_entered',
       state: body.to,
       message: `Entered state: ${body.to}`,
+      data: { state: body.to, is_final: isFinal },
       created_at: new Date().toISOString(),
     })
 
@@ -145,11 +147,20 @@ export async function capsuleRoutes(app: FastifyInstance) {
 
   // ─── Events ────────────────────────────────────────────────────
 
+  const VALID_EVENT_TYPES = ['state_entered', 'state_completed', 'tool_requested', 'tool_allowed', 'tool_denied', 'validator_passed', 'validator_failed', 'artifact_created', 'blocked', 'note']
+
   app.post('/api/capsule-runs/:id/events', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
     const body = req.body as { type: string; state?: string; message?: string; data?: Record<string, unknown> }
     if (!body.type) return reply.code(400).send({ error: 'event type required' })
+    if (!VALID_EVENT_TYPES.includes(body.type)) {
+      return reply.code(400).send({ error: `Invalid event type. Valid: ${VALID_EVENT_TYPES.join(', ')}` })
+    }
+
+    // Verify run belongs to user
+    const r = await getRun(user.id, id)
+    if (!r) return reply.code(404).send({ error: 'Run not found' })
 
     const eventId = await appendEvent(user.id, id, {
       id: '', run_id: id,
@@ -232,9 +243,15 @@ export async function capsuleRoutes(app: FastifyInstance) {
     const user = (req as any).user as { id: string }
     const body = req.body as {
       run_id?: string; message_id?: string; attachment_id?: string
-      name: string; type: string; mime_type?: string; sha256?: string; size?: number
+      name: string; type: string; mime_type?: string; sha256?: string; size?: number; provenance?: Record<string, unknown>
     }
     if (!body.name || !body.type) return reply.code(400).send({ error: 'name and type required' })
+
+    // Verify run belongs to user if run_id provided
+    if (body.run_id) {
+      const r = await getRun(user.id, body.run_id)
+      if (!r) return reply.code(404).send({ error: 'Run not found' })
+    }
 
     const id = await createArtifact(user.id, body)
     return { id }

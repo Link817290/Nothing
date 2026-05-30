@@ -181,8 +181,11 @@ CREATE TABLE IF NOT EXISTS artifacts (
 CREATE INDEX IF NOT EXISTS idx_capsules_owner ON execution_capsules(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_runs_user ON capsule_runs(user_id);
 CREATE INDEX IF NOT EXISTS idx_runs_capsule ON capsule_runs(capsule_id);
+CREATE INDEX IF NOT EXISTS idx_runs_user_capsule ON capsule_runs(user_id, capsule_id);
 CREATE INDEX IF NOT EXISTS idx_events_run ON capsule_events(run_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_run ON capsule_events(user_id, run_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id);
+CREATE INDEX IF NOT EXISTS idx_artifacts_user ON artifacts(user_id);
 
 -- Trigram index for full-text search (safe if extension not available)
 DO $$ BEGIN
