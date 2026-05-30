@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { listUsers, banUser } from '../services/auth.js'
 import { getAllSettings, setSetting } from '../services/settings.js'
-import { queryOne, run } from '../repositories/db.js'
+import { queryOne, queryAll, run } from '../repositories/db.js'
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook('onRequest', authenticate)
@@ -121,6 +121,12 @@ export async function adminRoutes(app: FastifyInstance) {
       console.warn('[ADMIN-RESET] Stalwart cleanup failed:', (err as Error).message)
     }
 
+    await run('DELETE FROM capsule_events')
+    await run('DELETE FROM artifacts')
+    await run('DELETE FROM capsule_runs')
+    await run('DELETE FROM execution_capsules')
+    await run('DELETE FROM verification_codes')
+    await run('DELETE FROM tasks')
     await run('DELETE FROM messages')
     await run('DELETE FROM email_accounts')
     await run('DELETE FROM api_keys WHERE user_id != $1', [user.id])

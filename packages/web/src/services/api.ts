@@ -117,5 +117,5 @@ export const api = {
 
   // ── Admin - Data ────────────────────────────────────
   adminClearMessages: () => request('/admin/messages', { method: 'DELETE' }),
-  adminReset: () => request('/admin/reset', { method: 'POST' }),
+  adminReset: (password: string) => request('/admin/reset', { method: 'POST', body: JSON.stringify({ password }) }),
 };

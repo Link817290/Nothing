@@ -213,9 +213,15 @@ export default function AdminSystem() {
                   onClick={async () => {
                     const ok = await confirm({ title: t('confirm.reset_title'), description: t('confirm.reset_desc'), confirmText: t('confirm.reset_btn'), variant: 'destructive' });
                     if (!ok) return;
-                    await api.adminReset();
-                    toast({ title: 'Server reset complete', variant: 'success' });
-                    load();
+                    const pw = window.prompt('Enter your password to confirm reset:');
+                    if (!pw) return;
+                    try {
+                      await api.adminReset(pw);
+                      toast({ title: 'Server reset complete', variant: 'success' });
+                      load();
+                    } catch (err: any) {
+                      toast({ title: 'Reset failed', description: err.message, variant: 'error' });
+                    }
                   }}
                 >
                   <Trash2 className="h-3.5 w-3.5" /> {t('admin.full_reset_btn')}

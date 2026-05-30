@@ -102,6 +102,9 @@ export interface SendRequest {
   attachments?: SendAttachment[]
   help_request?: any
   execution_capsule?: any
+  capsule_run?: any
+  capsule_event?: any
+  artifact?: any
 }
 
 export interface InboxQuery {

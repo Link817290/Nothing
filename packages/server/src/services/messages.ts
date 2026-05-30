@@ -27,6 +27,9 @@ export async function sendMessage(userId: string, req: SendRequest) {
     priority: (req.priority as any), require: req.require,
     help_request: req.help_request,
     execution_capsule: req.execution_capsule,
+    capsule_run: req.capsule_run,
+    capsule_event: req.capsule_event,
+    artifact: req.artifact,
   }
 
   const hasAttachments = (req.attachments?.length || 0) > 0
