@@ -173,6 +173,17 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
             agent = nmpResult.payload?.agent || null
             project = nmpResult.payload?.project || null
             labels = nmpResult.payload?.labels || []
+
+            // Auto-save Execution Capsule if present
+            if (nmpResult.payload?.execution_capsule) {
+              try {
+                const { saveCapsule } = await import('../services/capsules.js')
+                await saveCapsule(acc.user_id, msgId, nmpResult.payload.execution_capsule)
+                console.log(`[stalwart-sync] Saved capsule: ${nmpResult.payload.execution_capsule.name}`)
+              } catch (e) {
+                console.warn(`[stalwart-sync] Failed to save capsule:`, (e as Error).message)
+              }
+            }
           } else {
             body = parsed.html || parsed.textAsHtml || parsed.text || email.preview || subject
           }

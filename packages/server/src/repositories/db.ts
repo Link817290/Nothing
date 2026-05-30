@@ -123,6 +123,67 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
 
+-- ─── Execution Capsules ─────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS execution_capsules (
+  id TEXT PRIMARY KEY,
+  owner_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  source_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL,
+  description TEXT,
+  capsule_json JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS capsule_runs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  capsule_id TEXT REFERENCES execution_capsules(id) ON DELETE CASCADE,
+  source_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+  help_request_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'created',
+  current_state TEXT NOT NULL,
+  run_json JSONB NOT NULL DEFAULT '{}',
+  inputs JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS capsule_events (
+  id TEXT PRIMARY KEY,
+  run_id TEXT REFERENCES capsule_runs(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  state TEXT,
+  message TEXT,
+  event_json JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS artifacts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  run_id TEXT REFERENCES capsule_runs(id) ON DELETE SET NULL,
+  message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+  attachment_id TEXT REFERENCES attachments(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  mime_type TEXT,
+  sha256 TEXT,
+  size INTEGER,
+  provenance_json JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_capsules_owner ON execution_capsules(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_runs_user ON capsule_runs(user_id);
+CREATE INDEX IF NOT EXISTS idx_runs_capsule ON capsule_runs(capsule_id);
+CREATE INDEX IF NOT EXISTS idx_events_run ON capsule_events(run_id);
+CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id);
+
 -- Trigram index for full-text search (safe if extension not available)
 DO $$ BEGIN
   CREATE EXTENSION IF NOT EXISTS pg_trgm;
