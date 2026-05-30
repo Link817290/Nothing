@@ -18,7 +18,7 @@ export { Registry } from './registry.js'
 export { schemaRegistry, resolveSchema } from './schemas.js'
 
 // Validation
-export { validatePayload, validateMarkdown } from './validate.js'
+export { validatePayload, validateMarkdown, validateExecutionCapsule, validateHelpRequest } from './validate.js'
 export type { ValidationResult } from './validate.js'
 
 // MCP tool definitions

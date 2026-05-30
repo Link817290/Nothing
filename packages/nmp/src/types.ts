@@ -6,16 +6,22 @@ export const NMP_VERSION = 1
 // Third parties can register custom types like "myapp:deploy-request".
 
 export const NMP_BUILTIN_TYPES = [
-  'nmp:chat',          // General message / conversation
-  'nmp:task',          // Task assignment
-  'nmp:reply',         // Reply to a message
-  'nmp:notification',  // One-way notification (no reply expected)
-  'nmp:code-review',   // Code review request
-  'nmp:report',        // Report / summary request
-  'nmp:approval',      // Approval request
-  'nmp:escalation',    // Escalation to human
-  'nmp:error',         // Error response
-  'nmp:ack',           // Acknowledgment
+  'nmp:chat',               // General message / conversation
+  'nmp:task',               // Task assignment
+  'nmp:reply',              // Reply to a message
+  'nmp:notification',       // One-way notification (no reply expected)
+  'nmp:code-review',        // Code review request
+  'nmp:report',             // Report / summary request
+  'nmp:approval',           // Approval request
+  'nmp:escalation',         // Escalation to human
+  'nmp:error',              // Error response
+  'nmp:ack',                // Acknowledgment
+  'nmp:help-request',       // Request for help / expertise
+  'nmp:execution-capsule',  // Deliver executable experience package
+  'nmp:capsule-run',        // Declare a capsule execution started
+  'nmp:capsule-event',      // Record execution process event
+  'nmp:artifact-created',   // Record artifact creation
+  'nmp:help-reply',         // Structured expert reply
 ] as const
 
 export type NmpBuiltinType = typeof NMP_BUILTIN_TYPES[number]
@@ -133,6 +139,222 @@ export interface NmpPayload {
   source?: NmpSource
   error?: NmpError
   signature?: string
+
+  // Execution Capsule extensions (optional, backward-compatible)
+  help_request?: NmpHelpRequest
+  execution_capsule?: NmpExecutionCapsule
+  capsule_run?: NmpCapsuleRun
+  capsule_event?: NmpCapsuleEvent
+  artifact?: NmpArtifact
+}
+
+// ─── Help Request ─────────────────────────────────────────────────
+
+export interface NmpHelpRequest {
+  id: string
+  goal: string
+  background?: string
+  expected_artifacts?: NmpExpectedArtifact[]
+  constraints?: string[]
+  current_attempts?: NmpAttemptSummary[]
+  preferred_reply_types?: Array<'help-reply' | 'execution-capsule' | 'patch' | 'checklist'>
+  context_refs?: NmpContextRef[]
+}
+
+export interface NmpExpectedArtifact {
+  type: string
+  name: string
+}
+
+export interface NmpAttemptSummary {
+  description: string
+  outcome: 'failed' | 'partial' | 'unsatisfactory'
+  reason?: string
+}
+
+export interface NmpContextRef {
+  type: 'file' | 'url' | 'message' | 'repo'
+  ref: string
+  description?: string
+}
+
+// ─── Execution Capsule ────────────────────────────────────────────
+
+export interface NmpExecutionCapsule {
+  id: string
+  name: string
+  version: string
+  description?: string
+  author?: NmpCapsuleAuthor
+  license?: string
+  activation: NmpCapsuleActivation
+  inputs?: NmpCapsuleInput[]
+  state_machine: NmpCapsuleStateMachine
+  tool_policy: NmpCapsuleToolPolicy
+  file_policy?: NmpCapsuleFilePolicy
+  network_policy?: NmpCapsuleNetworkPolicy
+  budget_policy?: NmpCapsuleBudgetPolicy
+  validators: NmpCapsuleValidator[]
+  fallbacks?: Record<string, NmpCapsuleFallback>
+  artifacts?: NmpCapsuleArtifactSpec[]
+  attachment_refs?: string[]
+  examples?: NmpCapsuleExample[]
+}
+
+export interface NmpCapsuleAuthor {
+  name: string
+  email?: string
+  agent?: string
+}
+
+export interface NmpCapsuleActivation {
+  task_types: string[]
+  keywords?: string[]
+  required_context?: string[]
+  unsupported_context?: string[]
+  confidence?: number
+}
+
+export interface NmpCapsuleInput {
+  name: string
+  type: 'string' | 'number' | 'boolean' | 'file' | 'json'
+  required: boolean
+  description?: string
+  default?: unknown
+}
+
+// ─── State Machine ────────────────────────────────────────────────
+
+export interface NmpCapsuleStateMachine {
+  initial: string
+  final: string[]
+  states: Record<string, NmpCapsuleState>
+}
+
+export interface NmpCapsuleState {
+  title?: string
+  goal: string
+  instructions?: string
+  required_inputs?: string[]
+  expected_outputs?: string[]
+  allowed_tools?: string[]
+  validators?: string[]
+  transitions: NmpCapsuleTransition[]
+}
+
+export interface NmpCapsuleTransition {
+  to: string
+  when: string
+  fallback?: string
+}
+
+// ─── Policies ─────────────────────────────────────────────────────
+
+export interface NmpCapsuleToolPolicy {
+  allow: string[]
+  deny?: string[]
+  require_confirm?: string[]
+  command_rules?: NmpCommandRule[]
+}
+
+export interface NmpCommandRule {
+  pattern: string
+  effect: 'allow' | 'deny' | 'confirm'
+  reason: string
+}
+
+export interface NmpCapsuleFilePolicy {
+  read_allow?: string[]
+  read_deny?: string[]
+  write_allow?: string[]
+  write_deny?: string[]
+}
+
+export interface NmpCapsuleNetworkPolicy {
+  allow_hosts?: string[]
+  deny_hosts?: string[]
+  require_confirm?: string[]
+}
+
+export interface NmpCapsuleBudgetPolicy {
+  max_steps?: number
+  max_tool_calls?: number
+  max_retries?: number
+  timeout_minutes?: number
+}
+
+// ─── Validators & Fallbacks ───────────────────────────────────────
+
+export interface NmpCapsuleValidator {
+  id: string
+  type: 'file_exists' | 'json_schema' | 'command' | 'llm_check' | 'manual'
+  target?: string
+  rule: string
+  severity: 'error' | 'warning'
+}
+
+export interface NmpCapsuleFallback {
+  description: string
+  action: string
+}
+
+export interface NmpCapsuleArtifactSpec {
+  name: string
+  type: string
+  required: boolean
+  validators?: string[]
+}
+
+export interface NmpCapsuleExample {
+  input: Record<string, unknown>
+  description: string
+}
+
+// ─── Capsule Run & Events ─────────────────────────────────────────
+
+export interface NmpCapsuleRun {
+  id: string
+  capsule_id: string
+  capsule_version: string
+  help_request_id?: string
+  status: 'created' | 'running' | 'blocked' | 'completed' | 'failed' | 'cancelled'
+  current_state: string
+  started_at: string
+  completed_at?: string
+  executor?: string
+}
+
+export interface NmpCapsuleEvent {
+  id: string
+  run_id: string
+  type: 'state_entered' | 'state_completed' | 'tool_requested' | 'tool_allowed' | 'tool_denied' | 'validator_passed' | 'validator_failed' | 'artifact_created' | 'blocked' | 'note'
+  state?: string
+  message?: string
+  data?: Record<string, unknown>
+  created_at: string
+}
+
+// ─── Artifact ─────────────────────────────────────────────────────
+
+export interface NmpArtifact {
+  id: string
+  run_id?: string
+  name: string
+  type: string
+  mime_type?: string
+  attachment_id?: string
+  sha256?: string
+  size?: number
+  created_at: string
+  provenance?: NmpArtifactProvenance
+}
+
+export interface NmpArtifactProvenance {
+  source_message_id?: string
+  capsule_id?: string
+  run_id?: string
+  state?: string
+  validators?: string[]
 }
 
 /** Parsed nmp.md content (Part 2) */

@@ -2,6 +2,7 @@ import {
   NMP_VERSION, NMP_HEADERS, NMP_ATTACHMENT_NAME, NMP_DEFAULTS,
   resolveType,
   type NmpType, type NmpPriority, type NmpContext, type NmpPayload, type NmpEmail,
+  type NmpHelpRequest, type NmpExecutionCapsule, type NmpCapsuleRun, type NmpCapsuleEvent, type NmpArtifact,
 } from './types.js'
 import { generateMarkdown, generatePlainText } from './markdown.js'
 
@@ -41,6 +42,11 @@ export class NmpBuilder {
   private _inReplyTo?: string
   private _references?: string[]
   private _signature?: string
+  private _helpRequest?: NmpHelpRequest
+  private _executionCapsule?: NmpExecutionCapsule
+  private _capsuleRun?: NmpCapsuleRun
+  private _capsuleEvent?: NmpCapsuleEvent
+  private _artifact?: NmpArtifact
 
   static create(): NmpBuilder {
     return new NmpBuilder()
@@ -67,6 +73,11 @@ export class NmpBuilder {
   inReplyTo(id: string): this { this._inReplyTo = id; return this }
   references(refs: string[]): this { this._references = refs; return this }
   signature(sig: string): this { this._signature = sig; return this }
+  helpRequest(req: NmpHelpRequest): this { this._helpRequest = req; this._type = 'nmp:help-request'; return this }
+  executionCapsule(cap: NmpExecutionCapsule): this { this._executionCapsule = cap; this._type = 'nmp:execution-capsule'; return this }
+  capsuleRun(run: NmpCapsuleRun): this { this._capsuleRun = run; this._type = 'nmp:capsule-run'; return this }
+  capsuleEvent(evt: NmpCapsuleEvent): this { this._capsuleEvent = evt; this._type = 'nmp:capsule-event'; return this }
+  artifactCreated(art: NmpArtifact): this { this._artifact = art; this._type = 'nmp:artifact-created'; return this }
 
   /** Build the NMP payload object */
   buildPayload(): NmpPayload {
@@ -86,6 +97,11 @@ export class NmpBuilder {
       require: this._require,
       reply_schema: this._replySchema,
       signature: this._signature,
+      help_request: this._helpRequest,
+      execution_capsule: this._executionCapsule,
+      capsule_run: this._capsuleRun,
+      capsule_event: this._capsuleEvent,
+      artifact: this._artifact,
     }
   }
 

@@ -99,4 +99,85 @@ export const NMP_TOOLS = {
       },
     },
   },
+  // ─── Execution Capsule Tools ────────────────────────────────
+
+  nothing_capsule_inspect: {
+    name: 'nothing_capsule_inspect',
+    description: 'Inspect an Execution Capsule from a received message. Shows state machine, tool policy, validators, and artifact specs. Use when you receive an nmp:execution-capsule message.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Message ID or Capsule ID to inspect' },
+      },
+      required: ['id'],
+    },
+  },
+
+  nothing_capsule_start: {
+    name: 'nothing_capsule_start',
+    description: 'Start executing a capsule. Creates a run and returns the initial state with goal, allowed tools, and expected outputs. Use after inspecting a capsule to begin the task.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        capsule_id: { type: 'string', description: 'Capsule ID to execute' },
+        inputs: { type: 'object', description: 'Input values required by the capsule (e.g., { topic: "AI startup", slides: 10 })' },
+      },
+      required: ['capsule_id'],
+    },
+  },
+
+  nothing_capsule_next: {
+    name: 'nothing_capsule_next',
+    description: 'Get the current state of a running capsule. Returns the goal, instructions, allowed tools, expected outputs, and validators for the current step. Call this to know what to do next.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        run_id: { type: 'string', description: 'Run ID from capsule_start' },
+      },
+      required: ['run_id'],
+    },
+  },
+
+  nothing_capsule_guard: {
+    name: 'nothing_capsule_guard',
+    description: 'Check if a command is allowed by the capsule tool policy BEFORE executing it. Returns allow/deny/confirm with reason. Always call this before running shell commands during capsule execution.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        run_id: { type: 'string', description: 'Run ID' },
+        command: { type: 'string', description: 'The command to check (e.g., "python build_ppt.py", "npm install x")' },
+      },
+      required: ['run_id', 'command'],
+    },
+  },
+
+  nothing_capsule_event: {
+    name: 'nothing_capsule_event',
+    description: 'Record an event during capsule execution. Use to log state transitions, tool calls, validation results, or notes. This builds the execution timeline.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        run_id: { type: 'string', description: 'Run ID' },
+        type: { type: 'string', enum: ['state_entered', 'state_completed', 'tool_requested', 'tool_allowed', 'tool_denied', 'validator_passed', 'validator_failed', 'artifact_created', 'blocked', 'note'], description: 'Event type' },
+        state: { type: 'string', description: 'Current state name' },
+        message: { type: 'string', description: 'Event description' },
+        data: { type: 'object', description: 'Additional event data' },
+      },
+      required: ['run_id', 'type'],
+    },
+  },
+
+  nothing_capsule_validate: {
+    name: 'nothing_capsule_validate',
+    description: 'Validate an artifact against capsule validators. Call after generating the expected output to check if it meets requirements (file exists, correct format, structure rules, etc.).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        run_id: { type: 'string', description: 'Run ID' },
+        artifact_path: { type: 'string', description: 'Path to the artifact file to validate' },
+        artifact_name: { type: 'string', description: 'Name of the artifact (matches capsule artifact spec)' },
+      },
+      required: ['run_id', 'artifact_path'],
+    },
+  },
 } as const
