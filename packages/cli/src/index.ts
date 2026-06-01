@@ -149,6 +149,15 @@ program
   })
 
 program
+  .command('download <attachmentId>')
+  .option('-o, --output <dir>', 'Output directory', '.')
+  .description('Download an attachment by ID')
+  .action(async (attachmentId: string, opts) => {
+    const { download } = await import('./commands/download.js')
+    await download(attachmentId, opts.output)
+  })
+
+program
   .command('reply <id> <text>')
   .option('-f, --file <files...>', 'Attach files')
   .description('Reply to a message (inherits project, labels, thread)')

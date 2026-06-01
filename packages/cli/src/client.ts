@@ -153,6 +153,18 @@ export class NothingClient {
     return this.request<any>('GET', `/api/reports${qs ? '?' + qs : ''}`)
   }
 
+  // ─── Attachments ────────────────────────────────────────────────
+
+  async downloadAttachment(id: string): Promise<{ filename: string; data: Buffer }> {
+    const res = await fetch(`${this.serverUrl}/api/attachments/${id}/download`, {
+      headers: { 'Authorization': `Bearer ${this.token}` },
+    })
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`)
+    const filename = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || `attachment_${id}`
+    const data = Buffer.from(await res.arrayBuffer())
+    return { filename, data }
+  }
+
   // ─── Capsules ──────────────────────────────────────────────────
 
   listCapsules() {

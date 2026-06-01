@@ -35,7 +35,7 @@ export async function read(id: string) {
       console.log()
       console.log('  Attachments:')
       msg.attachments.forEach((att: any, i: number) => {
-        console.log(`    [${i + 1}] ${att.filename} (${(att.size / 1024).toFixed(1)} KB)`)
+        console.log(`    [${i + 1}] ${att.filename} (${(att.size / 1024).toFixed(1)} KB)  → nothing download ${att.id}`)
       })
     }
 

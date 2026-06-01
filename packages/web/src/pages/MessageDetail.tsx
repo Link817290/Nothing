@@ -36,6 +36,7 @@ export default function MessageDetail() {
   const [panel, setPanel] = useState<'reply' | 'forward' | null>(null);
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -43,8 +44,19 @@ export default function MessageDetail() {
     api.getMessage(id).then((data) => {
       setMsg(data);
       if (data.unread) api.markRead(id, true).catch(() => {});
-      // Load attachments
-      api.getAttachments(id).then(r => setAttachments(r.attachments || [])).catch(() => {});
+      // Load attachments + image previews
+      api.getAttachments(id).then(r => {
+        const atts = r.attachments || [];
+        setAttachments(atts);
+        // Load image previews
+        const token = useAuthStore.getState().token;
+        atts.filter((a: any) => /^image\//i.test(a.content_type)).forEach((a: any) => {
+          fetch(`/api/attachments/${a.id}/download`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+            .then(blob => { if (blob) setPreviewUrls(prev => ({ ...prev, [a.id]: URL.createObjectURL(blob) })) })
+            .catch(() => {});
+        });
+      }).catch(() => {});
     }).catch(() => navigate('/inbox')).finally(() => setLoading(false));
   }, [id]);
 
@@ -82,6 +94,25 @@ export default function MessageDetail() {
     await api.deleteMessage(id);
     toast({ title: t('message.deleted'), variant: 'success' });
     navigate('/inbox');
+  };
+
+  const downloadAtt = async (att: any) => {
+    try {
+      const token = useAuthStore.getState().token;
+      const res = await fetch(`/api/attachments/${att.id}/download`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: 'Download failed', variant: 'error' });
+    }
   };
 
   const handleToggleRead = async () => {
@@ -176,35 +207,36 @@ export default function MessageDetail() {
 
           {/* Attachments */}
           {attachments.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-2">
-              {attachments.map((att: any) => (
-                <button
-                  key={att.id}
-                  onClick={async () => {
-                    try {
-                      const token = useAuthStore.getState().token;
-                      const res = await fetch(`/api/attachments/${att.id}/download`, {
-                        headers: { 'Authorization': `Bearer ${token}` },
-                      });
-                      if (!res.ok) throw new Error('Download failed');
-                      const blob = await res.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = att.filename;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    } catch {
-                      toast({ title: 'Download failed', variant: 'error' });
-                    }
-                  }}
-                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
-                >
-                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="truncate max-w-[200px]">{att.filename}</span>
-                  <span className="text-xs text-muted-foreground">{formatSize(att.size)}</span>
-                </button>
+            <div className="mt-6 space-y-3">
+              {/* Image previews */}
+              {attachments.filter((att: any) => /^image\//i.test(att.content_type) && previewUrls[att.id]).map((att: any) => (
+                <div key={`preview-${att.id}`} className="rounded-lg border border-border overflow-hidden">
+                  <img
+                    src={previewUrls[att.id]}
+                    alt={att.filename}
+                    className="max-w-full max-h-96 object-contain bg-muted"
+                  />
+                  <div className="flex items-center justify-between px-3 py-2 bg-accent/30">
+                    <span className="text-xs text-muted-foreground">{att.filename} · {formatSize(att.size)}</span>
+                    <button onClick={() => downloadAtt(att)} className="text-xs text-brand hover:underline">Download</button>
+                  </div>
+                </div>
               ))}
+
+              {/* File list (non-image) */}
+              <div className="flex flex-wrap gap-2">
+                {attachments.filter((att: any) => !/^image\//i.test(att.content_type)).map((att: any) => (
+                  <button
+                    key={att.id}
+                    onClick={() => downloadAtt(att)}
+                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="truncate max-w-[200px]">{att.filename}</span>
+                    <span className="text-xs text-muted-foreground">{formatSize(att.size)}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
