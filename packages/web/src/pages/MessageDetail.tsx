@@ -38,7 +38,7 @@ export default function MessageDetail() {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [expandedAtt, setExpandedAtt] = useState<string | null>(null);
-  const [threadView, setThreadView] = useState<'tree' | 'canvas' | 'summary'>('tree');
+  const [threadView, setThreadView] = useState<'tree' | 'canvas'>('tree');
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -280,10 +280,6 @@ export default function MessageDetail() {
                     onClick={() => setThreadView('canvas')}
                     className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'canvas' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
                   >Canvas</button>
-                  <button
-                    onClick={() => setThreadView('summary')}
-                    className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'summary' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
-                  >Summary</button>
                 </div>
               </div>
 
@@ -291,13 +287,9 @@ export default function MessageDetail() {
                 <div className="mt-3">
                   <ThreadTree items={msg.thread} currentId={msg.id} />
                 </div>
-              ) : threadView === 'canvas' ? (
-                <div className="mt-3">
-                  <ThreadCanvas items={msg.thread} currentId={msg.id} />
-                </div>
               ) : (
                 <div className="mt-3">
-                  <ThreadSummary items={msg.thread} />
+                  <ThreadCanvas items={msg.thread} currentId={msg.id} />
                 </div>
               )}
             </div>
@@ -397,103 +389,6 @@ function ThreadTree({ items, currentId }: { items: ThreadItemData[]; currentId: 
   return <div>{renderNode(null, 0)}</div>
 }
 
-function ThreadSummary({ items }: { items: ThreadItemData[] }) {
-  const [summary, setSummary] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  const threadId = items[0]?.id
-  useEffect(() => {
-    if (!threadId) return
-    // Find the actual thread_id — it's the same for all items in the thread
-    // Use the first item's id as thread_id (it's the root)
-    const rootThread = items[0]?.id
-    if (!rootThread) return
-    api.getThreadSummary(rootThread).then(setSummary).catch(() => {}).finally(() => setLoading(false))
-  }, [threadId])
-
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
-  if (!summary || !summary.days?.length) return <p className="text-sm text-muted-foreground p-4">No summary available</p>
-
-  return (
-    <div className="space-y-4 fade-in">
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-xs text-muted-foreground">Messages</p>
-          <p className="text-lg font-semibold mt-1">{summary.total}</p>
-        </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-xs text-muted-foreground">Participants</p>
-          <p className="text-lg font-semibold mt-1">{summary.participants?.length || 0}</p>
-        </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-xs text-muted-foreground">Days Active</p>
-          <p className="text-lg font-semibold mt-1">{summary.days.length}</p>
-        </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-xs text-muted-foreground">Duration</p>
-          <p className="text-lg font-semibold mt-1">
-            {summary.started && summary.last_activity
-              ? formatDuration(new Date(summary.last_activity).getTime() - new Date(summary.started).getTime())
-              : '—'}
-          </p>
-        </div>
-      </div>
-
-      {/* Participants */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Participants</p>
-        <div className="flex flex-wrap gap-2">
-          {(summary.participants || []).map((p: string) => (
-            <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-sm">
-              <span className="h-2 w-2 rounded-full bg-brand" />
-              {p}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Daily Digest */}
-      {summary.days.map((day: any) => (
-        <div key={day.date}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{day.date}</span>
-            <span className="text-xs text-muted-foreground">· {day.message_count} messages · {day.senders.join(', ')}</span>
-          </div>
-          <div className="space-y-1 ml-1">
-            {day.messages.map((m: any, i: number) => (
-              <Link to={`/messages/${m.id}`} key={m.id} className="block">
-                <div className="flex items-start gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent/50 transition-colors">
-                  <div className="flex flex-col items-center mt-1">
-                    <span className={cn('h-2 w-2 rounded-full', m.direction === 'outbound' ? 'bg-muted-foreground' : 'bg-brand')} />
-                    {i < day.messages.length - 1 && <span className="w-px flex-1 bg-border mt-1" style={{ minHeight: '12px' }} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">{m.from}</span>
-                      <span className="text-xs text-muted-foreground">{m.time}</span>
-                      {m.has_attachments && <Paperclip className="h-3 w-3 text-muted-foreground" />}
-                    </div>
-                    <p className="text-muted-foreground truncate">{m.preview}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function formatDuration(ms: number): string {
-  const mins = Math.floor(ms / 60000)
-  if (mins < 1) return '<1m'
-  if (mins < 60) return `${mins}m`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ${mins % 60}m`
-  return `${Math.floor(hours / 24)}d ${hours % 24}h`
-}
 
 function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId: string }) {
   const containerRef = React.useRef<HTMLDivElement>(null)
