@@ -104,7 +104,7 @@ export class NothingClient {
     return this.request<any>('GET', `/api/messages/${id}`)
   }
 
-  reply(id: string, req: { text: string; files?: string[] }) {
+  reply(id: string, req: { text: string; attachments?: { filename: string; content: string; content_type?: string }[] }) {
     return this.request<{ success: boolean; message_id: string; status: string }>('POST', `/api/messages/${id}/reply`, req)
   }
 
