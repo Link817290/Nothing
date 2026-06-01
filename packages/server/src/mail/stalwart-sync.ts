@@ -194,20 +194,12 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
             body = parsed.html || parsed.textAsHtml || parsed.text || email.preview || subject
           }
 
-          // Save user attachments (exclude nmp.md/nmp.json)
+          // Count user attachments (exclude nmp.md/nmp.json) — saved after message INSERT
           const rawAttachments = (parsed.attachments || [])
             .filter(a => a.filename && a.filename !== 'nmp.md' && a.filename !== 'nmp.json')
 
           if (rawAttachments.length > 0) {
             hasUserAttachments = true
-            try {
-              const { saveAttachment } = await import('../services/attachments.js')
-              for (const att of rawAttachments) {
-                await saveAttachment(msgId, att.filename!, att.contentType || 'application/octet-stream', att.content)
-              }
-            } catch (e) {
-              console.warn(`[stalwart-sync] Failed to save attachments for ${msgId}:`, (e as Error).message)
-            }
           }
         }
       } catch (e) {
@@ -258,6 +250,21 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
        'stalwart', source, threadId, inReplyTo, smtpMessageId,
        hasUserAttachments || email.hasAttachment || false]
     )
+
+    // Save attachments AFTER message INSERT (foreign key requires message to exist)
+    if (hasUserAttachments && parsedEmail) {
+      try {
+        const rawAtts = (parsedEmail.attachments || [])
+          .filter((a: any) => a.filename && a.filename !== 'nmp.md' && a.filename !== 'nmp.json')
+        const { saveAttachment } = await import('../services/attachments.js')
+        for (const att of rawAtts) {
+          await saveAttachment(msgId, att.filename!, att.contentType || 'application/octet-stream', att.content)
+        }
+      } catch (e) {
+        console.warn(`[stalwart-sync] Failed to save attachments for ${msgId}:`, (e as Error).message)
+      }
+    }
+
     newCount++
   }
 
