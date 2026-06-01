@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessageBody } from '@/components/email/MessageBody';
-import { Loader2, ArrowLeft, Reply, Forward, Trash2, Eye, EyeOff, Paperclip } from 'lucide-react';
+import { Loader2, ArrowLeft, Reply, Forward, Trash2, Eye, EyeOff, Paperclip, Download, Image, FileText, File, ChevronDown } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
 import { useAuthStore } from '@/stores/authStore';
@@ -37,6 +37,7 @@ export default function MessageDetail() {
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [expandedAtt, setExpandedAtt] = useState<string | null>(null);
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -214,36 +215,51 @@ export default function MessageDetail() {
 
           {/* Attachments */}
           {attachments.length > 0 && (
-            <div className="mt-6 space-y-3">
-              {/* Image previews */}
-              {attachments.filter((att: any) => /^image\//i.test(att.content_type) && previewUrls[att.id]).map((att: any) => (
-                <div key={`preview-${att.id}`} className="rounded-lg border border-border overflow-hidden">
-                  <img
-                    src={previewUrls[att.id]}
-                    alt={att.filename}
-                    className="max-w-full max-h-96 object-contain bg-muted"
-                  />
-                  <div className="flex items-center justify-between px-3 py-2 bg-accent/30">
-                    <span className="text-xs text-muted-foreground">{att.filename} · {formatSize(att.size)}</span>
-                    <button onClick={() => downloadAtt(att)} className="text-xs text-brand hover:underline">Download</button>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-6 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                <Paperclip className="h-3 w-3 inline mr-1" /> {attachments.length} attachment{attachments.length > 1 ? 's' : ''}
+              </p>
+              {attachments.map((att: any) => {
+                const isImage = /^image\//i.test(att.content_type)
+                const isPdf = /pdf/i.test(att.content_type)
+                const isExpanded = expandedAtt === att.id
+                const IconComp = isImage ? Image : isPdf ? FileText : File
 
-              {/* File list (non-image) */}
-              <div className="flex flex-wrap gap-2">
-                {attachments.filter((att: any) => !/^image\//i.test(att.content_type)).map((att: any) => (
-                  <button
-                    key={att.id}
-                    onClick={() => downloadAtt(att)}
-                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
-                  >
-                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="truncate max-w-[200px]">{att.filename}</span>
-                    <span className="text-xs text-muted-foreground">{formatSize(att.size)}</span>
-                  </button>
-                ))}
-              </div>
+                return (
+                  <div key={att.id} className="rounded-lg border border-border overflow-hidden">
+                    <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent/30 transition-colors">
+                      <IconComp className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate flex-1">{att.filename}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{formatSize(att.size)}</span>
+                      {isImage && previewUrls[att.id] && (
+                        <button
+                          onClick={() => setExpandedAtt(isExpanded ? null : att.id)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          title="Preview"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => downloadAtt(att)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title="Download"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {isExpanded && previewUrls[att.id] && (
+                      <div className="border-t border-border bg-muted/30 p-2 fade-in">
+                        <img
+                          src={previewUrls[att.id]}
+                          alt={att.filename}
+                          className="max-w-full max-h-[500px] object-contain mx-auto rounded"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
