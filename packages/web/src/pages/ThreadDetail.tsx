@@ -228,7 +228,7 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
   });
 
   const canvasW = Math.max(600, messages.length * (NODE_W + GAP_X));
-  const canvasH = NODE_H + 40;
+  const canvasH = NODE_H + (fullscreen ? 60 : 48);
 
   const onMouseDown = (e: React.MouseEvent) => {
     const el = containerRef.current;
@@ -258,7 +258,7 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
         'overflow-x-auto cursor-grab active:cursor-grabbing touch-pan-x',
         fullscreen ? 'bg-transparent' : 'rounded-xl border border-border bg-muted/20',
       )}
-      style={fullscreen ? {} : { maxHeight: '140px' }}
+      style={fullscreen ? {} : { minHeight: '120px' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
