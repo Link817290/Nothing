@@ -1,6 +1,6 @@
 {
   "name": "nothing-cli",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Nothing — AI Agent email client & MCP Server",
   "type": "module",
   "bin": {
