@@ -98,7 +98,7 @@ export function buildSummaryPrompt(messages: any[]): string {
 
 /** Generate summary using DeepSeek API — non-streaming (for storage) */
 export async function generateSummaryText(messages: any[]): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY
+  const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-cbcea3b46fff4fb1a122a8f38a4afd31'
   const prompt = buildSummaryPrompt(messages)
 
   if (apiKey) {
@@ -132,7 +132,7 @@ export async function generateSummaryText(messages: any[]): Promise<string> {
 
 /** Stream summary via DeepSeek — yields chunks for SSE */
 export async function* streamSummaryText(messages: any[]): AsyncGenerator<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY
+  const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-cbcea3b46fff4fb1a122a8f38a4afd31'
   const prompt = buildSummaryPrompt(messages)
 
   if (!apiKey) {
