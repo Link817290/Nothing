@@ -403,7 +403,7 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
   }
 
   // Layout: assign x (depth) and y (row) to each node
-  const NODE_W = 200, NODE_H = 56, GAP_X = 40, GAP_Y = 16
+  const NODE_W = 240, NODE_H = 64, GAP_X = 56, GAP_Y = 24
   const positions = new Map<string, { x: number; y: number }>()
   let nextY = 0
 
@@ -417,8 +417,8 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
   }
   layout(null, 0)
 
-  const canvasW = Math.max(600, (positions.size > 0 ? Math.max(...[...positions.values()].map(p => p.x)) : 0) + NODE_W + 40)
-  const canvasH = Math.max(200, nextY * (NODE_H + GAP_Y) + 20)
+  const canvasW = Math.max(800, (positions.size > 0 ? Math.max(...[...positions.values()].map(p => p.x)) : 0) + NODE_W + 80)
+  const canvasH = Math.max(300, nextY * (NODE_H + GAP_Y) + 60)
 
   const navigate = useNavigate()
 
@@ -439,7 +439,7 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
     <div
       ref={containerRef}
       className="overflow-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing"
-      style={{ maxHeight: '400px' }}
+      style={{ maxHeight: '500px' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
@@ -481,13 +481,13 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
                 stroke={isCurrent ? 'var(--brand)' : 'var(--border)'}
                 strokeWidth={isCurrent ? 2 : 1}
               />
-              <text x="10" y="20" fontSize="12" fontWeight={isCurrent ? 600 : 400} fill="var(--foreground)">
+              <text x="12" y="24" fontSize="13" fontWeight={isCurrent ? 600 : 400} fill="var(--foreground)">
                 {item.from.split('@')[0]}
               </text>
-              <text x="10" y="38" fontSize="11" fill="var(--muted-foreground)">
-                {item.preview.slice(0, 25)}{item.preview.length > 25 ? '…' : ''}
+              <text x="12" y="44" fontSize="11" fill="var(--muted-foreground)">
+                {item.preview.slice(0, 30)}{item.preview.length > 30 ? '…' : ''}
               </text>
-              <text x={NODE_W - 10} y="20" fontSize="10" fill="var(--muted-foreground)" textAnchor="end">
+              <text x={NODE_W - 12} y="24" fontSize="10" fill="var(--muted-foreground)" textAnchor="end">
                 {formatDate(item.date)}
               </text>
             </g>
