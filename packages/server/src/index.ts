@@ -19,7 +19,7 @@ async function main() {
   await initDb(config.databaseUrl)
 
   // Create Fastify app
-  const app = Fastify({ logger: true })
+  const app = Fastify({ logger: true, bodyLimit: 25 * 1024 * 1024 }) // 25MB
 
   // Plugins
   const corsOrigins = (process.env.CORS_ORIGINS ?? '').split(',').filter(Boolean)
