@@ -42,6 +42,7 @@ services:
       - SERVER_IP=${SERVER_IP:-}
       - ATTACHMENT_DIR=/data/attachments
       - MAIL_DOMAIN=${MAIL_DOMAIN:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - PORT=3000
     depends_on:
       db:

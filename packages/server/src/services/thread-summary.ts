@@ -96,14 +96,43 @@ export function buildSummaryPrompt(messages: any[]): string {
   return `Summarize this email thread concisely. Focus on key decisions, action items, and open questions. Keep it under 200 words.\n\n${lines}`
 }
 
-/** Placeholder: generate summary text. Replace with actual LLM call. */
+/** Generate summary using DeepSeek API (OpenAI-compatible) */
 export async function generateSummaryText(messages: any[]): Promise<string> {
-  // TODO: Replace with actual LLM API call (OpenAI, Claude, etc.)
-  // For now, generate a structured summary from the messages
-  const participants = [...new Set(messages.map(m => m.from_address.split('@')[0]))]
-  const topics = messages.map(m => m.subject).filter(Boolean)
-  const subject = topics[0] || 'Thread discussion'
+  const apiKey = process.env.DEEPSEEK_API_KEY
+  const prompt = buildSummaryPrompt(messages)
 
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'You are a concise thread summarizer. Summarize email threads focusing on key decisions, action items, and open questions. Use the same language as the messages. Keep it under 200 words.' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 512,
+          temperature: 0.3,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json() as any
+        const text = data.choices?.[0]?.message?.content?.trim()
+        if (text) return text
+      }
+    } catch (err) {
+      console.warn('[summary] DeepSeek API failed:', (err as Error).message)
+    }
+  }
+
+  // Fallback: structured summary without AI
+  const participants = [...new Set(messages.map(m => m.from_address.split('@')[0]))]
+  const subject = messages[0]?.subject || 'Thread'
   const points: string[] = []
   for (const m of messages) {
     const from = m.from_address.split('@')[0]
