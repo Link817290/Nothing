@@ -174,6 +174,59 @@ program
     await reply(id, text, opts)
   })
 
+// ─── Threads ───────────────────────────────────────────────────
+
+program
+  .command('threads')
+  .option('-p, --project <project>', 'Filter by project')
+  .description('List conversation threads')
+  .action(async (opts) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      const { threads } = await client.listThreads(opts.project ? { project: opts.project } : undefined)
+      if (threads.length === 0) { console.log('\n  No threads yet.\n'); return }
+      console.log()
+      for (const t of threads) {
+        const unread = t.has_unread ? '●' : '○'
+        console.log(`  ${unread} ${t.thread_id}  ${t.subject?.slice(0, 40).padEnd(40)}  ${t.participant_count}p ${t.message_count}m  ${t.project || ''}`)
+      }
+      console.log()
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
+program
+  .command('thread:summary <threadId>')
+  .description('View or generate thread summary')
+  .option('--generate', 'Generate a new summary')
+  .action(async (threadId: string, opts) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      if (opts.generate) {
+        const res = await client.summarizeThread(threadId)
+        console.log(`\n  ✓ Summary generated\n\n${res.summary}\n`)
+      } else {
+        const { summaries } = await client.getThreadSummaries(threadId)
+        if (summaries.length === 0) {
+          console.log('\n  No summaries. Use --generate to create one.\n')
+          return
+        }
+        for (const s of summaries) {
+          console.log(`\n  ─── ${s.generated_by} · ${new Date(s.created_at).toLocaleString()} ───`)
+          console.log(`  ${s.summary}`)
+        }
+        console.log()
+      }
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
 // ─── Overview ───────────────────────────────────────────────────
 
 program

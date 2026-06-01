@@ -153,6 +153,23 @@ export class NothingClient {
     return this.request<any>('GET', `/api/reports${qs ? '?' + qs : ''}`)
   }
 
+  // ─── Threads ───────────────────────────────────────────────────
+
+  listThreads(query?: Record<string, string>) {
+    const params = new URLSearchParams()
+    if (query) for (const [k, v] of Object.entries(query)) if (v) params.set(k, v)
+    const qs = params.toString()
+    return this.request<{ threads: any[] }>('GET', `/api/threads${qs ? '?' + qs : ''}`)
+  }
+
+  getThreadSummaries(threadId: string) {
+    return this.request<{ summaries: any[] }>('GET', `/api/threads/${threadId}/summaries`)
+  }
+
+  summarizeThread(threadId: string, messageIds?: string[]) {
+    return this.request<{ id: string; summary: string }>('POST', `/api/threads/${threadId}/summarize`, messageIds ? { message_ids: messageIds } : {})
+  }
+
   // ─── Attachments ────────────────────────────────────────────────
 
   async downloadAttachment(id: string): Promise<{ filename: string; data: Buffer }> {
