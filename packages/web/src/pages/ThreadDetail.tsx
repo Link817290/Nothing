@@ -263,13 +263,13 @@ function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: strin
                 width={NODE_W} height={NODE_H} rx="10"
                 fill="var(--card)" stroke="var(--border)" strokeWidth="1"
               />
-              <text x="12" y="24" fontSize="13" fontWeight="500" fill="var(--foreground)">
+              <text x="12" y="26" fontSize="14" fontWeight="500" fill="var(--foreground)">
                 {m.from}
               </text>
-              <text x="12" y="44" fontSize="12" fill="var(--muted-foreground)">
+              <text x="12" y="46" fontSize="13" fill="var(--muted-foreground)">
                 {(m.preview || '').slice(0, 28)}{(m.preview || '').length > 28 ? '…' : ''}
               </text>
-              <text x={NODE_W - 12} y="24" fontSize="11" fill="var(--muted-foreground)" textAnchor="end">
+              <text x={NODE_W - 12} y="26" fontSize="12" fill="var(--muted-foreground)" textAnchor="end">
                 {m.time}
               </text>
             </g>

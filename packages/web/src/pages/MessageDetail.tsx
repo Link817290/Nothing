@@ -587,13 +587,13 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
                 stroke={isCurrent ? 'var(--brand)' : 'var(--border)'}
                 strokeWidth={isCurrent ? 2 : 1}
               />
-              <text x="12" y="24" fontSize="13" fontWeight={isCurrent ? 600 : 400} fill="var(--foreground)">
+              <text x="12" y="26" fontSize="14" fontWeight={isCurrent ? 600 : 400} fill="var(--foreground)">
                 {item.from.split('@')[0]}
               </text>
-              <text x="12" y="44" fontSize="11" fill="var(--muted-foreground)">
+              <text x="12" y="46" fontSize="13" fill="var(--muted-foreground)">
                 {item.preview.slice(0, 30)}{item.preview.length > 30 ? '…' : ''}
               </text>
-              <text x={NODE_W - 12} y="24" fontSize="10" fill="var(--muted-foreground)" textAnchor="end">
+              <text x={NODE_W - 12} y="26" fontSize="12" fill="var(--muted-foreground)" textAnchor="end">
                 {formatDate(item.date)}
               </text>
             </g>
