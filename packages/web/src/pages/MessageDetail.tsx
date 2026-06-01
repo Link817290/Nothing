@@ -445,7 +445,7 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
     >
-      <svg width={canvasW} height={canvasH} className="select-none">
+      <svg width={canvasW} height={canvasH} className="select-none" style={{ fontFamily: 'var(--font-sans)' }}>
         {/* Lines */}
         {items.map(item => {
           const pos = positions.get(item.id)
