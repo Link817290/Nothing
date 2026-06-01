@@ -30,9 +30,13 @@ export default function ThreadDetail() {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
 
+  const [streamingText, setStreamingText] = useState('');
+
   const handleSummarize = async () => {
     if (!id) return;
     setSummarizing(true);
+    setStreamingText('');
+
     try {
       const res = await fetch(`/api/threads/${id}/summarize`, {
         method: 'POST',
@@ -40,12 +44,44 @@ export default function ThreadDetail() {
           'Authorization': `Bearer ${useAuthStore.getState().token}`,
           'Content-Type': 'application/json',
         },
-      }).then(r => r.json());
-      if (res.summary) {
-        setSummaries(prev => [{ id: res.id, summary: res.summary, created_at: new Date().toISOString(), generated_by: 'manual' }, ...prev]);
+        body: JSON.stringify({ stream: true }),
+      });
+
+      if (!res.ok || !res.body) throw new Error('Failed');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') break;
+          try {
+            const json = JSON.parse(data);
+            if (json.chunk) {
+              full += json.chunk;
+              setStreamingText(full);
+            }
+          } catch {}
+        }
+      }
+
+      if (full) {
+        setSummaries(prev => [{ id: `new_${Date.now()}`, summary: full, created_at: new Date().toISOString(), generated_by: 'manual' }, ...prev]);
       }
     } catch {}
     setSummarizing(false);
+    setStreamingText('');
   };
 
   if (loading) return <div className="flex items-center justify-center p-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -96,6 +132,17 @@ export default function ThreadDetail() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t('threads.thread_map')}</p>
             <ThreadCanvas messages={allMessages} threadId={id || ''} />
+          </div>
+        )}
+
+        {/* Streaming output */}
+        {streamingText && (
+          <div className="rounded-xl border border-brand/30 bg-accent/10 p-3 md:p-4 text-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-3 w-3 text-brand animate-pulse" />
+              <span className="text-xs text-muted-foreground">Generating...</span>
+            </div>
+            <div className="text-foreground whitespace-pre-line leading-relaxed">{streamingText}<span className="animate-pulse">▊</span></div>
           </div>
         )}
 

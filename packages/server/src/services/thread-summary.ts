@@ -96,7 +96,7 @@ export function buildSummaryPrompt(messages: any[]): string {
   return `Summarize this email thread concisely. Focus on key decisions, action items, and open questions. Keep it under 200 words.\n\n${lines}`
 }
 
-/** Generate summary using DeepSeek API (OpenAI-compatible) */
+/** Generate summary using DeepSeek API — non-streaming (for storage) */
 export async function generateSummaryText(messages: any[]): Promise<string> {
   const apiKey = process.env.DEEPSEEK_API_KEY
   const prompt = buildSummaryPrompt(messages)
@@ -111,10 +111,7 @@ export async function generateSummaryText(messages: any[]): Promise<string> {
         },
         body: JSON.stringify({
           model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'You are a concise thread summarizer. Summarize email threads focusing on key decisions, action items, and open questions. Use the same language as the messages. Keep it under 200 words.' },
-            { role: 'user', content: prompt },
-          ],
+          messages: buildChatMessages(prompt),
           max_tokens: 512,
           temperature: 0.3,
         }),
@@ -130,7 +127,77 @@ export async function generateSummaryText(messages: any[]): Promise<string> {
     }
   }
 
-  // Fallback: structured summary without AI
+  return fallbackSummary(messages)
+}
+
+/** Stream summary via DeepSeek — yields chunks for SSE */
+export async function* streamSummaryText(messages: any[]): AsyncGenerator<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY
+  const prompt = buildSummaryPrompt(messages)
+
+  if (!apiKey) {
+    yield fallbackSummary(messages)
+    return
+  }
+
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: buildChatMessages(prompt),
+        max_tokens: 512,
+        temperature: 0.3,
+        stream: true,
+      }),
+    })
+
+    if (!res.ok || !res.body) {
+      yield fallbackSummary(messages)
+      return
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        if (data === '[DONE]') return
+        try {
+          const json = JSON.parse(data)
+          const content = json.choices?.[0]?.delta?.content
+          if (content) yield content
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.warn('[summary] DeepSeek stream failed:', (err as Error).message)
+    yield fallbackSummary(messages)
+  }
+}
+
+function buildChatMessages(prompt: string) {
+  return [
+    { role: 'system', content: 'You are a concise thread summarizer. Summarize email threads focusing on key decisions, action items, and open questions. Use the same language as the messages. Keep it under 200 words.' },
+    { role: 'user', content: prompt },
+  ]
+}
+
+function fallbackSummary(messages: any[]): string {
   const participants = [...new Set(messages.map(m => m.from_address.split('@')[0]))]
   const subject = messages[0]?.subject || 'Thread'
   const points: string[] = []
@@ -139,12 +206,5 @@ export async function generateSummaryText(messages: any[]): Promise<string> {
     const preview = m.content.replace(/## Message.*?## Content/s, '').trim().slice(0, 100)
     if (preview) points.push(`${from}: ${preview}`)
   }
-
-  return [
-    `**${subject}**`,
-    `Participants: ${participants.join(', ')}`,
-    `Messages: ${messages.length}`,
-    '',
-    ...points.slice(0, 8).map(p => `- ${p}`),
-  ].join('\n')
+  return [`**${subject}**`, `Participants: ${participants.join(', ')}`, `Messages: ${messages.length}`, '', ...points.slice(0, 8).map(p => `- ${p}`)].join('\n')
 }
