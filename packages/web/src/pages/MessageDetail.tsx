@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -38,7 +38,7 @@ export default function MessageDetail() {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [expandedAtt, setExpandedAtt] = useState<string | null>(null);
-  const [threadView, setThreadView] = useState<'timeline' | 'tree'>('timeline');
+  const [threadView, setThreadView] = useState<'tree' | 'canvas'>('tree');
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -273,25 +273,23 @@ export default function MessageDetail() {
                 </p>
                 <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
                   <button
-                    onClick={() => setThreadView('timeline')}
-                    className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'timeline' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
-                  >Timeline</button>
-                  <button
                     onClick={() => setThreadView('tree')}
                     className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'tree' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
                   >Tree</button>
+                  <button
+                    onClick={() => setThreadView('canvas')}
+                    className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'canvas' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                  >Canvas</button>
                 </div>
               </div>
 
-              {threadView === 'timeline' ? (
-                <div className="mt-3 space-y-0">
-                  {msg.thread.map((t) => (
-                    <ThreadItem key={t.id} item={t} currentId={msg.id} />
-                  ))}
+              {threadView === 'tree' ? (
+                <div className="mt-3">
+                  <ThreadTree items={msg.thread} currentId={msg.id} />
                 </div>
               ) : (
                 <div className="mt-3">
-                  <ThreadTree items={msg.thread} currentId={msg.id} />
+                  <ThreadCanvas items={msg.thread} currentId={msg.id} />
                 </div>
               )}
             </div>
@@ -389,6 +387,115 @@ function ThreadTree({ items, currentId }: { items: ThreadItemData[]; currentId: 
   }
 
   return <div>{renderNode(null, 0)}</div>
+}
+
+function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId: string }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [drag, setDrag] = React.useState({ dragging: false, startX: 0, startY: 0, scrollX: 0, scrollY: 0 })
+
+  // Build tree structure
+  const childrenMap = new Map<string | null, ThreadItemData[]>()
+  const idSet = new Set(items.map(i => i.id))
+  for (const item of items) {
+    const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
+    if (!childrenMap.has(parentId)) childrenMap.set(parentId, [])
+    childrenMap.get(parentId)!.push(item)
+  }
+
+  // Layout: assign x (depth) and y (row) to each node
+  const NODE_W = 200, NODE_H = 56, GAP_X = 40, GAP_Y = 16
+  const positions = new Map<string, { x: number; y: number }>()
+  let nextY = 0
+
+  function layout(parentId: string | null, depth: number) {
+    const children = childrenMap.get(parentId) || []
+    for (const child of children) {
+      positions.set(child.id, { x: depth * (NODE_W + GAP_X), y: nextY * (NODE_H + GAP_Y) })
+      nextY++
+      layout(child.id, depth + 1)
+    }
+  }
+  layout(null, 0)
+
+  const canvasW = Math.max(600, (positions.size > 0 ? Math.max(...[...positions.values()].map(p => p.x)) : 0) + NODE_W + 40)
+  const canvasH = Math.max(200, nextY * (NODE_H + GAP_Y) + 20)
+
+  const navigate = useNavigate()
+
+  // Drag to pan
+  const onMouseDown = (e: React.MouseEvent) => {
+    const el = containerRef.current
+    if (!el) return
+    setDrag({ dragging: true, startX: e.clientX, startY: e.clientY, scrollX: el.scrollLeft, scrollY: el.scrollTop })
+  }
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!drag.dragging || !containerRef.current) return
+    containerRef.current.scrollLeft = drag.scrollX - (e.clientX - drag.startX)
+    containerRef.current.scrollTop = drag.scrollY - (e.clientY - drag.startY)
+  }
+  const onMouseUp = () => setDrag(d => ({ ...d, dragging: false }))
+
+  return (
+    <div
+      ref={containerRef}
+      className="overflow-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing"
+      style={{ maxHeight: '400px' }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+    >
+      <svg width={canvasW} height={canvasH} className="select-none">
+        {/* Lines */}
+        {items.map(item => {
+          const pos = positions.get(item.id)
+          const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
+          const parentPos = parentId ? positions.get(parentId) : null
+          if (!pos || !parentPos) return null
+          return (
+            <path
+              key={`line-${item.id}`}
+              d={`M${parentPos.x + NODE_W},${parentPos.y + NODE_H / 2} C${parentPos.x + NODE_W + GAP_X / 2},${parentPos.y + NODE_H / 2} ${pos.x - GAP_X / 2},${pos.y + NODE_H / 2} ${pos.x},${pos.y + NODE_H / 2}`}
+              fill="none"
+              stroke="var(--border)"
+              strokeWidth="1.5"
+            />
+          )
+        })}
+
+        {/* Nodes */}
+        {items.map(item => {
+          const pos = positions.get(item.id)
+          if (!pos) return null
+          const isCurrent = item.id === currentId
+          return (
+            <g
+              key={item.id}
+              transform={`translate(${pos.x}, ${pos.y})`}
+              onClick={() => navigate(`/messages/${item.id}`)}
+              className="cursor-pointer"
+            >
+              <rect
+                width={NODE_W} height={NODE_H} rx="8"
+                fill={isCurrent ? 'var(--accent)' : 'var(--card)'}
+                stroke={isCurrent ? 'var(--brand)' : 'var(--border)'}
+                strokeWidth={isCurrent ? 2 : 1}
+              />
+              <text x="10" y="20" fontSize="12" fontWeight={isCurrent ? 600 : 400} fill="var(--foreground)">
+                {item.from.split('@')[0]}
+              </text>
+              <text x="10" y="38" fontSize="11" fill="var(--muted-foreground)">
+                {item.preview.slice(0, 25)}{item.preview.length > 25 ? '…' : ''}
+              </text>
+              <text x={NODE_W - 10} y="20" fontSize="10" fill="var(--muted-foreground)" textAnchor="end">
+                {formatDate(item.date)}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
 }
 
 /** Parse "Display Name" <email@host> into { name, email } */
