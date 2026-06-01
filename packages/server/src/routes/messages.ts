@@ -3,7 +3,7 @@ import { authenticate, requirePermission } from '../middleware/auth.js'
 import {
   sendMessage, getInbox, getSent, getMessage, replyMessage,
   getProjects, getReport, deleteMessage, setReadStatus,
-  forwardMessage, searchMessages, getThread, listThreads,
+  forwardMessage, searchMessages, getThread, listThreads, getThreadSummary,
 } from '../services/messages.js'
 import type { SendRequest, InboxQuery } from '../types/index.js'
 
@@ -128,6 +128,12 @@ export async function messageRoutes(app: FastifyInstance) {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
     return getThread(user.id, id)
+  })
+
+  app.get('/api/threads/:id/summary', async (req) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    return getThreadSummary(user.id, id)
   })
 
   // ─── Attachments ────────────────────────────────────────────────

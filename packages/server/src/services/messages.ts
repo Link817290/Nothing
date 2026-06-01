@@ -390,6 +390,52 @@ export async function listThreads(userId: string, query?: { project?: string; li
   }
 }
 
+export async function getThreadSummary(userId: string, threadId: string) {
+  const rows = await queryAll(
+    `SELECT * FROM messages WHERE thread_id = $1 AND user_id = $2 ORDER BY created_at ASC`,
+    [threadId, userId]
+  )
+  if (rows.length === 0) return { days: [], participants: [], total: 0 }
+
+  // Group by day
+  const dayMap = new Map<string, any[]>()
+  for (const row of rows) {
+    const day = new Date(row.created_at).toISOString().slice(0, 10)
+    if (!dayMap.has(day)) dayMap.set(day, [])
+    dayMap.get(day)!.push(row)
+  }
+
+  const participants = [...new Set(rows.map(r => r.from_address.split('@')[0]))]
+
+  const days = [...dayMap.entries()].map(([date, msgs]) => {
+    const senders = [...new Set(msgs.map(m => m.from_address.split('@')[0]))]
+    return {
+      date,
+      message_count: msgs.length,
+      senders,
+      messages: msgs.map(m => ({
+        id: m.id,
+        from: m.from_address.split('@')[0],
+        preview: stripHtml(m.content).slice(0, 120),
+        direction: m.direction,
+        has_attachments: m.has_attachments,
+        time: new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      })),
+    }
+  })
+
+  return {
+    thread_id: threadId,
+    subject: rows[0].subject,
+    project: rows[0].project || undefined,
+    total: rows.length,
+    participants,
+    started: rows[0].created_at,
+    last_activity: rows[rows.length - 1].created_at,
+    days,
+  }
+}
+
 export async function getThread(userId: string, threadId: string) {
   const rows = await queryAll(
     `SELECT * FROM messages WHERE thread_id = $1 AND user_id = $2 ORDER BY created_at ASC`,

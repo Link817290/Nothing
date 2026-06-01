@@ -398,25 +398,21 @@ function ThreadTree({ items, currentId }: { items: ThreadItemData[]; currentId: 
 }
 
 function ThreadSummary({ items }: { items: ThreadItemData[] }) {
-  // Participants
-  const participants = [...new Set(items.map(i => i.from.split('@')[0]))]
+  const [summary, setSummary] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Root message
-  const root = items[0]
+  const threadId = items[0]?.id
+  useEffect(() => {
+    if (!threadId) return
+    // Find the actual thread_id — it's the same for all items in the thread
+    // Use the first item's id as thread_id (it's the root)
+    const rootThread = items[0]?.id
+    if (!rootThread) return
+    api.getThreadSummary(rootThread).then(setSummary).catch(() => {}).finally(() => setLoading(false))
+  }, [threadId])
 
-  // Branch count (messages with multiple children from same parent)
-  const childrenMap = new Map<string | null, number>()
-  const idSet = new Set(items.map(i => i.id))
-  for (const item of items) {
-    const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
-    childrenMap.set(parentId, (childrenMap.get(parentId) || 0) + 1)
-  }
-  const branchPoints = [...childrenMap.entries()].filter(([, count]) => count > 1).length
-
-  // Time span
-  const dates = items.map(i => new Date(i.date).getTime()).filter(d => !isNaN(d))
-  const earliest = dates.length > 0 ? new Date(Math.min(...dates)) : null
-  const latest = dates.length > 0 ? new Date(Math.max(...dates)) : null
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+  if (!summary || !summary.days?.length) return <p className="text-sm text-muted-foreground p-4">No summary available</p>
 
   return (
     <div className="space-y-4 fade-in">
@@ -424,20 +420,22 @@ function ThreadSummary({ items }: { items: ThreadItemData[] }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-lg border border-border p-3">
           <p className="text-xs text-muted-foreground">Messages</p>
-          <p className="text-lg font-semibold mt-1">{items.length}</p>
+          <p className="text-lg font-semibold mt-1">{summary.total}</p>
         </div>
         <div className="rounded-lg border border-border p-3">
           <p className="text-xs text-muted-foreground">Participants</p>
-          <p className="text-lg font-semibold mt-1">{participants.length}</p>
+          <p className="text-lg font-semibold mt-1">{summary.participants?.length || 0}</p>
         </div>
         <div className="rounded-lg border border-border p-3">
-          <p className="text-xs text-muted-foreground">Branches</p>
-          <p className="text-lg font-semibold mt-1">{branchPoints}</p>
+          <p className="text-xs text-muted-foreground">Days Active</p>
+          <p className="text-lg font-semibold mt-1">{summary.days.length}</p>
         </div>
         <div className="rounded-lg border border-border p-3">
           <p className="text-xs text-muted-foreground">Duration</p>
           <p className="text-lg font-semibold mt-1">
-            {earliest && latest ? formatDuration(latest.getTime() - earliest.getTime()) : '—'}
+            {summary.started && summary.last_activity
+              ? formatDuration(new Date(summary.last_activity).getTime() - new Date(summary.started).getTime())
+              : '—'}
           </p>
         </div>
       </div>
@@ -446,7 +444,7 @@ function ThreadSummary({ items }: { items: ThreadItemData[] }) {
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Participants</p>
         <div className="flex flex-wrap gap-2">
-          {participants.map(p => (
+          {(summary.participants || []).map((p: string) => (
             <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-sm">
               <span className="h-2 w-2 rounded-full bg-brand" />
               {p}
@@ -455,29 +453,35 @@ function ThreadSummary({ items }: { items: ThreadItemData[] }) {
         </div>
       </div>
 
-      {/* Timeline */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Timeline</p>
-        <div className="space-y-1">
-          {items.map((item, i) => (
-            <Link to={`/messages/${item.id}`} key={item.id} className="block">
-              <div className="flex items-start gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent/50 transition-colors">
-                <div className="flex flex-col items-center mt-1">
-                  <span className="h-2 w-2 rounded-full bg-brand" />
-                  {i < items.length - 1 && <span className="w-px flex-1 bg-border mt-1" style={{ minHeight: '16px' }} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{item.from.split('@')[0]}</span>
-                    <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
+      {/* Daily Digest */}
+      {summary.days.map((day: any) => (
+        <div key={day.date}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{day.date}</span>
+            <span className="text-xs text-muted-foreground">· {day.message_count} messages · {day.senders.join(', ')}</span>
+          </div>
+          <div className="space-y-1 ml-1">
+            {day.messages.map((m: any, i: number) => (
+              <Link to={`/messages/${m.id}`} key={m.id} className="block">
+                <div className="flex items-start gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent/50 transition-colors">
+                  <div className="flex flex-col items-center mt-1">
+                    <span className={cn('h-2 w-2 rounded-full', m.direction === 'outbound' ? 'bg-muted-foreground' : 'bg-brand')} />
+                    {i < day.messages.length - 1 && <span className="w-px flex-1 bg-border mt-1" style={{ minHeight: '12px' }} />}
                   </div>
-                  <p className="text-muted-foreground truncate">{item.preview}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">{m.from}</span>
+                      <span className="text-xs text-muted-foreground">{m.time}</span>
+                      {m.has_attachments && <Paperclip className="h-3 w-3 text-muted-foreground" />}
+                    </div>
+                    <p className="text-muted-foreground truncate">{m.preview}</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   )
 }
