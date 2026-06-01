@@ -28,10 +28,13 @@ program
 
 program
   .command('init')
+  .option('-s, --server <url>', 'Server URL (non-interactive)')
+  .option('-k, --key <apiKey>', 'API Key (non-interactive)')
   .description('Connect to a Nothing server (login with API Key or register a new account)')
   .addHelpText('after', `
   Examples:
     $ nothing init                   Interactive setup
+    $ nothing init -s https://nothingmail.shop -k ntk_xxx   Non-interactive (for AI agents)
 
   Login flow:
     → Enter server URL
@@ -42,12 +45,12 @@ program
   Register flow:
     → Enter server URL
     → Choose "No — Register"
-    → Enter email + password
+    → Enter username + password
     → Enter verification code (sent to your email)
     → Done (MCP auto-installed)`)
-  .action(async () => {
+  .action(async (opts) => {
     const { init } = await import('./commands/init.js')
-    await init()
+    await init(opts)
   })
 
 program
@@ -68,10 +71,11 @@ program
 
 program
   .command('reset')
+  .option('-y, --yes', 'Skip confirmation (for AI agents)')
   .description('Disconnect and delete local config (server data is not affected)')
-  .action(async () => {
+  .action(async (opts) => {
     const { reset } = await import('./commands/reset.js')
-    await reset()
+    await reset(opts)
   })
 
 // ─── MCP ────────────────────────────────────────────────────────

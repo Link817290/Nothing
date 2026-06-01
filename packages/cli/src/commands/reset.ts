@@ -1,7 +1,7 @@
 import { confirm } from '@inquirer/prompts'
 import { loadConfig, resetAll, paths } from '../config.js'
 
-export async function reset() {
+export async function reset(opts?: { yes?: boolean }) {
   const config = loadConfig()
 
   if (!config.initialized) {
@@ -11,10 +11,12 @@ export async function reset() {
 
   console.log(`\n  Current config: ${config.email} → ${config.server_url}`)
 
-  const ok = await confirm({ message: 'Reset local config? (server data is not affected)', default: false })
-  if (!ok) {
-    console.log('  Cancelled.\n')
-    return
+  if (!opts?.yes) {
+    const ok = await confirm({ message: 'Reset local config? (server data is not affected)', default: false })
+    if (!ok) {
+      console.log('  Cancelled.\n')
+      return
+    }
   }
 
   resetAll()

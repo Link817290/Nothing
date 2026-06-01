@@ -2,7 +2,22 @@ import { input, select, password } from '@inquirer/prompts'
 import { loadConfig, saveConfig, paths } from '../config.js'
 import { mcpInstall } from './mcp-install.js'
 
-export async function init() {
+export async function init(opts?: { server?: string; key?: string }) {
+  // Non-interactive mode: nothing init --server URL --key API_KEY
+  if (opts?.server && opts?.key) {
+    const url = opts.server.replace(/\/$/, '')
+    try {
+      const res = await fetch(`${url}/api/me`, {
+        headers: { 'Authorization': `Bearer ${opts.key}` },
+      })
+      if (!res.ok) { console.log('  ✗ Invalid API Key or server.\n'); return }
+      const user = await res.json() as { email?: string; name?: string }
+      saveConfig({ server_url: url, token: opts.key, email: user.email, initialized: true })
+      await finishSetup(user.email)
+    } catch { console.log('  ✗ Connection failed.\n') }
+    return
+  }
+
   console.log('\n  Welcome to Nothing\n')
 
   const config = loadConfig()
