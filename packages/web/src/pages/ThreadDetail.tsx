@@ -296,13 +296,13 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
   const edges: Edge[] = [];
   if (isLinear) {
     messages.forEach((_, i) => {
-      if (i > 0) edges.push({ id: `e${i - 1}-${i}`, source: String(i - 1), target: String(i), type: 'smoothstep', animated: true, style: { stroke: 'var(--brand)', strokeWidth: 2 } });
+      if (i > 0) edges.push({ id: `e${i - 1}-${i}`, source: String(i - 1), target: String(i), type: 'smoothstep', style: { stroke: 'var(--muted-foreground)', strokeWidth: 1.5, opacity: 0.4 } });
     });
   } else {
     messages.forEach((m, i) => {
       const parentIdx = m.in_reply_to ? idToIndex.get(m.in_reply_to) : undefined;
       if (parentIdx !== undefined) {
-        edges.push({ id: `e${parentIdx}-${i}`, source: String(parentIdx), target: String(i), type: 'smoothstep', animated: true, style: { stroke: 'var(--brand)', strokeWidth: 2 } });
+        edges.push({ id: `e${parentIdx}-${i}`, source: String(parentIdx), target: String(i), type: 'smoothstep', style: { stroke: 'var(--muted-foreground)', strokeWidth: 1.5, opacity: 0.4 } });
       }
     });
   }
