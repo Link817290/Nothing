@@ -37,19 +37,16 @@ export async function inbox(opts: InboxOptions) {
     }
 
     console.log()
-    console.log('  #   From                    Subject                          Date')
-    console.log('  ' + '─'.repeat(80))
-
-    result.messages.forEach((msg: any, i: number) => {
+    result.messages.forEach((msg: any) => {
       const unread = msg.unread ? '●' : '○'
-      const from = (msg.from || '').padEnd(22).slice(0, 22)
-      const subject = (msg.subject || '').padEnd(32).slice(0, 32)
+      const from = (msg.from || '').split('@')[0].padEnd(16).slice(0, 16)
+      const subject = (msg.subject || '(no subject)').padEnd(30).slice(0, 30)
       const date = timeAgo(msg.date)
-      console.log(`  ${unread} ${String(i + 1).padStart(2)}  ${from}  ${subject}  ${date}`)
+      console.log(`  ${unread} ${msg.id}  ${from}  ${subject}  ${date}`)
     })
 
     console.log()
-    console.log(`  Unread: ${result.total_unread}`)
+    console.log(`  Unread: ${result.total_unread}  |  Use: nothing read <id>`)
     console.log()
   } catch (err) {
     console.log(`  ✗ Failed: ${(err as Error).message}`)
