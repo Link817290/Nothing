@@ -254,7 +254,10 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
   return (
     <div
       ref={containerRef}
-      className="overflow-x-auto rounded-xl border border-border bg-muted/20 cursor-grab active:cursor-grabbing touch-pan-x"
+      className={cn(
+        'overflow-x-auto cursor-grab active:cursor-grabbing touch-pan-x',
+        fullscreen ? 'bg-transparent' : 'rounded-xl border border-border bg-muted/20',
+      )}
       style={fullscreen ? {} : { maxHeight: '140px' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
