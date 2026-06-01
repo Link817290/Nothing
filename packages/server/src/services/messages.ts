@@ -151,7 +151,7 @@ export async function getMessage(userId: string, id: string) {
 
 // ─── Reply ─────────────────────────────────────────────────────
 
-export async function replyMessage(userId: string, id: string, req: { text: string; files?: string[] }) {
+export async function replyMessage(userId: string, id: string, req: { text: string; files?: string[]; attachments?: { filename: string; content: string; content_type?: string }[] }) {
   const original = await queryOne(`SELECT * FROM messages WHERE id = $1 AND user_id = $2`, [id, userId])
   if (!original) throw new Error('Message not found')
 
@@ -175,15 +175,28 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   await run(
     `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, project, labels, status, source, thread_id, in_reply_to, direction, has_attachments)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'queued', 'nmp', $11, $12, 'outbound', $13)`,
-    [replyId, userId, account.id, from, original.from_address, subject, req.text, JSON.stringify(payload), original.project || null, JSON.stringify(origLabels), threadId, id, req.files?.length ? true : false]
+    [replyId, userId, account.id, from, original.from_address, subject, req.text, JSON.stringify(payload), original.project || null, JSON.stringify(origLabels), threadId, id, (req.attachments?.length || 0) > 0]
   )
+
+  // Save reply attachments
+  if (req.attachments?.length) {
+    const { saveAttachment } = await import('./attachments.js')
+    for (const att of req.attachments) {
+      await saveAttachment(replyId, att.filename, att.content_type || 'application/octet-stream', Buffer.from(att.content, 'base64'))
+    }
+  }
 
   let status = 'sent'
   try {
     const { smtpSend } = await import('../mail/smtp.js')
     // Use original smtp_message_id for proper In-Reply-To threading
     const origSmtpId = original.smtp_message_id || original.id
-    const result = await smtpSend({ account, from, to: original.from_address, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId] })
+    const userAttachments = req.attachments?.map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.content, 'base64'),
+      contentType: a.content_type || 'application/octet-stream',
+    }))
+    const result = await smtpSend({ account, from, to: original.from_address, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId], userAttachments })
     if (result.messageId) {
       await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, replyId])
     }
