@@ -38,6 +38,7 @@ export default function MessageDetail() {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [expandedAtt, setExpandedAtt] = useState<string | null>(null);
+  const [threadView, setThreadView] = useState<'timeline' | 'tree'>('timeline');
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -266,28 +267,33 @@ export default function MessageDetail() {
           {/* Thread */}
           {msg.thread && msg.thread.length > 1 && (
             <div className="mt-10 border-t border-border pt-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                {t('message.thread')} &middot; {msg.thread.length}
-              </p>
-              <div className="mt-3 space-y-0">
-                {msg.thread.map((t) => (
-                  <Link to={`/messages/${t.id}`} key={t.id} className="block">
-                    <div className={cn(
-                      'flex items-baseline gap-4 border-b border-border py-3 text-sm transition-all duration-200 hover:bg-accent/50 rounded-lg px-2 -mx-2',
-                    )}>
-                      <span className={cn(
-                        'h-2 w-2 shrink-0 rounded-full',
-                        t.id === msg.id ? 'bg-foreground' : 'bg-border',
-                      )} />
-                      <span className={cn('w-28 shrink-0 truncate', t.id === msg.id ? 'font-medium text-foreground' : 'text-muted-foreground')}>
-                        {t.from.split('@')[0]}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-muted-foreground/70">{t.preview}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground/50">{formatDate(t.date)}</span>
-                    </div>
-                  </Link>
-                ))}
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                  {t('message.thread')} &middot; {msg.thread.length}
+                </p>
+                <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+                  <button
+                    onClick={() => setThreadView('timeline')}
+                    className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'timeline' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                  >Timeline</button>
+                  <button
+                    onClick={() => setThreadView('tree')}
+                    className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'tree' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                  >Tree</button>
+                </div>
               </div>
+
+              {threadView === 'timeline' ? (
+                <div className="mt-3 space-y-0">
+                  {msg.thread.map((t) => (
+                    <ThreadItem key={t.id} item={t} currentId={msg.id} />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <ThreadTree items={msg.thread} currentId={msg.id} />
+                </div>
+              )}
             </div>
           )}
 
@@ -335,6 +341,54 @@ export default function MessageDetail() {
       </div>
     </>
   );
+}
+
+// ─── Thread Components ──────────────────────────────────────────
+
+interface ThreadItemData {
+  id: string; from: string; preview: string; date: string; in_reply_to?: string | null;
+}
+
+function ThreadItem({ item, currentId, depth = 0 }: { item: ThreadItemData; currentId: string; depth?: number }) {
+  return (
+    <Link to={`/messages/${item.id}`} className="block">
+      <div className={cn(
+        'flex items-baseline gap-3 border-b border-border py-2.5 text-sm transition-all duration-200 hover:bg-accent/50 rounded-lg px-2 -mx-2',
+      )} style={{ paddingLeft: `${depth * 20 + 8}px` }}>
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', item.id === currentId ? 'bg-foreground' : 'bg-border')} />
+        {depth > 0 && <span className="text-muted-foreground/30 shrink-0">└</span>}
+        <span className={cn('w-24 shrink-0 truncate', item.id === currentId ? 'font-medium text-foreground' : 'text-muted-foreground')}>
+          {item.from.split('@')[0]}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-muted-foreground/70">{item.preview}</span>
+        <span className="shrink-0 text-xs text-muted-foreground/50">{formatDate(item.date)}</span>
+      </div>
+    </Link>
+  )
+}
+
+function ThreadTree({ items, currentId }: { items: ThreadItemData[]; currentId: string }) {
+  // Build tree from flat list using in_reply_to
+  const childrenMap = new Map<string | null, ThreadItemData[]>()
+  const idSet = new Set(items.map(i => i.id))
+
+  for (const item of items) {
+    const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
+    if (!childrenMap.has(parentId)) childrenMap.set(parentId, [])
+    childrenMap.get(parentId)!.push(item)
+  }
+
+  function renderNode(parentId: string | null, depth: number): React.ReactNode {
+    const children = childrenMap.get(parentId) || []
+    return children.map(item => (
+      <div key={item.id}>
+        <ThreadItem item={item} currentId={currentId} depth={depth} />
+        {renderNode(item.id, depth + 1)}
+      </div>
+    ))
+  }
+
+  return <div>{renderNode(null, 0)}</div>
 }
 
 /** Parse "Display Name" <email@host> into { name, email } */

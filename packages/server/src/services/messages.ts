@@ -145,6 +145,7 @@ export async function getMessage(userId: string, id: string) {
       id: t.id, from: t.from_address,
       preview: stripHtml(t.content).slice(0, 80),
       date: t.created_at,
+      in_reply_to: t.in_reply_to || null,
     })),
   }
 }
