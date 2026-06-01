@@ -197,10 +197,27 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
       content: Buffer.from(a.content, 'base64'),
       contentType: a.content_type || 'application/octet-stream',
     }))
-    // Reply All: send to original sender + all original recipients (except self)
+    // Reply All: send to all thread participants (except self)
     const allAddrs = new Set([original.from_address, ...(original.to_address || '').split(',').map((s: string) => s.trim())])
     allAddrs.delete(from)
-    const replyTo = [...allAddrs].filter(Boolean).join(', ') || original.from_address
+    let replyTo = [...allAddrs].filter(Boolean).join(', ')
+
+    // If no recipients left (replying to own message), find other participants from thread
+    if (!replyTo && threadId) {
+      const threadMsgs = await queryAll(
+        `SELECT DISTINCT from_address, to_address FROM messages WHERE thread_id = $1 AND user_id = $2`,
+        [threadId, userId]
+      )
+      const threadAddrs = new Set<string>()
+      for (const m of threadMsgs) {
+        threadAddrs.add(m.from_address)
+        for (const a of (m.to_address || '').split(',')) if (a.trim()) threadAddrs.add(a.trim())
+      }
+      threadAddrs.delete(from)
+      replyTo = [...threadAddrs].filter(Boolean).join(', ')
+    }
+
+    if (!replyTo) replyTo = original.from_address
     const result = await smtpSend({ account, from, to: replyTo, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId], userAttachments })
     if (result.messageId) {
       await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, replyId])
