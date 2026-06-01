@@ -436,6 +436,7 @@ export async function getThreadSummary(userId: string, threadId: string) {
         preview: stripHtml(m.content).slice(0, 120),
         direction: m.direction,
         has_attachments: m.has_attachments,
+        in_reply_to: m.in_reply_to || null,
         time: new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       })),
     }
