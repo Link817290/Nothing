@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ReactFlow, Background, Controls, type Node, type Edge, Position } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -213,105 +215,118 @@ export default function ThreadDetail() {
   );
 }
 
-// ─── Canvas ─────────────────────────────────────────────────────
+// ─── ReactFlow Canvas ───────────────────────────────────────────
+
+function MessageNode({ data }: { data: any }) {
+  const navigate = useNavigate();
+  return (
+    <div
+      onClick={() => navigate(`/messages/${data.msgId}`)}
+      className="rounded-xl border border-border bg-card px-4 py-3 cursor-pointer hover:border-brand/50 hover:shadow-sm transition-all"
+      style={{ width: 220, fontFamily: 'var(--font-sans)' }}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-foreground">{data.from}</span>
+        <span className="text-xs text-muted-foreground">{data.time}</span>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground truncate">{data.preview}</p>
+      <span className="text-[10px] text-muted-foreground/60">{data.direction === 'outbound' ? '↗ sent' : '↙ received'}</span>
+    </div>
+  );
+}
+
+const nodeTypes = { message: MessageNode };
 
 function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; threadId: string; fullscreen?: boolean }) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const [drag, setDrag] = useState({ dragging: false, startX: 0, scrollX: 0 });
+  // Build nodes + edges
+  const GAP_X = 300, GAP_Y = 120;
 
-  const NODE_W = fullscreen ? 320 : 240, NODE_H = fullscreen ? 88 : 64, GAP_X = fullscreen ? 100 : 56, GAP_Y = 24;
-  const positions = new Map<number, { x: number; y: number }>();
+  // Layout: use in_reply_to for tree, fallback to linear
+  const idToIndex = new Map<string, number>();
+  messages.forEach((m, i) => idToIndex.set(m.id, i));
 
-  messages.forEach((_, i) => {
-    positions.set(i, { x: i * (NODE_W + GAP_X), y: 0 });
+  const childrenMap = new Map<number, number[]>();
+  const roots: number[] = [];
+
+  messages.forEach((m, i) => {
+    const parentIdx = m.in_reply_to ? idToIndex.get(m.in_reply_to) : undefined;
+    if (parentIdx !== undefined) {
+      if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
+      childrenMap.get(parentIdx)!.push(i);
+    } else {
+      roots.push(i);
+    }
   });
 
-  const canvasW = Math.max(600, messages.length * (NODE_W + GAP_X));
-  const canvasH = NODE_H + (fullscreen ? 60 : 48);
+  // If no tree structure (all roots), make linear
+  const isLinear = roots.length === messages.length;
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    const el = containerRef.current;
-    if (!el) return;
-    setDrag({ dragging: true, startX: e.clientX, scrollX: el.scrollLeft });
-  };
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!drag.dragging || !containerRef.current) return;
-    containerRef.current.scrollLeft = drag.scrollX - (e.clientX - drag.startX);
-  };
-  const onMouseUp = () => setDrag(d => ({ ...d, dragging: false }));
+  const positions = new Map<number, { x: number; y: number }>();
+  let nextRow = 0;
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    const el = containerRef.current;
-    if (!el || !e.touches[0]) return;
-    setDrag({ dragging: true, startX: e.touches[0].clientX, scrollX: el.scrollLeft });
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!drag.dragging || !containerRef.current || !e.touches[0]) return;
-    containerRef.current.scrollLeft = drag.scrollX - (e.touches[0].clientX - drag.startX);
-  };
+  function layoutTree(idx: number, depth: number) {
+    const children = childrenMap.get(idx) || [];
+    if (children.length === 0) {
+      positions.set(idx, { x: depth * GAP_X, y: nextRow * GAP_Y });
+      nextRow++;
+    } else {
+      const startRow = nextRow;
+      for (const child of children) layoutTree(child, depth + 1);
+      const endRow = nextRow - 1;
+      const midY = ((startRow + endRow) / 2) * GAP_Y;
+      positions.set(idx, { x: depth * GAP_X, y: midY });
+    }
+  }
+
+  if (isLinear) {
+    messages.forEach((_, i) => positions.set(i, { x: i * GAP_X, y: 0 }));
+  } else {
+    for (const root of roots) layoutTree(root, 0);
+  }
+
+  const nodes: Node[] = messages.map((m, i) => ({
+    id: String(i),
+    type: 'message',
+    position: positions.get(i) || { x: i * GAP_X, y: 0 },
+    data: { msgId: m.id, from: m.from, preview: m.preview, time: m.time, direction: m.direction },
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  }));
+
+  const edges: Edge[] = [];
+  if (isLinear) {
+    messages.forEach((_, i) => {
+      if (i > 0) edges.push({ id: `e${i - 1}-${i}`, source: String(i - 1), target: String(i), style: { stroke: 'var(--border)' } });
+    });
+  } else {
+    messages.forEach((m, i) => {
+      const parentIdx = m.in_reply_to ? idToIndex.get(m.in_reply_to) : undefined;
+      if (parentIdx !== undefined) {
+        edges.push({ id: `e${parentIdx}-${i}`, source: String(parentIdx), target: String(i), style: { stroke: 'var(--border)' } });
+      }
+    });
+  }
 
   return (
     <div
-      ref={containerRef}
       className={cn(
-        'overflow-x-auto cursor-grab active:cursor-grabbing touch-pan-x',
-        fullscreen ? 'bg-transparent' : 'rounded-xl border border-border bg-muted/20',
+        fullscreen ? 'w-full h-full' : 'rounded-xl border border-border bg-muted/20',
       )}
-      style={fullscreen ? {} : { minHeight: '120px' }}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onMouseUp}
+      style={fullscreen ? { height: '100%' } : { height: Math.max(200, (nextRow || 1) * GAP_Y + 80) }}
     >
-      <svg width={canvasW} height={canvasH} className="select-none" style={{ fontFamily: 'var(--font-sans)' }}>
-        {messages.map((_, i) => {
-          if (i === 0) return null;
-          const prev = positions.get(i - 1)!;
-          const curr = positions.get(i)!;
-          return (
-            <line
-              key={`line-${i}`}
-              x1={prev.x + NODE_W} y1={prev.y + NODE_H / 2 + 16}
-              x2={curr.x} y2={curr.y + NODE_H / 2 + 16}
-              stroke="var(--border)" strokeWidth="1.5"
-            />
-          );
-        })}
-        {messages.map((m, i) => {
-          const pos = positions.get(i)!;
-          return (
-            <g
-              key={i}
-              transform={`translate(${pos.x}, ${pos.y + 16})`}
-              onClick={() => navigate(`/messages/${m.id}`)}
-              className="cursor-pointer"
-            >
-              <rect
-                width={NODE_W} height={NODE_H} rx="10"
-                fill="var(--card)" stroke="var(--border)" strokeWidth="1"
-              />
-              <text x="14" y={fullscreen ? 30 : 26} fontSize={fullscreen ? 16 : 14} fontWeight="500" fill="var(--foreground)">
-                {m.from}
-              </text>
-              <text x="14" y={fullscreen ? 54 : 46} fontSize={fullscreen ? 14 : 13} fill="var(--muted-foreground)">
-                {(m.preview || '').slice(0, fullscreen ? 35 : 28)}{(m.preview || '').length > (fullscreen ? 35 : 28) ? '…' : ''}
-              </text>
-              {fullscreen && (
-                <text x="14" y="74" fontSize="12" fill="var(--muted-foreground)">
-                  {m.direction === 'outbound' ? '↗' : '↙'} {m.direction}
-                </text>
-              )}
-              <text x={NODE_W - 14} y={fullscreen ? 30 : 26} fontSize={fullscreen ? 13 : 12} fill="var(--muted-foreground)" textAnchor="end">
-                {m.time}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        fitView
+        minZoom={0.3}
+        maxZoom={2}
+        proOptions={{ hideAttribution: true }}
+        nodesDraggable={false}
+      >
+        {fullscreen && <Controls />}
+        <Background gap={20} size={1} color="var(--border)" />
+      </ReactFlow>
     </div>
   );
 }
