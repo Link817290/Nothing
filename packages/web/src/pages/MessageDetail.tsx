@@ -38,7 +38,7 @@ export default function MessageDetail() {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [expandedAtt, setExpandedAtt] = useState<string | null>(null);
-  const [threadView, setThreadView] = useState<'tree' | 'canvas'>('tree');
+  const [threadView, setThreadView] = useState<'tree' | 'canvas' | 'summary'>('tree');
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -280,6 +280,10 @@ export default function MessageDetail() {
                     onClick={() => setThreadView('canvas')}
                     className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'canvas' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
                   >Canvas</button>
+                  <button
+                    onClick={() => setThreadView('summary')}
+                    className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'summary' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                  >Summary</button>
                 </div>
               </div>
 
@@ -287,9 +291,13 @@ export default function MessageDetail() {
                 <div className="mt-3">
                   <ThreadTree items={msg.thread} currentId={msg.id} />
                 </div>
-              ) : (
+              ) : threadView === 'canvas' ? (
                 <div className="mt-3">
                   <ThreadCanvas items={msg.thread} currentId={msg.id} />
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <ThreadSummary items={msg.thread} />
                 </div>
               )}
             </div>
@@ -387,6 +395,100 @@ function ThreadTree({ items, currentId }: { items: ThreadItemData[]; currentId: 
   }
 
   return <div>{renderNode(null, 0)}</div>
+}
+
+function ThreadSummary({ items }: { items: ThreadItemData[] }) {
+  // Participants
+  const participants = [...new Set(items.map(i => i.from.split('@')[0]))]
+
+  // Root message
+  const root = items[0]
+
+  // Branch count (messages with multiple children from same parent)
+  const childrenMap = new Map<string | null, number>()
+  const idSet = new Set(items.map(i => i.id))
+  for (const item of items) {
+    const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
+    childrenMap.set(parentId, (childrenMap.get(parentId) || 0) + 1)
+  }
+  const branchPoints = [...childrenMap.entries()].filter(([, count]) => count > 1).length
+
+  // Time span
+  const dates = items.map(i => new Date(i.date).getTime()).filter(d => !isNaN(d))
+  const earliest = dates.length > 0 ? new Date(Math.min(...dates)) : null
+  const latest = dates.length > 0 ? new Date(Math.max(...dates)) : null
+
+  return (
+    <div className="space-y-4 fade-in">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-border p-3">
+          <p className="text-xs text-muted-foreground">Messages</p>
+          <p className="text-lg font-semibold mt-1">{items.length}</p>
+        </div>
+        <div className="rounded-lg border border-border p-3">
+          <p className="text-xs text-muted-foreground">Participants</p>
+          <p className="text-lg font-semibold mt-1">{participants.length}</p>
+        </div>
+        <div className="rounded-lg border border-border p-3">
+          <p className="text-xs text-muted-foreground">Branches</p>
+          <p className="text-lg font-semibold mt-1">{branchPoints}</p>
+        </div>
+        <div className="rounded-lg border border-border p-3">
+          <p className="text-xs text-muted-foreground">Duration</p>
+          <p className="text-lg font-semibold mt-1">
+            {earliest && latest ? formatDuration(latest.getTime() - earliest.getTime()) : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Participants */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Participants</p>
+        <div className="flex flex-wrap gap-2">
+          {participants.map(p => (
+            <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-sm">
+              <span className="h-2 w-2 rounded-full bg-brand" />
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Timeline</p>
+        <div className="space-y-1">
+          {items.map((item, i) => (
+            <Link to={`/messages/${item.id}`} key={item.id} className="block">
+              <div className="flex items-start gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent/50 transition-colors">
+                <div className="flex flex-col items-center mt-1">
+                  <span className="h-2 w-2 rounded-full bg-brand" />
+                  {i < items.length - 1 && <span className="w-px flex-1 bg-border mt-1" style={{ minHeight: '16px' }} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">{item.from.split('@')[0]}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
+                  </div>
+                  <p className="text-muted-foreground truncate">{item.preview}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function formatDuration(ms: number): string {
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return '<1m'
+  if (mins < 60) return `${mins}m`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ${mins % 60}m`
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`
 }
 
 function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId: string }) {
