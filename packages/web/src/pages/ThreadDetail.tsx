@@ -220,7 +220,7 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
   const navigate = useNavigate();
   const [drag, setDrag] = useState({ dragging: false, startX: 0, scrollX: 0 });
 
-  const NODE_W = fullscreen ? 280 : 240, NODE_H = fullscreen ? 72 : 64, GAP_X = fullscreen ? 72 : 56, GAP_Y = 24;
+  const NODE_W = fullscreen ? 320 : 240, NODE_H = fullscreen ? 88 : 64, GAP_X = fullscreen ? 100 : 56, GAP_Y = 24;
   const positions = new Map<number, { x: number; y: number }>();
 
   messages.forEach((_, i) => {
@@ -291,13 +291,18 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
                 width={NODE_W} height={NODE_H} rx="10"
                 fill="var(--card)" stroke="var(--border)" strokeWidth="1"
               />
-              <text x="12" y="26" fontSize="14" fontWeight="500" fill="var(--foreground)">
+              <text x="14" y={fullscreen ? 30 : 26} fontSize={fullscreen ? 16 : 14} fontWeight="500" fill="var(--foreground)">
                 {m.from}
               </text>
-              <text x="12" y="46" fontSize="13" fill="var(--muted-foreground)">
-                {(m.preview || '').slice(0, 28)}{(m.preview || '').length > 28 ? '…' : ''}
+              <text x="14" y={fullscreen ? 54 : 46} fontSize={fullscreen ? 14 : 13} fill="var(--muted-foreground)">
+                {(m.preview || '').slice(0, fullscreen ? 35 : 28)}{(m.preview || '').length > (fullscreen ? 35 : 28) ? '…' : ''}
               </text>
-              <text x={NODE_W - 12} y="26" fontSize="12" fill="var(--muted-foreground)" textAnchor="end">
+              {fullscreen && (
+                <text x="14" y="74" fontSize="12" fill="var(--muted-foreground)">
+                  {m.direction === 'outbound' ? '↗' : '↙'} {m.direction}
+                </text>
+              )}
+              <text x={NODE_W - 14} y={fullscreen ? 30 : 26} fontSize={fullscreen ? 13 : 12} fill="var(--muted-foreground)" textAnchor="end">
                 {m.time}
               </text>
             </g>
