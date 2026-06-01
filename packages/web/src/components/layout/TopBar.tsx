@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, Menu, Search, PanelLeftClose, PanelLeft, Globe, Check } from 'lucide-react';
+import { Sun, Moon, LogOut, Menu, Search, PanelLeftClose, PanelLeft, Globe, Check, Github } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -62,6 +62,13 @@ export function TopBar() {
       </form>
 
       <div className="ml-auto flex items-center gap-1">
+        {/* GitHub */}
+        <a href="https://github.com/Link817290/Nothing" target="_blank" rel="noopener noreferrer">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+            <Github className="h-4 w-4" />
+          </Button>
+        </a>
+
         {/* Language switcher */}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
