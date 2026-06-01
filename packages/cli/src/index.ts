@@ -22,7 +22,7 @@ program
     nothing_read, nothing_reply, nothing_projects, nothing_report.
 
   More info: https://github.com/Link817290/Nothing`)
-  .version('0.2.1')
+  .version('0.4.2')
 
 // ─── Setup ──────────────────────────────────────────────────────
 
