@@ -15,6 +15,7 @@ export default function ThreadDetail() {
   const [summaries, setSummaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [summarizing, setSummarizing] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -29,8 +30,6 @@ export default function ThreadDetail() {
       setSummaries(sums.summaries || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
-
-  const [streamingText, setStreamingText] = useState('');
 
   const handleSummarize = async () => {
     if (!id) return;
@@ -90,18 +89,21 @@ export default function ThreadDetail() {
   const participants: string[] = summary.participants || [];
   const days: any[] = summary.days || [];
   const total: number = summary.total || 0;
-
-  // Build thread items for canvas
   const allMessages: any[] = days.flatMap((d: any) => d.messages || []);
 
   return (
     <>
-      <div className="flex items-center gap-3 border-b border-border px-4 md:px-6 py-3">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-border px-4 md:px-10 py-4 md:py-5">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/threads"><ArrowLeft className="h-4 w-4" /> {t('threads.title')}</Link>
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg md:text-xl font-bold tracking-tight truncate">{summary.subject}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {total} {t('threads.messages')} · {participants.length} {t('threads.participants')} · {days.length} {t('threads.days')}
+            {summary.project && <Badge variant="outline" className="text-xs ml-2 px-1.5 py-0">{summary.project}</Badge>}
+          </p>
         </div>
         {total >= 5 && (
           <Button variant="outline" size="sm" onClick={handleSummarize} disabled={summarizing}>
@@ -111,51 +113,45 @@ export default function ThreadDetail() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-5 fade-in">
-        {/* Compact stats + participants */}
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {total} {t('threads.messages')}</span>
-          <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {participants.length} {t('threads.participants')}</span>
-          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {days.length} {t('threads.days')}</span>
-          {summary.project && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{summary.project}</Badge>}
-          <span className="flex items-center gap-1 ml-2">
-            {participants.map((p: string) => (
-              <span key={p} className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand" />{p}
-              </span>
-            ))}
-          </span>
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6 space-y-6 fade-in">
+        {/* Participants */}
+        <div className="flex flex-wrap gap-2">
+          {participants.map((p: string) => (
+            <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-sm">
+              <span className="h-2 w-2 rounded-full bg-brand" />{p}
+            </span>
+          ))}
         </div>
 
         {/* Canvas */}
         {allMessages.length > 1 && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t('threads.thread_map')}</p>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-3">{t('threads.thread_map')}</h2>
             <ThreadCanvas messages={allMessages} threadId={id || ''} />
           </div>
         )}
 
         {/* Streaming output */}
         {streamingText && (
-          <div className="rounded-xl border border-brand/30 bg-accent/10 p-3 md:p-4 text-sm">
+          <div className="rounded-xl border border-brand/30 bg-accent/10 p-4 md:p-5">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-3 w-3 text-brand animate-pulse" />
-              <span className="text-xs text-muted-foreground">Generating...</span>
+              <Sparkles className="h-3.5 w-3.5 text-brand animate-pulse" />
+              <span className="text-sm text-muted-foreground">{t('threads.summarize')}...</span>
             </div>
-            <div className="text-foreground whitespace-pre-line leading-relaxed">{streamingText}<span className="animate-pulse">▊</span></div>
+            <div className="text-sm text-foreground whitespace-pre-line leading-relaxed">{streamingText}<span className="animate-pulse">▊</span></div>
           </div>
         )}
 
         {/* AI Summaries */}
         {summaries.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
               <Sparkles className="h-3 w-3 inline mr-1" /> {t('threads.summaries')}
-            </p>
+            </h2>
             {summaries.map((s: any) => (
-              <div key={s.id} className="rounded-xl border border-border p-3 md:p-4 text-sm">
+              <div key={s.id} className="rounded-xl border border-border p-4 md:p-5">
                 <span className="text-xs text-muted-foreground">{s.generated_by} · {formatDate(s.created_at)}</span>
-                <div className="mt-1.5 text-foreground whitespace-pre-line leading-relaxed">{s.summary}</div>
+                <div className="mt-2 text-sm text-foreground whitespace-pre-line leading-relaxed">{s.summary}</div>
               </div>
             ))}
           </div>
@@ -164,20 +160,20 @@ export default function ThreadDetail() {
         {/* Daily message links */}
         {days.map((day: any) => (
           <div key={day.date}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-              {day.date} · {day.message_count}m
-            </p>
-            <div className="space-y-0.5">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+              {day.date} · {day.message_count} {t('threads.messages')}
+            </h2>
+            <div className="space-y-1">
               {day.messages.map((m: any) => (
                 <Link to={`/messages/${m.id}`} key={m.id} className="block">
-                  <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm hover:bg-accent/50 transition-colors">
                     {m.direction === 'outbound'
-                      ? <Send className="h-3 w-3 text-muted-foreground shrink-0" />
-                      : <Inbox className="h-3 w-3 text-muted-foreground shrink-0" />
+                      ? <Send className="h-4 w-4 text-muted-foreground shrink-0" />
+                      : <Inbox className="h-4 w-4 text-muted-foreground shrink-0" />
                     }
-                    <span className="font-medium w-14 shrink-0 truncate text-xs">{m.from}</span>
-                    <span className="text-muted-foreground truncate flex-1 text-xs">{m.preview}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{m.time}</span>
+                    <span className="font-medium w-20 shrink-0 truncate">{m.from}</span>
+                    <span className="text-muted-foreground truncate flex-1">{m.preview}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{m.time}</span>
                   </div>
                 </Link>
               ))}
@@ -189,28 +185,27 @@ export default function ThreadDetail() {
   );
 }
 
-// ─── Canvas Component ─────────────────────────────────────────
+// ─── Canvas ─────────────────────────────────────────────────────
 
 function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: string }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [drag, setDrag] = useState({ dragging: false, startX: 0, startY: 0, scrollX: 0, scrollY: 0 });
+  const [drag, setDrag] = useState({ dragging: false, startX: 0, scrollX: 0 });
 
-  const NODE_W = 180, NODE_H = 48, GAP_X = 40, GAP_Y = 16;
+  const NODE_W = 240, NODE_H = 64, GAP_X = 56, GAP_Y = 24;
   const positions = new Map<number, { x: number; y: number }>();
 
-  // Simple left-to-right layout (no in_reply_to in summary API, so linear)
   messages.forEach((_, i) => {
     positions.set(i, { x: i * (NODE_W + GAP_X), y: 0 });
   });
 
-  const canvasW = Math.max(400, messages.length * (NODE_W + GAP_X));
-  const canvasH = NODE_H + 32;
+  const canvasW = Math.max(600, messages.length * (NODE_W + GAP_X));
+  const canvasH = NODE_H + 40;
 
   const onMouseDown = (e: React.MouseEvent) => {
     const el = containerRef.current;
     if (!el) return;
-    setDrag({ dragging: true, startX: e.clientX, startY: e.clientY, scrollX: el.scrollLeft, scrollY: el.scrollTop });
+    setDrag({ dragging: true, startX: e.clientX, scrollX: el.scrollLeft });
   };
   const onMouseMove = (e: React.MouseEvent) => {
     if (!drag.dragging || !containerRef.current) return;
@@ -218,11 +213,10 @@ function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: strin
   };
   const onMouseUp = () => setDrag(d => ({ ...d, dragging: false }));
 
-  // Touch support for mobile
   const onTouchStart = (e: React.TouchEvent) => {
     const el = containerRef.current;
     if (!el || !e.touches[0]) return;
-    setDrag({ dragging: true, startX: e.touches[0].clientX, startY: 0, scrollX: el.scrollLeft, scrollY: 0 });
+    setDrag({ dragging: true, startX: e.touches[0].clientX, scrollX: el.scrollLeft });
   };
   const onTouchMove = (e: React.TouchEvent) => {
     if (!drag.dragging || !containerRef.current || !e.touches[0]) return;
@@ -232,8 +226,8 @@ function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: strin
   return (
     <div
       ref={containerRef}
-      className="overflow-x-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing touch-pan-x"
-      style={{ maxHeight: '120px' }}
+      className="overflow-x-auto rounded-xl border border-border bg-muted/20 cursor-grab active:cursor-grabbing touch-pan-x"
+      style={{ maxHeight: '140px' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
@@ -242,8 +236,7 @@ function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: strin
       onTouchMove={onTouchMove}
       onTouchEnd={onMouseUp}
     >
-      <svg width={canvasW} height={canvasH} className="select-none" style={{ fontFamily: 'var(--font-sans)', minHeight: '80px' }}>
-        {/* Lines */}
+      <svg width={canvasW} height={canvasH} className="select-none" style={{ fontFamily: 'var(--font-sans)' }}>
         {messages.map((_, i) => {
           if (i === 0) return null;
           const prev = positions.get(i - 1)!;
@@ -251,34 +244,32 @@ function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: strin
           return (
             <line
               key={`line-${i}`}
-              x1={prev.x + NODE_W} y1={prev.y + NODE_H / 2 + 12}
-              x2={curr.x} y2={curr.y + NODE_H / 2 + 12}
+              x1={prev.x + NODE_W} y1={prev.y + NODE_H / 2 + 16}
+              x2={curr.x} y2={curr.y + NODE_H / 2 + 16}
               stroke="var(--border)" strokeWidth="1.5"
             />
           );
         })}
-
-        {/* Nodes */}
         {messages.map((m, i) => {
           const pos = positions.get(i)!;
           return (
             <g
               key={i}
-              transform={`translate(${pos.x}, ${pos.y + 12})`}
+              transform={`translate(${pos.x}, ${pos.y + 16})`}
               onClick={() => navigate(`/messages/${m.id}`)}
               className="cursor-pointer"
             >
               <rect
-                width={NODE_W} height={NODE_H} rx="8"
+                width={NODE_W} height={NODE_H} rx="10"
                 fill="var(--card)" stroke="var(--border)" strokeWidth="1"
               />
-              <text x="8" y="18" fontSize="11" fontWeight="500" fill="var(--foreground)">
+              <text x="12" y="24" fontSize="13" fontWeight="500" fill="var(--foreground)">
                 {m.from}
               </text>
-              <text x="8" y="34" fontSize="10" fill="var(--muted-foreground)">
-                {(m.preview || '').slice(0, 22)}{(m.preview || '').length > 22 ? '…' : ''}
+              <text x="12" y="44" fontSize="12" fill="var(--muted-foreground)">
+                {(m.preview || '').slice(0, 28)}{(m.preview || '').length > 28 ? '…' : ''}
               </text>
-              <text x={NODE_W - 8} y="18" fontSize="9" fill="var(--muted-foreground)" textAnchor="end">
+              <text x={NODE_W - 12} y="24" fontSize="11" fill="var(--muted-foreground)" textAnchor="end">
                 {m.time}
               </text>
             </g>
