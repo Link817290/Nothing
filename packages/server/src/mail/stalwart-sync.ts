@@ -92,11 +92,17 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
   if (!res) return 0
   const emails = getResult(res, 'g1')?.list || []
 
+  // Skip emails older than last_sync_at (prevents re-syncing after message clear)
+  const syncAfter = acc.last_sync_at ? new Date(acc.last_sync_at) : null
+
   let newCount = 0
   for (const email of emails) {
     const msgId = `stalwart_${acc.id}_${email.id}`
     const existing = await queryOne('SELECT id FROM messages WHERE id = $1', [msgId])
     if (existing) continue
+
+    // Skip old emails if we have a sync timestamp
+    if (syncAfter && email.receivedAt && new Date(email.receivedAt) < syncAfter) continue
 
     const fromAddr = email.from?.[0]?.email || ''
     if (fromAddr === acc.email) continue

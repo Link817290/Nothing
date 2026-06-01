@@ -86,6 +86,8 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     } catch {}
     await run('DELETE FROM messages')
+    // Update sync timestamp so stalwart-sync won't re-pull old emails
+    await run('UPDATE email_accounts SET last_sync_at = NOW()')
     return { success: true, message: 'All messages deleted' }
   })
 
