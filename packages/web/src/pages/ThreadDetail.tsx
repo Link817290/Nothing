@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Sparkles, Inbox, Send, GitBranch } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Inbox, Send, Users, MessageSquare, Calendar } from 'lucide-react';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -49,55 +49,53 @@ export default function ThreadDetail() {
   if (loading) return <div className="flex items-center justify-center p-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   if (!summary) return <div className="p-12 text-center text-muted-foreground">Thread not found</div>;
 
-  const participants = summary.participants || [];
-  const days = summary.days || [];
-  const total = summary.total || 0;
+  const participants: string[] = summary.participants || [];
+  const days: any[] = summary.days || [];
+  const total: number = summary.total || 0;
+
+  // Build thread items for canvas
+  const allMessages: any[] = days.flatMap((d: any) => d.messages || []);
 
   return (
     <>
-      {/* Header */}
       <div className="flex items-center gap-3 border-b border-border px-4 md:px-6 py-3">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/threads"><ArrowLeft className="h-4 w-4" /> Threads</Link>
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-semibold truncate">{summary.subject}</h1>
-          {summary.project && <Badge variant="outline" className="text-[10px] mt-0.5">{summary.project}</Badge>}
         </div>
         {total >= 5 && (
           <Button variant="outline" size="sm" onClick={handleSummarize} disabled={summarizing}>
             {summarizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Summarize
+            <span className="hidden sm:inline ml-1">Summarize</span>
           </Button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-6 fade-in">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border p-3 text-center">
-            <p className="text-2xl font-bold">{total}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">messages</p>
-          </div>
-          <div className="rounded-xl border border-border p-3 text-center">
-            <p className="text-2xl font-bold">{participants.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">participants</p>
-          </div>
-          <div className="rounded-xl border border-border p-3 text-center">
-            <p className="text-2xl font-bold">{days.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">days</p>
-          </div>
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-5 fade-in">
+        {/* Compact stats + participants */}
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {total} messages</span>
+          <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {participants.length} participants</span>
+          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {days.length} days</span>
+          {summary.project && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{summary.project}</Badge>}
+          <span className="flex items-center gap-1 ml-2">
+            {participants.map((p: string) => (
+              <span key={p} className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px]">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand" />{p}
+              </span>
+            ))}
+          </span>
         </div>
 
-        {/* Participants */}
-        <div className="flex flex-wrap gap-2">
-          {participants.map((p: string) => (
-            <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              {p}
-            </span>
-          ))}
-        </div>
+        {/* Canvas */}
+        {allMessages.length > 1 && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Thread Map</p>
+            <ThreadCanvas messages={allMessages} threadId={id || ''} />
+          </div>
+        )}
 
         {/* AI Summaries */}
         {summaries.length > 0 && (
@@ -106,33 +104,31 @@ export default function ThreadDetail() {
               <Sparkles className="h-3 w-3 inline mr-1" /> Summaries
             </p>
             {summaries.map((s: any) => (
-              <div key={s.id} className="rounded-xl border border-border p-4 text-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-muted-foreground">{s.generated_by} · {formatDate(s.created_at)}</span>
-                </div>
-                <div className="text-foreground whitespace-pre-line leading-relaxed">{s.summary}</div>
+              <div key={s.id} className="rounded-xl border border-border p-3 md:p-4 text-sm">
+                <span className="text-xs text-muted-foreground">{s.generated_by} · {formatDate(s.created_at)}</span>
+                <div className="mt-1.5 text-foreground whitespace-pre-line leading-relaxed">{s.summary}</div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Daily Messages — compact, just links */}
+        {/* Daily message links */}
         {days.map((day: any) => (
           <div key={day.date}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              {day.date} · {day.message_count} messages
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+              {day.date} · {day.message_count}m
             </p>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {day.messages.map((m: any) => (
                 <Link to={`/messages/${m.id}`} key={m.id} className="block">
-                  <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-accent/50 transition-colors">
                     {m.direction === 'outbound'
                       ? <Send className="h-3 w-3 text-muted-foreground shrink-0" />
                       : <Inbox className="h-3 w-3 text-muted-foreground shrink-0" />
                     }
-                    <span className="font-medium w-16 shrink-0 truncate">{m.from}</span>
-                    <span className="text-muted-foreground truncate flex-1">{m.preview}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">{m.time}</span>
+                    <span className="font-medium w-14 shrink-0 truncate text-xs">{m.from}</span>
+                    <span className="text-muted-foreground truncate flex-1 text-xs">{m.preview}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{m.time}</span>
                   </div>
                 </Link>
               ))}
@@ -141,6 +137,106 @@ export default function ThreadDetail() {
         ))}
       </div>
     </>
+  );
+}
+
+// ─── Canvas Component ─────────────────────────────────────────
+
+function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: string }) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [drag, setDrag] = useState({ dragging: false, startX: 0, startY: 0, scrollX: 0, scrollY: 0 });
+
+  const NODE_W = 180, NODE_H = 48, GAP_X = 40, GAP_Y = 16;
+  const positions = new Map<number, { x: number; y: number }>();
+
+  // Simple left-to-right layout (no in_reply_to in summary API, so linear)
+  messages.forEach((_, i) => {
+    positions.set(i, { x: i * (NODE_W + GAP_X), y: 0 });
+  });
+
+  const canvasW = Math.max(400, messages.length * (NODE_W + GAP_X));
+  const canvasH = NODE_H + 32;
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    const el = containerRef.current;
+    if (!el) return;
+    setDrag({ dragging: true, startX: e.clientX, startY: e.clientY, scrollX: el.scrollLeft, scrollY: el.scrollTop });
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!drag.dragging || !containerRef.current) return;
+    containerRef.current.scrollLeft = drag.scrollX - (e.clientX - drag.startX);
+  };
+  const onMouseUp = () => setDrag(d => ({ ...d, dragging: false }));
+
+  // Touch support for mobile
+  const onTouchStart = (e: React.TouchEvent) => {
+    const el = containerRef.current;
+    if (!el || !e.touches[0]) return;
+    setDrag({ dragging: true, startX: e.touches[0].clientX, startY: 0, scrollX: el.scrollLeft, scrollY: 0 });
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!drag.dragging || !containerRef.current || !e.touches[0]) return;
+    containerRef.current.scrollLeft = drag.scrollX - (e.touches[0].clientX - drag.startX);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="overflow-x-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing touch-pan-x"
+      style={{ maxHeight: '120px' }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onMouseUp}
+    >
+      <svg width={canvasW} height={canvasH} className="select-none" style={{ fontFamily: 'var(--font-sans)', minHeight: '80px' }}>
+        {/* Lines */}
+        {messages.map((_, i) => {
+          if (i === 0) return null;
+          const prev = positions.get(i - 1)!;
+          const curr = positions.get(i)!;
+          return (
+            <line
+              key={`line-${i}`}
+              x1={prev.x + NODE_W} y1={prev.y + NODE_H / 2 + 12}
+              x2={curr.x} y2={curr.y + NODE_H / 2 + 12}
+              stroke="var(--border)" strokeWidth="1.5"
+            />
+          );
+        })}
+
+        {/* Nodes */}
+        {messages.map((m, i) => {
+          const pos = positions.get(i)!;
+          return (
+            <g
+              key={i}
+              transform={`translate(${pos.x}, ${pos.y + 12})`}
+              onClick={() => navigate(`/messages/${m.id}`)}
+              className="cursor-pointer"
+            >
+              <rect
+                width={NODE_W} height={NODE_H} rx="8"
+                fill="var(--card)" stroke="var(--border)" strokeWidth="1"
+              />
+              <text x="8" y="18" fontSize="11" fontWeight="500" fill="var(--foreground)">
+                {m.from}
+              </text>
+              <text x="8" y="34" fontSize="10" fill="var(--muted-foreground)">
+                {(m.preview || '').slice(0, 22)}{(m.preview || '').length > 22 ? '…' : ''}
+              </text>
+              <text x={NODE_W - 8} y="18" fontSize="9" fill="var(--muted-foreground)" textAnchor="end">
+                {m.time}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
