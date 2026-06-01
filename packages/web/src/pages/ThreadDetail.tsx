@@ -192,19 +192,22 @@ export default function ThreadDetail() {
         ))}
       </div>
 
-      {/* Fullscreen Canvas Overlay */}
+      {/* Modal Canvas */}
       {canvasFullscreen && (
-        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col fade-in">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold">{t('threads.thread_map')}</h2>
-            <button onClick={() => setCanvasFullscreen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-              <X className="h-5 w-5" />
-            </button>
+        <>
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setCanvasFullscreen(false)} />
+          <div className="fixed inset-4 md:inset-10 z-50 flex flex-col rounded-2xl border border-border bg-background shadow-2xl fade-in">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+              <h2 className="text-sm font-semibold">{t('threads.thread_map')}</h2>
+              <button onClick={() => setCanvasFullscreen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto flex items-center justify-center p-6">
+              <ThreadCanvas messages={allMessages} threadId={id || ''} fullscreen />
+            </div>
           </div>
-          <div className="flex-1 overflow-auto p-4">
-            <ThreadCanvas messages={allMessages} threadId={id || ''} fullscreen />
-          </div>
-        </div>
+        </>
       )}
     </>
   );
