@@ -38,6 +38,13 @@ export default function MessageDetail() {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);

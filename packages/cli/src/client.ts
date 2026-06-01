@@ -160,7 +160,8 @@ export class NothingClient {
       headers: { 'Authorization': `Bearer ${this.token}` },
     })
     if (!res.ok) throw new Error(`Download failed: ${res.status}`)
-    const filename = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || `attachment_${id}`
+    const rawFilename = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || `attachment_${id}`
+    const filename = decodeURIComponent(rawFilename)
     const data = Buffer.from(await res.arrayBuffer())
     return { filename, data }
   }
