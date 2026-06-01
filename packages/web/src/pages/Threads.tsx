@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, GitBranch, MessageSquare, Users } from 'lucide-react';
@@ -18,6 +19,7 @@ interface ThreadItem {
 }
 
 export default function Threads() {
+  const { t } = useTranslation();
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,8 +31,8 @@ export default function Threads() {
   return (
     <>
       <div className="border-b border-border px-4 md:px-10 py-4 md:py-5">
-        <h1 className="text-lg md:text-xl font-bold tracking-tight">Threads</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">{threads.length} conversations</p>
+        <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('threads.title')}</h1>
+        <p className="mt-0.5 text-xs text-muted-foreground">{threads.length} {t('threads.subtitle')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4">
@@ -42,28 +44,28 @@ export default function Threads() {
         {!loading && threads.length === 0 && (
           <div className="p-12 text-center fade-in">
             <GitBranch className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-lg font-semibold text-muted-foreground">No threads yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Threads appear when messages have replies</p>
+            <p className="text-lg font-semibold text-muted-foreground">{t('threads.empty')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('threads.empty_hint')}</p>
           </div>
         )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {threads.map((t) => (
-            <Link key={t.thread_id} to={`/threads/${t.thread_id}`}>
+          {threads.map((thread) => (
+            <Link key={thread.thread_id} to={`/threads/${thread.thread_id}`}>
               <div className={cn(
                 'rounded-xl border border-border p-4 transition-all duration-200 hover:bg-accent/50 hover:border-brand/30',
-                t.has_unread && 'border-brand/20 bg-accent/10',
+                thread.has_unread && 'border-brand/20 bg-accent/10',
               )}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className={cn('text-sm truncate', t.has_unread ? 'font-semibold' : 'text-foreground')}>
-                    {t.subject}
+                  <p className={cn('text-sm truncate', thread.has_unread ? 'font-semibold' : 'text-foreground')}>
+                    {thread.subject}
                   </p>
-                  {t.has_unread && <span className="h-2 w-2 rounded-full bg-brand shrink-0 mt-1.5" />}
+                  {thread.has_unread && <span className="h-2 w-2 rounded-full bg-brand shrink-0 mt-1.5" />}
                 </div>
                 <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{t.message_count}</span>
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{t.participant_count}</span>
-                  {t.project && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t.project}</Badge>}
-                  <span className="ml-auto">{formatDate(t.last_activity)}</span>
+                  <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{thread.message_count}</span>
+                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{thread.participant_count}</span>
+                  {thread.project && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{thread.project}</Badge>}
+                  <span className="ml-auto">{formatDate(thread.last_activity)}</span>
                 </div>
               </div>
             </Link>

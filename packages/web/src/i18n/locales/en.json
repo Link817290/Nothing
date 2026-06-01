@@ -3,6 +3,7 @@
     "overview": "Overview",
     "dashboard": "Dashboard",
     "mail": "Mail",
+    "threads": "Threads",
     "inbox": "Inbox",
     "sent": "Sent",
     "compose": "Compose",
@@ -54,6 +55,20 @@
       "all": "All",
       "nmp": "NMP"
     }
+  },
+  "threads": {
+    "title": "Threads",
+    "subtitle": "conversations",
+    "empty": "No threads yet",
+    "empty_hint": "Threads appear when messages have replies",
+    "messages": "messages",
+    "participants": "participants",
+    "days": "days",
+    "thread_map": "Thread Map",
+    "summaries": "Summaries",
+    "summarize": "Summarize",
+    "no_summaries": "No summaries yet. Click ✨ to generate.",
+    "need_more": "Need at least 5 messages for summary"
   },
   "sent": {
     "title": "Sent",

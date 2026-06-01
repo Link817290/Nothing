@@ -3,6 +3,7 @@
     "overview": "概览",
     "dashboard": "仪表盘",
     "mail": "邮件",
+    "threads": "会话",
     "inbox": "收件箱",
     "sent": "已发送",
     "compose": "写邮件",
@@ -54,6 +55,20 @@
       "all": "全部",
       "nmp": "NMP"
     }
+  },
+  "threads": {
+    "title": "会话",
+    "subtitle": "个会话",
+    "empty": "暂无会话",
+    "empty_hint": "消息有回复后会自动形成会话",
+    "messages": "条消息",
+    "participants": "位参与者",
+    "days": "天",
+    "thread_map": "会话地图",
+    "summaries": "摘要",
+    "summarize": "生成摘要",
+    "no_summaries": "暂无摘要，点击 ✨ 生成",
+    "need_more": "至少 5 条消息才能生成摘要"
   },
   "sent": {
     "title": "已发送",

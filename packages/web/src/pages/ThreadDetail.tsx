@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function ThreadDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [summary, setSummary] = useState<any>(null);
   const [summaries, setSummaries] = useState<any[]>([]);
@@ -60,7 +62,7 @@ export default function ThreadDetail() {
     <>
       <div className="flex items-center gap-3 border-b border-border px-4 md:px-6 py-3">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/threads"><ArrowLeft className="h-4 w-4" /> Threads</Link>
+          <Link to="/threads"><ArrowLeft className="h-4 w-4" /> {t('threads.title')}</Link>
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-semibold truncate">{summary.subject}</h1>
@@ -68,7 +70,7 @@ export default function ThreadDetail() {
         {total >= 5 && (
           <Button variant="outline" size="sm" onClick={handleSummarize} disabled={summarizing}>
             {summarizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline ml-1">Summarize</span>
+            <span className="hidden sm:inline ml-1">{t('threads.summarize')}</span>
           </Button>
         )}
       </div>
@@ -76,9 +78,9 @@ export default function ThreadDetail() {
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-5 fade-in">
         {/* Compact stats + participants */}
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {total} messages</span>
-          <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {participants.length} participants</span>
-          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {days.length} days</span>
+          <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {total} {t('threads.messages')}</span>
+          <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {participants.length} {t('threads.participants')}</span>
+          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {days.length} {t('threads.days')}</span>
           {summary.project && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{summary.project}</Badge>}
           <span className="flex items-center gap-1 ml-2">
             {participants.map((p: string) => (
@@ -92,7 +94,7 @@ export default function ThreadDetail() {
         {/* Canvas */}
         {allMessages.length > 1 && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Thread Map</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t('threads.thread_map')}</p>
             <ThreadCanvas messages={allMessages} threadId={id || ''} />
           </div>
         )}
@@ -101,7 +103,7 @@ export default function ThreadDetail() {
         {summaries.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Sparkles className="h-3 w-3 inline mr-1" /> Summaries
+              <Sparkles className="h-3 w-3 inline mr-1" /> {t('threads.summaries')}
             </p>
             {summaries.map((s: any) => (
               <div key={s.id} className="rounded-xl border border-border p-3 md:p-4 text-sm">
