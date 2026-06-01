@@ -197,7 +197,11 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
       content: Buffer.from(a.content, 'base64'),
       contentType: a.content_type || 'application/octet-stream',
     }))
-    const result = await smtpSend({ account, from, to: original.from_address, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId], userAttachments })
+    // Reply All: send to original sender + all original recipients (except self)
+    const allAddrs = new Set([original.from_address, ...(original.to_address || '').split(',').map((s: string) => s.trim())])
+    allAddrs.delete(from)
+    const replyTo = [...allAddrs].filter(Boolean).join(', ') || original.from_address
+    const result = await smtpSend({ account, from, to: replyTo, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId], userAttachments })
     if (result.messageId) {
       await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, replyId])
     }
