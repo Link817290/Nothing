@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Sparkles, Inbox, Send, Users, MessageSquare, Calendar } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Inbox, Send, Users, MessageSquare, Calendar, Maximize2, X } from 'lucide-react';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -16,6 +16,7 @@ export default function ThreadDetail() {
   const [loading, setLoading] = useState(true);
   const [summarizing, setSummarizing] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+  const [canvasFullscreen, setCanvasFullscreen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -126,7 +127,16 @@ export default function ThreadDetail() {
         {/* Canvas */}
         {allMessages.length > 1 && (
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-3">{t('threads.thread_map')}</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{t('threads.thread_map')}</h2>
+              <button
+                onClick={() => setCanvasFullscreen(true)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Expand"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            </div>
             <ThreadCanvas messages={allMessages} threadId={id || ''} />
           </div>
         )}
@@ -181,18 +191,33 @@ export default function ThreadDetail() {
           </div>
         ))}
       </div>
+
+      {/* Fullscreen Canvas Overlay */}
+      {canvasFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col fade-in">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 className="text-sm font-semibold">{t('threads.thread_map')}</h2>
+            <button onClick={() => setCanvasFullscreen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto p-4">
+            <ThreadCanvas messages={allMessages} threadId={id || ''} fullscreen />
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
 // ─── Canvas ─────────────────────────────────────────────────────
 
-function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: string }) {
+function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; threadId: string; fullscreen?: boolean }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [drag, setDrag] = useState({ dragging: false, startX: 0, scrollX: 0 });
 
-  const NODE_W = 240, NODE_H = 64, GAP_X = 56, GAP_Y = 24;
+  const NODE_W = fullscreen ? 280 : 240, NODE_H = fullscreen ? 72 : 64, GAP_X = fullscreen ? 72 : 56, GAP_Y = 24;
   const positions = new Map<number, { x: number; y: number }>();
 
   messages.forEach((_, i) => {
@@ -227,7 +252,7 @@ function ThreadCanvas({ messages, threadId }: { messages: any[]; threadId: strin
     <div
       ref={containerRef}
       className="overflow-x-auto rounded-xl border border-border bg-muted/20 cursor-grab active:cursor-grabbing touch-pan-x"
-      style={{ maxHeight: '140px' }}
+      style={fullscreen ? {} : { maxHeight: '140px' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
