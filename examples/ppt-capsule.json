@@ -1,0 +1,175 @@
+{
+  "id": "ppt-generation-v1",
+  "name": "PPT Generation Experience Package",
+  "version": "1.0.0",
+  "description": "AI-driven presentation generation using Typst templates. Collects requirements, selects template, generates outline, fills content, compiles to PDF.",
+  "author": {
+    "name": "Nothing",
+    "agent": "claude-code"
+  },
+  "license": "MIT",
+
+  "activation": {
+    "task_types": ["ppt", "slides", "presentation", "pitch-deck", "report-slides"],
+    "keywords": ["PPT", "演示", "幻灯片", "路演", "融资", "汇报", "presentation", "slide deck"],
+    "required_context": ["topic"],
+    "unsupported_context": ["real-time data fetching", "video editing"]
+  },
+
+  "inputs": [
+    { "name": "topic", "type": "string", "required": true, "description": "Presentation topic or title" },
+    { "name": "audience", "type": "string", "required": false, "description": "Target audience (investors, team, students, etc.)", "default": "general" },
+    { "name": "slide_count", "type": "number", "required": false, "description": "Target number of slides", "default": 10 },
+    { "name": "language", "type": "string", "required": false, "description": "Language (zh/en)", "default": "zh" },
+    { "name": "style", "type": "string", "required": false, "description": "Visual style preference (minimal, corporate, academic, creative)", "default": "corporate" },
+    { "name": "raw_text", "type": "string", "required": false, "description": "Source material/notes to base the presentation on" },
+    { "name": "aspect_ratio", "type": "string", "required": false, "description": "Slide aspect ratio", "default": "16:9" }
+  ],
+
+  "state_machine": {
+    "initial": "collect_requirements",
+    "final": ["final"],
+    "states": {
+      "collect_requirements": {
+        "title": "Collect Requirements",
+        "goal": "Gather presentation requirements: topic, audience, purpose, slide count, style, and any source material",
+        "instructions": "Create a requirements.json with fields: topic, audience, purpose (persuade|report|teach|inform), slide_count, style, language, aspect_ratio, core_message. If raw_text is provided, analyze it for key points.",
+        "expected_outputs": ["requirements.json"],
+        "allowed_tools": ["filesystem", "python"],
+        "transitions": [
+          { "to": "select_template", "when": "requirements.json created and validated" }
+        ]
+      },
+      "select_template": {
+        "title": "Select Template",
+        "goal": "Choose the best Typst template from the catalog based on requirements",
+        "instructions": "Read template/catalog.json, match templates by style/purpose/audience. Score top 3, pick the best. If no catalog available, use a clean default template. Output template_selection.json with template_id, template_path, score, reasoning.",
+        "expected_outputs": ["template_selection.json"],
+        "allowed_tools": ["filesystem", "python"],
+        "transitions": [
+          { "to": "generate_outline", "when": "template selected" },
+          { "to": "generate_outline", "when": "no catalog available", "fallback": "use_default_template" }
+        ]
+      },
+      "generate_outline": {
+        "title": "Generate Semantic Outline",
+        "goal": "Create a structured outline with slide-by-slide plan, claims, and content types",
+        "instructions": "For each slide: write a title, claim (one sentence takeaway), content_type (text|chart|comparison|kpi|flow|image), and bullet points. Output as outline.yaml (SemanticOutline format). Ensure cover, agenda, and closing slides are included.",
+        "expected_outputs": ["outline.yaml"],
+        "allowed_tools": ["filesystem", "python"],
+        "validators": ["outline_structure"],
+        "transitions": [
+          { "to": "generate_content", "when": "outline.yaml created with all slides defined" }
+        ]
+      },
+      "generate_content": {
+        "title": "Generate Slide Content",
+        "goal": "Fill each slide with actual content based on the outline",
+        "instructions": "Read the template's SKILL.md for available slide types and slot constraints. For each outline section, map to a slide type and fill with content. Respect character limits per slot. Output slides.json with per-slide content.",
+        "expected_outputs": ["slides.json"],
+        "allowed_tools": ["filesystem", "python"],
+        "transitions": [
+          { "to": "render_typst", "when": "all slides have content filled" }
+        ]
+      },
+      "render_typst": {
+        "title": "Render to Typst & Compile",
+        "goal": "Generate Typst source code and compile to PDF",
+        "instructions": "Create theme.typ, content.typ, and slides.typ from the content. Use template functions if available. Compile with 'typst compile slides.typ slides.pdf'. If compilation fails, fix errors and retry (max 3 attempts).",
+        "expected_outputs": ["slides.typ", "slides.pdf"],
+        "allowed_tools": ["filesystem", "python", "typst"],
+        "transitions": [
+          { "to": "validate_output", "when": "slides.pdf successfully compiled" },
+          { "to": "render_typst", "when": "compilation failed", "fallback": "fix_typst_errors" }
+        ]
+      },
+      "validate_output": {
+        "title": "Validate Output",
+        "goal": "Check that the generated PDF meets all requirements",
+        "instructions": "Verify: PDF exists, slide count matches target (±2), cover slide present, content readable. Run structural checks. If validation fails, go back to fix.",
+        "expected_outputs": ["validation_report.json"],
+        "allowed_tools": ["filesystem", "python"],
+        "validators": ["pdf_exists", "slide_count", "has_cover"],
+        "transitions": [
+          { "to": "final", "when": "all validators pass" },
+          { "to": "render_typst", "when": "validation failed", "fallback": "fix_content_issues" }
+        ]
+      },
+      "final": {
+        "title": "Complete",
+        "goal": "Presentation is ready",
+        "instructions": "Report the final output path and summary. Record artifact in Nothing.",
+        "expected_outputs": ["slides.pdf"],
+        "transitions": []
+      }
+    }
+  },
+
+  "tool_policy": {
+    "allow": ["filesystem", "python", "typst", "python-pptx"],
+    "deny": ["curl|bash", "rm -rf", "sudo", "docker", "npm install"],
+    "require_confirm": ["network_upload", "pip install"],
+    "command_rules": [
+      { "pattern": "rm -rf", "effect": "deny", "reason": "destructive command" },
+      { "pattern": "curl.*\\|.*bash", "effect": "deny", "reason": "remote script execution" },
+      { "pattern": "pip install", "effect": "confirm", "reason": "new dependency requires approval" },
+      { "pattern": "typst compile", "effect": "allow", "reason": "core compilation tool" }
+    ]
+  },
+
+  "file_policy": {
+    "read_allow": ["./", "./template/", "./components/", "./assets/"],
+    "read_deny": [".env", "*.pem", "*credential*", "*secret*"],
+    "write_allow": ["./output/", "./workdir/", "./tmp/"],
+    "write_deny": ["./.git/", "./src/"]
+  },
+
+  "budget_policy": {
+    "max_steps": 20,
+    "max_tool_calls": 50,
+    "max_retries": 3,
+    "timeout_minutes": 30
+  },
+
+  "validators": [
+    { "id": "pdf_exists", "type": "file_exists", "target": "slides.pdf", "rule": "Output PDF must exist", "severity": "error" },
+    { "id": "slide_count", "type": "manual", "rule": "Slide count should be within ±2 of target", "severity": "warning" },
+    { "id": "has_cover", "type": "manual", "rule": "First slide must be a cover/title slide", "severity": "error" },
+    { "id": "outline_structure", "type": "json_schema", "target": "outline.yaml", "rule": "Each section must have title, claim, and content_type", "severity": "error" },
+    { "id": "no_empty_slides", "type": "manual", "rule": "No slide should have empty content", "severity": "warning" },
+    { "id": "char_limit", "type": "manual", "rule": "Each slide body should not exceed 6 lines or 200 characters per point", "severity": "warning" }
+  ],
+
+  "fallbacks": {
+    "use_default_template": {
+      "description": "Use a clean minimal template when no catalog match found",
+      "action": "Create a simple theme.typ with default fonts and neutral colors"
+    },
+    "fix_typst_errors": {
+      "description": "Fix Typst compilation errors and retry",
+      "action": "Read compiler error output, fix syntax issues in .typ files, retry compile"
+    },
+    "fix_content_issues": {
+      "description": "Fix content issues found during validation",
+      "action": "Adjust slide content based on validation report, re-render"
+    }
+  },
+
+  "artifacts": [
+    { "name": "slides.pdf", "type": "pdf", "required": true, "validators": ["pdf_exists"] },
+    { "name": "slides.typ", "type": "typst", "required": true },
+    { "name": "outline.yaml", "type": "yaml", "required": false },
+    { "name": "requirements.json", "type": "json", "required": false }
+  ],
+
+  "examples": [
+    {
+      "input": { "topic": "AI Agent 经验协作协议", "audience": "投资人", "slide_count": 10, "language": "zh", "style": "corporate" },
+      "description": "生成面向投资人的中文融资 PPT"
+    },
+    {
+      "input": { "topic": "Q3 Product Update", "audience": "internal team", "slide_count": 8, "language": "en", "style": "minimal" },
+      "description": "Generate an internal team status update deck"
+    }
+  ]
+}
