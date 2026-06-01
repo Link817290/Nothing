@@ -180,6 +180,14 @@ async function finishSetup(email?: string) {
   console.log('  Setting up MCP for your editors...\n')
   await mcpInstall()
 
+  // Auto-install message notifications
+  try {
+    const { installWatch } = await import('./watch-setup.js')
+    if (installWatch()) {
+      console.log('  ✓ Message notifications enabled (checks every 5 min)\n')
+    }
+  } catch {}
+
   console.log('  All done! Your AI Agent can now send and receive emails.')
   console.log()
   console.log('  Try:')

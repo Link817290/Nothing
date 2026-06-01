@@ -20,5 +20,15 @@ export async function reset(opts?: { yes?: boolean }) {
   }
 
   resetAll()
+
+  // Remove watch cron
+  try {
+    const { uninstallWatch } = await import('./watch-setup.js')
+    uninstallWatch()
+  } catch {}
+
+  const { clearNotifications } = await import('../config.js')
+  clearNotifications()
+
   console.log('  ✓ Reset complete. Run "nothing init" to start fresh.\n')
 }

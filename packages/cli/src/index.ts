@@ -78,6 +78,15 @@ program
     await reset(opts)
   })
 
+program
+  .command('check')
+  .option('--silent', 'No output (for cron)')
+  .description('Check for new messages and update notification file')
+  .action(async (opts) => {
+    const { check } = await import('./commands/check.js')
+    await check(opts)
+  })
+
 // ─── MCP ────────────────────────────────────────────────────────
 
 program

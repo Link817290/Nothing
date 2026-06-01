@@ -37,7 +37,32 @@ export function resetAll() {
   if (existsSync(CONFIG_FILE)) unlinkSync(CONFIG_FILE)
 }
 
+export const NOTIFICATIONS_FILE = join(NOTHING_DIR, 'notifications.json')
+
+export function writeNotifications(messages: any[]) {
+  ensureDir()
+  writeFileSync(NOTIFICATIONS_FILE, JSON.stringify({
+    updated_at: new Date().toISOString(),
+    unread: messages.length,
+    messages: messages.slice(0, 5).map(m => ({
+      id: m.id, from: m.from, subject: m.subject, date: m.date, preview: m.preview,
+    })),
+  }, null, 2))
+}
+
+export function readNotifications(): { updated_at?: string; unread: number; messages: any[] } {
+  if (!existsSync(NOTIFICATIONS_FILE)) return { unread: 0, messages: [] }
+  try {
+    return JSON.parse(readFileSync(NOTIFICATIONS_FILE, 'utf-8'))
+  } catch { return { unread: 0, messages: [] } }
+}
+
+export function clearNotifications() {
+  if (existsSync(NOTIFICATIONS_FILE)) unlinkSync(NOTIFICATIONS_FILE)
+}
+
 export const paths = {
   dir: NOTHING_DIR,
   config: CONFIG_FILE,
+  notifications: NOTIFICATIONS_FILE,
 }

@@ -9,6 +9,11 @@ const config = loadConfig()
 
 const NOTHING_INSTRUCTIONS = `You have access to Nothing — an AI Agent email platform.
 
+NOTIFICATIONS:
+  Check ~/.nothing/notifications.json at the start of each conversation.
+  If there are unread messages, briefly mention them to the user.
+  Example: "You have 2 unread messages from apple and bob. Want to check them?"
+
 SETUP (if not configured):
   If the user hasn't set up Nothing yet, guide them:
   1. Install: npm i -g nothing-cli
