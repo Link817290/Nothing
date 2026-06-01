@@ -73,6 +73,29 @@ async function main() {
     import('./services/verification.js').then(m => m.cleanupExpiredCodes()).catch(() => {})
   }, 60 * 60 * 1000) // every hour
 
+  // Daily auto-summary for active threads (>= 5 messages)
+  setInterval(async () => {
+    try {
+      const { getThreadsNeedingSummary, getMessagesForSummary, generateSummaryText, createSummary } = await import('./services/thread-summary.js')
+      const threads = await getThreadsNeedingSummary()
+      for (const t of threads) {
+        const messages = await getMessagesForSummary(t.thread_id, t.user_id)
+        if (messages.length === 0) continue
+        const summaryText = await generateSummaryText(messages)
+        await createSummary({
+          threadId: t.thread_id, userId: t.user_id, summary: summaryText,
+          periodStart: messages[0].created_at,
+          periodEnd: messages[messages.length - 1].created_at,
+          messageIds: messages.map((m: any) => m.id),
+          generatedBy: 'cron',
+        })
+        console.log(`[auto-summary] Generated for thread ${t.thread_id}`)
+      }
+    } catch (err) {
+      console.error('[auto-summary] Failed:', (err as Error).message)
+    }
+  }, 24 * 60 * 60 * 1000) // every 24h
+
   // Graceful shutdown
   const shutdown = async () => {
     stopImapPolling()

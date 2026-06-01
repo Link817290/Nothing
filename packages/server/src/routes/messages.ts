@@ -136,6 +136,35 @@ export async function messageRoutes(app: FastifyInstance) {
     return getThreadSummary(user.id, id)
   })
 
+  // AI summaries
+  app.get('/api/threads/:id/summaries', async (req) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    const { listSummaries } = await import('../services/thread-summary.js')
+    return { summaries: await listSummaries(id, user.id) }
+  })
+
+  app.post('/api/threads/:id/summarize', { preHandler: requirePermission('write') }, async (req, reply) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    const body = (req.body || {}) as { message_ids?: string[] }
+
+    const { getMessagesForSummary, generateSummaryText, createSummary } = await import('../services/thread-summary.js')
+    const messages = await getMessagesForSummary(id, user.id, body.message_ids)
+    if (messages.length === 0) return reply.code(400).send({ error: 'No messages to summarize' })
+
+    const summaryText = await generateSummaryText(messages)
+    const result = await createSummary({
+      threadId: id, userId: user.id, summary: summaryText,
+      periodStart: messages[0].created_at,
+      periodEnd: messages[messages.length - 1].created_at,
+      messageIds: messages.map((m: any) => m.id),
+      generatedBy: 'manual',
+    })
+
+    return { id: result.id, summary: summaryText }
+  })
+
   // ─── Attachments ────────────────────────────────────────────────
   app.get('/api/messages/:id/attachments', async (req) => {
     const user = (req as any).user as { id: string }

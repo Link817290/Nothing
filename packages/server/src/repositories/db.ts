@@ -178,6 +178,24 @@ CREATE TABLE IF NOT EXISTS artifacts (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── Thread Summaries ────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS thread_summaries (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT NOT NULL,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  summary TEXT NOT NULL,
+  period_start TIMESTAMPTZ,
+  period_end TIMESTAMPTZ,
+  message_ids JSONB,
+  message_count INTEGER DEFAULT 0,
+  generated_by TEXT DEFAULT 'manual',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_thread_summaries_thread ON thread_summaries(thread_id);
+CREATE INDEX IF NOT EXISTS idx_thread_summaries_user ON thread_summaries(user_id);
+
 CREATE INDEX IF NOT EXISTS idx_capsules_owner ON execution_capsules(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_runs_user ON capsule_runs(user_id);
 CREATE INDEX IF NOT EXISTS idx_runs_capsule ON capsule_runs(capsule_id);
