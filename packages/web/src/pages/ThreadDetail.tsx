@@ -65,7 +65,7 @@ export default function ThreadDetail() {
           <Link to="/threads"><ArrowLeft className="h-4 w-4" /> {t('threads.title')}</Link>
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-semibold truncate">{summary.subject}</h1>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight truncate">{summary.subject}</h1>
         </div>
         {total >= 5 && (
           <Button variant="outline" size="sm" onClick={handleSummarize} disabled={summarizing}>

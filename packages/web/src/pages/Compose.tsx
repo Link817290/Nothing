@@ -63,7 +63,7 @@ export default function Compose() {
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">{t('compose.title')}</h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('compose.title')}</h1>
             {accounts.length > 1 && (
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Sending from {accounts.find(a => a.id === accountId)?.email || '—'}
