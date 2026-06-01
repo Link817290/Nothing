@@ -135,7 +135,12 @@ export async function getMessage(userId: string, id: string) {
     project: row.project || undefined,
     labels: typeof row.labels === 'string' ? JSON.parse(row.labels) : (row.labels || []),
     context: payload?.context, status: row.status, source: row.source,
-    attachments: [],
+    attachments: await (async () => {
+      try {
+        const { listAttachments } = await import('./attachments.js')
+        return listAttachments(id)
+      } catch { return [] }
+    })(),
     thread: thread.map(t => ({
       id: t.id, from: t.from_address,
       preview: stripHtml(t.content).slice(0, 80),
