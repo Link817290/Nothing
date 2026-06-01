@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Inbox, Send, PenSquare, Settings, Plug,
-  FolderOpen, Users, Globe, Mail, Server,
+  FolderOpen, Users, Globe, Mail, Server, GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
@@ -59,6 +59,7 @@ export function Sidebar() {
             <NavItem icon={LayoutDashboard} label={t('nav.dashboard')} href="/dashboard" active={isActive('/dashboard')} />
 
             <SectionLabel>{t('nav.mail')}</SectionLabel>
+            <NavItem icon={GitBranch} label="Threads" href="/threads" active={isActive('/threads')} />
             <NavItem icon={Inbox} label={t('nav.inbox')} href="/inbox" active={isActive('/inbox')} badge={unreadCount || undefined} />
             <NavItem icon={Send} label={t('nav.sent')} href="/sent" active={isActive('/sent')} />
             <NavItem icon={PenSquare} label={t('nav.compose')} href="/compose" active={isActive('/compose')} />

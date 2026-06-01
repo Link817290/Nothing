@@ -3,7 +3,7 @@ import { authenticate, requirePermission } from '../middleware/auth.js'
 import {
   sendMessage, getInbox, getSent, getMessage, replyMessage,
   getProjects, getReport, deleteMessage, setReadStatus,
-  forwardMessage, searchMessages, getThread,
+  forwardMessage, searchMessages, getThread, listThreads,
 } from '../services/messages.js'
 import type { SendRequest, InboxQuery } from '../types/index.js'
 
@@ -117,7 +117,13 @@ export async function messageRoutes(app: FastifyInstance) {
     }
   })
 
-  // ─── Thread ────────────────────────────────────────────────────
+  // ─── Threads ───────────────────────────────────────────────────
+  app.get('/api/threads', async (req) => {
+    const user = (req as any).user as { id: string }
+    const q = req.query as { project?: string; limit?: string }
+    return listThreads(user.id, { project: q.project, limit: q.limit ? parseInt(q.limit) : undefined })
+  })
+
   app.get('/api/threads/:id', async (req) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }

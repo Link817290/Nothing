@@ -56,6 +56,11 @@ export const api = {
   clearAccountMessages: (id: string) =>
     request(`/accounts/${id}/messages`, { method: 'DELETE' }),
 
+  // ── Threads ──────────────────────────────────────────
+  listThreads: (params?: Record<string, string>) =>
+    request(`/threads${params ? '?' + new URLSearchParams(params) : ''}`),
+  getThread: (id: string) => request(`/threads/${id}`),
+
   // ── Messages ─────────────────────────────────────────
   inbox: (params?: Record<string, string>) =>
     request(`/messages/inbox${params ? '?' + new URLSearchParams(params) : ''}`),

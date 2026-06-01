@@ -6,6 +6,7 @@ import './i18n';
 import App from './App';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import Threads from './pages/Threads';
 import Inbox from './pages/Inbox';
 import Sent from './pages/Sent';
 import MessageDetail from './pages/MessageDetail';
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { index: true, element: <P><Dashboard /></P> },
       { path: 'dashboard', element: <P><Dashboard /></P> },
+      { path: 'threads', element: <P><Threads /></P> },
       { path: 'inbox', element: <P><Inbox /></P> },
       { path: 'sent', element: <P><Sent /></P> },
       { path: 'messages/:id', element: <P><MessageDetail /></P> },

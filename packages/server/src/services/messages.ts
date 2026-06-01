@@ -357,7 +357,38 @@ export async function searchMessages(userId: string, query: { q: string; project
   return { messages: rows.map(rowToSummary) }
 }
 
-// ─── Thread ────────────────────────────────────────────────────
+// ─── Threads ───────────────────────────────────────────────────
+
+export async function listThreads(userId: string, query?: { project?: string; limit?: number }) {
+  let sql = `SELECT thread_id, MIN(subject) as subject, MIN(from_address) as from_address,
+    COUNT(*) as message_count,
+    COUNT(DISTINCT from_address) as participant_count,
+    MIN(created_at) as started_at, MAX(created_at) as last_activity,
+    MAX(CASE WHEN is_read = FALSE AND direction = 'inbound' THEN 1 ELSE 0 END) as has_unread,
+    MIN(project) as project
+    FROM messages WHERE user_id = $1 AND thread_id IS NOT NULL`
+  const p: unknown[] = [userId]
+  let idx = 2
+
+  if (query?.project) { sql += ` AND project = $${idx}`; p.push(query.project); idx++ }
+  sql += ` GROUP BY thread_id HAVING COUNT(*) > 1 ORDER BY last_activity DESC LIMIT $${idx}`
+  p.push(query?.limit || 50)
+
+  const rows = await queryAll(sql, p)
+  return {
+    threads: rows.map(r => ({
+      thread_id: r.thread_id,
+      subject: r.subject,
+      from: r.from_address,
+      message_count: parseInt(r.message_count),
+      participant_count: parseInt(r.participant_count),
+      started_at: r.started_at,
+      last_activity: r.last_activity,
+      has_unread: r.has_unread === 1,
+      project: r.project || undefined,
+    })),
+  }
+}
 
 export async function getThread(userId: string, threadId: string) {
   const rows = await queryAll(
