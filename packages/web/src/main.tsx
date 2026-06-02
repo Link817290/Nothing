@@ -20,11 +20,6 @@ import AdminMailboxes from './pages/admin/Mailboxes';
 import AdminSystem from './pages/admin/System';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
-// Detect Tauri and add class for rounded window styling
-if ('__TAURI_INTERNALS__' in window) {
-  document.documentElement.classList.add('tauri');
-}
-
 // Apply persisted theme immediately to prevent flash
 (() => {
   try {

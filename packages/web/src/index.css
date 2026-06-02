@@ -138,25 +138,6 @@
     font-size: 16px;
   }
 
-  /* Tauri: transparent background for rounded window */
-  html.tauri {
-    background: transparent;
-  }
-  html.tauri body {
-    background: transparent;
-  }
-  html.tauri #root {
-    background: var(--background);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  html.tauri #root > * {
-    min-height: 0;
-  }
 
   body {
     @apply bg-background text-foreground font-sans;
