@@ -238,29 +238,40 @@ function MessageNode({ data }: { data: any }) {
 const nodeTypes = { message: MessageNode };
 
 function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; threadId: string; fullscreen?: boolean }) {
-  // Build nodes + edges
   const GAP_X = 300, GAP_Y = 120;
+  const edgeStyle = { stroke: 'var(--muted-foreground)', strokeWidth: 1.5, opacity: 0.4 };
 
-  // Layout: use in_reply_to for tree, fallback to linear
-  const idToIndex = new Map<string, number>();
-  messages.forEach((m, i) => idToIndex.set(m.id, i));
+  // 1. Stable sort by time
+  const msgs = [...messages].sort((a, b) => {
+    const ta = a.time || '', tb = b.time || '';
+    return ta.localeCompare(tb);
+  });
+  const idToIndex = new Map<string, number>(msgs.map((m, i) => [m.id, i]));
 
+  // 2. Build parent-child with fallback: missing parent → attach to nearest predecessor
   const childrenMap = new Map<number, number[]>();
   const roots: number[] = [];
+  const parentOf = new Map<number, number>(); // child → parent
 
-  messages.forEach((m, i) => {
-    const parentIdx = m.in_reply_to ? idToIndex.get(m.in_reply_to) : undefined;
-    if (parentIdx !== undefined) {
+  msgs.forEach((m, i) => {
+    let parentIdx: number | undefined;
+
+    if (m.in_reply_to) {
+      parentIdx = idToIndex.get(m.in_reply_to);
+      // Parent not in set → fallback to previous message
+      if (parentIdx === undefined && i > 0) parentIdx = i - 1;
+    }
+
+    if (parentIdx !== undefined && parentIdx !== i) {
       if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
       childrenMap.get(parentIdx)!.push(i);
+      parentOf.set(i, parentIdx);
     } else {
       roots.push(i);
     }
   });
 
-  // If no tree structure (all roots), make linear
-  const isLinear = roots.length === messages.length;
-
+  // 3. Unified DFS layout (no isLinear special case)
   const positions = new Map<number, { x: number; y: number }>();
   let nextRow = 0;
 
@@ -273,18 +284,14 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
       const startRow = nextRow;
       for (const child of children) layoutTree(child, depth + 1);
       const endRow = nextRow - 1;
-      const midY = ((startRow + endRow) / 2) * GAP_Y;
-      positions.set(idx, { x: depth * GAP_X, y: midY });
+      positions.set(idx, { x: depth * GAP_X, y: ((startRow + endRow) / 2) * GAP_Y });
     }
   }
 
-  if (isLinear) {
-    messages.forEach((_, i) => positions.set(i, { x: i * GAP_X, y: 0 }));
-  } else {
-    for (const root of roots) layoutTree(root, 0);
-  }
+  for (const root of roots) layoutTree(root, 0);
 
-  const nodes: Node[] = messages.map((m, i) => ({
+  // 4. Nodes + edges from same tree
+  const nodes: Node[] = msgs.map((m, i) => ({
     id: String(i),
     type: 'message',
     position: positions.get(i) || { x: i * GAP_X, y: 0 },
@@ -294,18 +301,9 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
   }));
 
   const edges: Edge[] = [];
-  if (isLinear) {
-    messages.forEach((_, i) => {
-      if (i > 0) edges.push({ id: `e${i - 1}-${i}`, source: String(i - 1), target: String(i), type: 'smoothstep', style: { stroke: 'var(--muted-foreground)', strokeWidth: 1.5, opacity: 0.4 } });
-    });
-  } else {
-    messages.forEach((m, i) => {
-      const parentIdx = m.in_reply_to ? idToIndex.get(m.in_reply_to) : undefined;
-      if (parentIdx !== undefined) {
-        edges.push({ id: `e${parentIdx}-${i}`, source: String(parentIdx), target: String(i), type: 'smoothstep', style: { stroke: 'var(--muted-foreground)', strokeWidth: 1.5, opacity: 0.4 } });
-      }
-    });
-  }
+  parentOf.forEach((parent, child) => {
+    edges.push({ id: `e${parent}-${child}`, source: String(parent), target: String(child), type: 'smoothstep', style: edgeStyle });
+  });
 
   return (
     <div
