@@ -31,6 +31,8 @@
     "new_message": "新消息",
     "needs_reply": "等待回复",
     "active_projects": "活跃项目",
+    "active_threads": "活跃会话",
+    "today_summaries": "今日 AI 摘要",
     "messages": "条消息"
   },
   "stat": {
