@@ -115,7 +115,11 @@ export default function LoginPage() {
     };
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-[40%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-brand/[0.03] blur-[120px]" />
+          <div className="absolute -bottom-[30%] -left-[20%] h-[60vh] w-[60vh] rounded-full bg-brand/[0.02] blur-[100px]" />
+        </div>
         <Card className="relative z-10 w-full max-w-sm fade-in">
           <CardHeader className="items-center text-center pb-2">
             <div className="flex items-center gap-2.5 mb-2">
@@ -123,13 +127,13 @@ export default function LoginPage() {
               <span className="h-2 w-2 rounded-full bg-brand" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Verification code sent to {verifyEmail}
+              {t('login.verify_sent', { email: verifyEmail })}
             </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleVerify} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Verification Code</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('login.verify_code')}</label>
                 <Input
                   value={verifyCode}
                   onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -146,7 +150,7 @@ export default function LoginPage() {
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={loading || verifyCode.length !== 6}>
-                {loading ? <Loader2 className="animate-spin" /> : 'Verify'}
+                {loading ? <Loader2 className="animate-spin" /> : t('login.verify')}
               </Button>
             </form>
             <div className="mt-4 text-center">
@@ -155,7 +159,7 @@ export default function LoginPage() {
                 onClick={() => { setVerifyStep(false); setVerifyCode(''); setError(''); }}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Back
+                {t('login.back')}
               </button>
             </div>
           </CardContent>
@@ -167,7 +171,11 @@ export default function LoginPage() {
   // API key reveal after registration
   if (apiKey) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-[40%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-brand/[0.03] blur-[120px]" />
+          <div className="absolute -bottom-[30%] -left-[20%] h-[60vh] w-[60vh] rounded-full bg-brand/[0.02] blur-[100px]" />
+        </div>
         <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-4">
             <div className="flex items-center gap-2.5">
@@ -178,7 +186,7 @@ export default function LoginPage() {
           <CardContent className="space-y-5">
             {mailbox && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your email</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('login.your_email')}</p>
                 <p className="mt-1 text-lg font-semibold text-foreground">{mailbox}</p>
               </div>
             )}
@@ -209,7 +217,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-[40%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-brand/[0.03] blur-[120px]" />
+        <div className="absolute -bottom-[30%] -left-[20%] h-[60vh] w-[60vh] rounded-full bg-brand/[0.02] blur-[100px]" />
+      </div>
       <Card className="relative z-10 w-full max-w-sm fade-in">
         <CardHeader className="items-center text-center pb-2">
           <div className="flex items-center gap-2.5 mb-2">
@@ -236,7 +248,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Username</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('login.username')}</label>
                 {mailDomain ? (
                   <div className="flex items-center gap-0">
                     <Input
@@ -264,7 +276,7 @@ export default function LoginPage() {
 
               {!isFirstTime && (
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Email (for verification)</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t('login.email_for_verify')}</label>
                   <Input
                     type="email"
                     value={externalEmail}
@@ -285,7 +297,7 @@ export default function LoginPage() {
                   required
                 />
                 {password && password.length < 8 && (
-                  <p className="text-xs text-muted-foreground">Min 8 chars, with uppercase, lowercase and number</p>
+                  <p className="text-xs text-muted-foreground">{t('login.password_rule')}</p>
                 )}
               </div>
 
@@ -302,7 +314,7 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Username or email</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('login.username_or_email')}</label>
                 <Input
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}

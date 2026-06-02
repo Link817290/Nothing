@@ -110,7 +110,12 @@
     "forward_fail": "Failed to forward",
     "deleted": "Message deleted",
     "marked_read": "Marked as read",
-    "marked_unread": "Marked as unread"
+    "marked_unread": "Marked as unread",
+    "download_failed": "Download failed",
+    "attachments": "{{count}} attachment",
+    "attachments_plural": "{{count}} attachments",
+    "tree": "Tree",
+    "canvas": "Canvas"
   },
   "settings": {
     "title": "Settings",
@@ -162,7 +167,16 @@
     "user_role": "User",
     "syncing": "Syncing NMP messages...",
     "importing": "Importing all emails...",
-    "sync_failed": "Sync failed"
+    "sync_failed": "Sync failed",
+    "account_added": "Account added",
+    "profile_update_failed": "Failed to update profile",
+    "no_keys": "No API keys",
+    "mailbox_title": "Mailbox",
+    "mailbox_claim_desc": "Claim your @{{domain}} email address",
+    "mailbox_password_hint": "Mailbox password (min 8 chars, A-z, 0-9)",
+    "mailbox_password_rule": "Must contain uppercase, lowercase and number",
+    "claim_mailbox": "Claim mailbox",
+    "mailbox_claimed": "Mailbox created: {{email}}"
   },
   "connect": {
     "title": "Connect",
@@ -186,7 +200,9 @@
     "tool_reply": "Reply to a message",
     "tool_sent": "Check sent messages",
     "tool_projects": "List projects",
-    "tool_report": "Generate activity report"
+    "tool_report": "Generate activity report",
+    "desktop": "Desktop App",
+    "desktop_desc": "Native app for Windows & Linux"
   },
   "admin": {
     "users_title": "Users",
@@ -236,7 +252,33 @@
     "setting_server_name": "Server Name",
     "setting_server_name_desc": "Display name for this instance",
     "setting_max_accounts_per_user": "Max Accounts",
-    "setting_max_accounts_per_user_desc": "Maximum email accounts per user"
+    "setting_max_accounts_per_user_desc": "Maximum email accounts per user",
+    "domains_subtitle": "Manage domains and DNS records for self-hosted email",
+    "add_domain_hint": "Add a domain for self-hosted email",
+    "add_domain_desc": "After adding, you'll get DNS records to configure at your domain registrar.",
+    "no_domains_hint": "Add a domain to start sending email from @yourdomain.com",
+    "dns_records": "DNS Records",
+    "dns_hint": "Add these records at your domain registrar:",
+    "delete_domain_confirm": "Delete domain {{name}}? This will remove all associated mailboxes.",
+    "mailboxes_subtitle": "Manage mailbox accounts for self-hosted domains",
+    "create_mailbox_hint": "Create a new mailbox",
+    "no_mailboxes_hint": "Create mailboxes for users on your self-hosted domain",
+    "manage": "Manage",
+    "email_aliases": "Email aliases",
+    "add_alias": "Add alias",
+    "storage_quota": "Storage quota",
+    "change_quota": "Change",
+    "set_quota": "Set quota",
+    "quota_set": "Quota set to {{mb}} MB",
+    "alias_added": "Alias added",
+    "alias_removed": "Alias removed",
+    "delete_mailbox_confirm": "Delete mailbox \"{{name}}\"? All emails in this mailbox will be lost.",
+    "settings_saved": "Settings saved",
+    "settings_save_failed": "Failed to save",
+    "messages_cleared": "All messages deleted",
+    "reset_complete": "Server reset complete",
+    "reset_failed": "Reset failed",
+    "reset_confirm_prompt": "Enter your password to confirm reset:"
   },
   "confirm": {
     "clear_messages_title": "Clear messages",
@@ -267,7 +309,16 @@
     "api_key_notice": "Shown once",
     "api_key_title": "Your API Key",
     "api_key_desc": "Save this key — you won't see it again. Use it for CLI login and agent config.",
-    "continue": "Continue to Inbox"
+    "continue": "Continue to Inbox",
+    "username": "Username",
+    "username_or_email": "Username or email",
+    "verify_code": "Verification Code",
+    "verify_sent": "Verification code sent to {{email}}",
+    "verify": "Verify",
+    "back": "Back",
+    "email_for_verify": "Email (for verification)",
+    "password_rule": "Min 8 chars, with uppercase, lowercase and number",
+    "your_email": "Your email"
   },
   "common": {
     "view_all": "View all",

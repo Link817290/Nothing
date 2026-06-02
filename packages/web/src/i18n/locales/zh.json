@@ -110,7 +110,12 @@
     "forward_fail": "转发失败",
     "deleted": "消息已删除",
     "marked_read": "已标为已读",
-    "marked_unread": "已标为未读"
+    "marked_unread": "已标为未读",
+    "download_failed": "下载失败",
+    "attachments": "{{count}} 个附件",
+    "attachments_plural": "{{count}} 个附件",
+    "tree": "树形",
+    "canvas": "画布"
   },
   "settings": {
     "title": "设置",
@@ -162,7 +167,16 @@
     "user_role": "用户",
     "syncing": "正在同步 NMP 消息...",
     "importing": "正在导入所有邮件...",
-    "sync_failed": "同步失败"
+    "sync_failed": "同步失败",
+    "account_added": "账户已添加",
+    "profile_update_failed": "资料更新失败",
+    "no_keys": "暂无 API 密钥",
+    "mailbox_title": "邮箱",
+    "mailbox_claim_desc": "领取你的 @{{domain}} 邮箱地址",
+    "mailbox_password_hint": "邮箱密码（至少 8 位，含大小写和数字）",
+    "mailbox_password_rule": "必须包含大写、小写字母和数字",
+    "claim_mailbox": "领取邮箱",
+    "mailbox_claimed": "邮箱已创建：{{email}}"
   },
   "connect": {
     "title": "连接",
@@ -186,7 +200,9 @@
     "tool_reply": "回复消息",
     "tool_sent": "查看已发送消息",
     "tool_projects": "列出项目",
-    "tool_report": "生成活动报告"
+    "tool_report": "生成活动报告",
+    "desktop": "桌面客户端",
+    "desktop_desc": "Windows 和 Linux 原生应用"
   },
   "admin": {
     "users_title": "用户管理",
@@ -236,7 +252,33 @@
     "setting_server_name": "服务器名称",
     "setting_server_name_desc": "此实例的显示名称",
     "setting_max_accounts_per_user": "最大账户数",
-    "setting_max_accounts_per_user_desc": "每个用户最多可绑定的邮箱数量"
+    "setting_max_accounts_per_user_desc": "每个用户最多可绑定的邮箱数量",
+    "domains_subtitle": "管理自建邮箱的域名和 DNS 记录",
+    "add_domain_hint": "添加自建邮箱域名",
+    "add_domain_desc": "添加后会生成 DNS 记录，需在域名注册商处配置。",
+    "no_domains_hint": "添加域名以使用 @yourdomain.com 邮箱",
+    "dns_records": "DNS 记录",
+    "dns_hint": "请在域名注册商处添加以下记录：",
+    "delete_domain_confirm": "删除域名 {{name}}？关联的邮箱也会被删除。",
+    "mailboxes_subtitle": "管理自建域名的邮箱账户",
+    "create_mailbox_hint": "创建新邮箱",
+    "no_mailboxes_hint": "为自建域名创建用户邮箱",
+    "manage": "管理",
+    "email_aliases": "邮箱别名",
+    "add_alias": "添加别名",
+    "storage_quota": "存储配额",
+    "change_quota": "修改",
+    "set_quota": "设置配额",
+    "quota_set": "配额已设为 {{mb}} MB",
+    "alias_added": "别名已添加",
+    "alias_removed": "别名已移除",
+    "delete_mailbox_confirm": "删除邮箱「{{name}}」？该邮箱的所有邮件将丢失。",
+    "settings_saved": "设置已保存",
+    "settings_save_failed": "保存失败",
+    "messages_cleared": "所有消息已删除",
+    "reset_complete": "服务器重置完成",
+    "reset_failed": "重置失败",
+    "reset_confirm_prompt": "输入密码确认重置："
   },
   "confirm": {
     "clear_messages_title": "清空消息",
@@ -267,9 +309,19 @@
     "api_key_notice": "仅显示一次",
     "api_key_title": "你的 API Key",
     "api_key_desc": "请保存此密钥，之后不会再显示。用于 CLI 登录和 Agent 配置。",
-    "continue": "进入收件箱"
+    "continue": "进入收件箱",
+    "username": "用户名",
+    "username_or_email": "用户名或邮箱",
+    "verify_code": "验证码",
+    "verify_sent": "验证码已发送至 {{email}}",
+    "verify": "验证",
+    "back": "返回",
+    "email_for_verify": "邮箱（用于验证）",
+    "password_rule": "至少 8 位，含大写、小写字母和数字",
+    "your_email": "你的邮箱"
   },
   "common": {
+    "view_all": "查看全部",
     "add": "添加",
     "create": "创建",
     "cancel": "取消",

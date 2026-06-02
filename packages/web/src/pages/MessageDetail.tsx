@@ -122,7 +122,7 @@ export default function MessageDetail() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast({ title: 'Download failed', variant: 'error' });
+      toast({ title: t('message.download_failed'), variant: 'error' });
     }
   };
 
@@ -277,11 +277,11 @@ export default function MessageDetail() {
                   <button
                     onClick={() => setThreadView('tree')}
                     className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'tree' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
-                  >Tree</button>
+                  >{t('message.tree')}</button>
                   <button
                     onClick={() => setThreadView('canvas')}
                     className={cn('px-2.5 py-1 text-xs rounded-md transition-colors', threadView === 'canvas' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
-                  >Canvas</button>
+                  >{t('message.canvas')}</button>
                 </div>
               </div>
 

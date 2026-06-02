@@ -42,7 +42,7 @@ export default function AdminUsers() {
     <>
       <div className="border-b border-border px-4 md:px-10 py-4 md:py-5">
         <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('admin.users_title')}</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">{users.length} registered</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{users.length} {t('admin.registered')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">

@@ -73,7 +73,7 @@ export default function Settings() {
       setEditPassword('');
       toast({ title: t('settings.saved'), variant: 'success' });
     } catch (err: any) {
-      toast({ title: 'Failed to update profile', description: err.message, variant: 'error' });
+      toast({ title: t('settings.profile_update_failed'), description: err.message, variant: 'error' });
     }
     setSaving(false);
   };
@@ -88,7 +88,7 @@ export default function Settings() {
       setAccEmail('');
       setAccPass('');
       load();
-      toast({ title: 'Account added', variant: 'success' });
+      toast({ title: t('settings.account_added'), variant: 'success' });
     } catch (err: any) {
       setAddError(err.message);
     }
@@ -298,7 +298,7 @@ export default function Settings() {
                       const ok = await confirm({ title: t('confirm.clear_messages_title'), description: t('confirm.clear_messages_desc', { email: acc.email }), confirmText: t('confirm.clear_messages_btn'), variant: 'destructive' });
                       if (!ok) return;
                       await api.clearAccountMessages(acc.id);
-                      toast({ title: 'Messages cleared', variant: 'success' });
+                      toast({ title: t('admin.messages_cleared'), variant: 'success' });
                     }} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-3.5 w-3.5" /> {t('settings.clear')}
                     </Button>
@@ -365,7 +365,7 @@ export default function Settings() {
               )}
 
               {keys.length === 0 && !newKey && (
-                <p className="text-sm text-muted-foreground">No API keys</p>
+                <p className="text-sm text-muted-foreground">{t('settings.no_keys')}</p>
               )}
 
               {keys.map((k) => (
@@ -437,10 +437,10 @@ function ClaimMailboxCard({ onClaimed }: { onClaimed: () => void }) {
     setClaiming(true);
     try {
       const res = await api.claimMailbox({ username: username || undefined, password });
-      toast({ title: `Mailbox created: ${res.email}`, variant: 'success' });
+      toast({ title: t('settings.mailbox_claimed', { email: res.email }), variant: 'success' });
       onClaimed();
     } catch (err: any) {
-      toast({ title: 'Failed', description: err.message, variant: 'error' });
+      toast({ title: t('settings.test_failed'), description: err.message, variant: 'error' });
     }
     setClaiming(false);
   };
@@ -448,8 +448,8 @@ function ClaimMailboxCard({ onClaimed }: { onClaimed: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mailbox</CardTitle>
-        <CardDescription>Claim your @{mailDomain} email address</CardDescription>
+        <CardTitle>{t('settings.mailbox_title')}</CardTitle>
+        <CardDescription>{t('settings.mailbox_claim_desc', { domain: mailDomain })}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-0">
@@ -467,11 +467,11 @@ function ClaimMailboxCard({ onClaimed }: { onClaimed: () => void }) {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mailbox password (min 8 chars, A-z, 0-9)"
+          placeholder={t('settings.mailbox_password_hint')}
         />
-        <p className="text-xs text-muted-foreground">Must contain uppercase, lowercase and number</p>
+        <p className="text-xs text-muted-foreground">{t('settings.mailbox_password_rule')}</p>
         <Button size="sm" onClick={handleClaim} disabled={claiming || password.length < 8}>
-          {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Claim mailbox'}
+          {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('settings.claim_mailbox')}
         </Button>
       </CardContent>
     </Card>

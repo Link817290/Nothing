@@ -48,7 +48,7 @@ export default function AdminMailboxes() {
   const handleDelete = async (name: string) => {
     const ok = await confirm({
       title: t('common.delete'),
-      description: `Delete mailbox "${name}"? All emails in this mailbox will be lost.`,
+      description: t('admin.delete_mailbox_confirm', { name }),
       confirmText: t('common.delete'),
       variant: 'destructive',
     });
@@ -64,16 +64,16 @@ export default function AdminMailboxes() {
       await api.adminAddAlias(mbName, newAlias.trim());
       setNewAlias('');
       load();
-      toast({ title: 'Alias added', variant: 'success' });
+      toast({ title: t('admin.alias_added'), variant: 'success' });
     } catch (err: any) {
-      toast({ title: 'Failed', description: err.message, variant: 'error' });
+      toast({ title: t('settings.test_failed'), description: err.message, variant: 'error' });
     }
   };
 
   const handleRemoveAlias = async (mbName: string, alias: string) => {
     await api.adminRemoveAlias(mbName, alias);
     load();
-    toast({ title: 'Alias removed', variant: 'success' });
+    toast({ title: t('admin.alias_removed'), variant: 'success' });
   };
 
   const [quotaInput, setQuotaInput] = useState('');
@@ -86,11 +86,11 @@ export default function AdminMailboxes() {
     try {
       await api.adminSetQuota(mbName, mb);
       load();
-      toast({ title: `Quota set to ${mb} MB`, variant: 'success' });
+      toast({ title: t('admin.quota_set', { mb: String(mb) }), variant: 'success' });
       setQuotaFor(null);
       setQuotaInput('');
     } catch (err: any) {
-      toast({ title: 'Failed', description: err.message, variant: 'error' });
+      toast({ title: t('settings.test_failed'), description: err.message, variant: 'error' });
     }
   };
 
@@ -99,7 +99,7 @@ export default function AdminMailboxes() {
       <div className="flex items-center justify-between border-b border-border px-4 md:px-10 py-4 md:py-5">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('admin.mailboxes_title')}</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">Manage mailbox accounts for self-hosted domains</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.mailboxes_subtitle')}</p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
           <Plus className="h-3.5 w-3.5" /> {t('admin.create_mailbox')}
@@ -111,7 +111,7 @@ export default function AdminMailboxes() {
           {showAdd && (
             <Card>
               <CardContent className="p-5 space-y-3">
-                <p className="text-sm font-medium">Create a new mailbox</p>
+                <p className="text-sm font-medium">{t('admin.create_mailbox_hint')}</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
                   <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@yourdomain.com" />
@@ -133,9 +133,9 @@ export default function AdminMailboxes() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : mailboxes.length === 0 && !showAdd ? (
-            <div className="p-12 text-center">
+            <div className="p-12 text-center fade-in">
               <p className="text-lg font-semibold text-muted-foreground">{t('admin.no_mailboxes')}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Create mailboxes for users on your self-hosted domain</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('admin.no_mailboxes_hint')}</p>
             </div>
           ) : (
             mailboxes.map((mb: any) => {
@@ -168,7 +168,7 @@ export default function AdminMailboxes() {
                       <div className="flex items-center gap-2 shrink-0">
                         <Button variant="outline" size="sm" onClick={() => setExpandedMb(isExpanded ? null : name)}>
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          Manage
+                          {t('admin.manage')}
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(name)} className="text-destructive hover:text-destructive">
                           <Trash2 className="h-3.5 w-3.5" />
@@ -181,7 +181,7 @@ export default function AdminMailboxes() {
                         {/* Aliases */}
                         <div>
                           <p className="text-xs font-medium text-muted-foreground mb-2">
-                            <Tag className="h-3 w-3 inline mr-1" /> Email aliases
+                            <Tag className="h-3 w-3 inline mr-1" /> {t('admin.email_aliases')}
                           </p>
                           <div className="flex flex-wrap gap-2 mb-2">
                             {emails.map((e: string, i: number) => (
@@ -203,14 +203,14 @@ export default function AdminMailboxes() {
                               className="flex-1"
                               onKeyDown={(e) => e.key === 'Enter' && handleAddAlias(name)}
                             />
-                            <Button variant="outline" size="sm" onClick={() => handleAddAlias(name)}>Add alias</Button>
+                            <Button variant="outline" size="sm" onClick={() => handleAddAlias(name)}>{t('admin.add_alias')}</Button>
                           </div>
                         </div>
 
                         {/* Quota */}
                         <div>
                           <p className="text-xs font-medium text-muted-foreground mb-2">
-                            <HardDrive className="h-3 w-3 inline mr-1" /> Storage quota
+                            <HardDrive className="h-3 w-3 inline mr-1" /> {t('admin.storage_quota')}
                             {quota ? ` — ${Math.round(quota / 1024 / 1024)} MB` : ''}
                           </p>
                           {quotaFor === name ? (
@@ -228,7 +228,7 @@ export default function AdminMailboxes() {
                             </div>
                           ) : (
                             <Button variant="outline" size="sm" onClick={() => { setQuotaFor(name); setQuotaInput(quota ? String(Math.round(quota / 1024 / 1024)) : ''); }}>
-                              {quota ? 'Change' : 'Set quota'}
+                              {quota ? t('admin.change_quota') : t('admin.set_quota')}
                             </Button>
                           )}
                         </div>

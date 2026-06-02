@@ -90,7 +90,7 @@ export default function AdminDomains() {
   const handleDelete = async (name: string) => {
     const ok = await confirm({
       title: t('common.delete'),
-      description: `Delete domain ${name}? This will remove all associated mailboxes.`,
+      description: t('admin.delete_domain_confirm', { name }),
       confirmText: t('common.delete'),
       variant: 'destructive',
     });
@@ -114,7 +114,7 @@ export default function AdminDomains() {
       <div className="flex items-center justify-between border-b border-border px-4 md:px-10 py-4 md:py-5">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('admin.domains_title')}</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">Manage domains and DNS records for self-hosted email</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.domains_subtitle')}</p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
           <Plus className="h-3.5 w-3.5" /> {t('admin.add_domain')}
@@ -126,8 +126,8 @@ export default function AdminDomains() {
           {showAdd && (
             <Card>
               <CardContent className="p-5 space-y-3">
-                <p className="text-sm font-medium">Add a domain for self-hosted email</p>
-                <p className="text-xs text-muted-foreground">After adding, you'll get DNS records to configure at your domain registrar.</p>
+                <p className="text-sm font-medium">{t('admin.add_domain_hint')}</p>
+                <p className="text-xs text-muted-foreground">{t('admin.add_domain_desc')}</p>
                 <div className="flex gap-2">
                   <Input
                     value={newName}
@@ -151,9 +151,9 @@ export default function AdminDomains() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : domains.length === 0 && !showAdd ? (
-            <div className="p-12 text-center">
+            <div className="p-12 text-center fade-in">
               <p className="text-lg font-semibold text-muted-foreground">{t('admin.no_domains')}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Add a domain to start sending email from @yourdomain.com</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('admin.no_domains_hint')}</p>
             </div>
           ) : (
             domains.map((d: any) => {
@@ -181,7 +181,7 @@ export default function AdminDomains() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={() => handleShowRecords(name)}>
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          DNS Records
+                          {t('admin.dns_records')}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleVerify(name)} disabled={verifying === name}>
                           {verifying === name ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
@@ -196,7 +196,7 @@ export default function AdminDomains() {
                     {/* DNS Records table */}
                     {isExpanded && records && records.length > 0 && (
                       <div className="mt-4 border-t border-border pt-4">
-                        <p className="text-xs font-medium text-muted-foreground mb-3">Add these records at your domain registrar:</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-3">{t('admin.dns_hint')}</p>
                         <div className="rounded-lg border border-border overflow-x-auto">
                           <table className="w-full text-sm min-w-[500px]">
                             <thead>

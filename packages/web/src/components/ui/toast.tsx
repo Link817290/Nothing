@@ -54,7 +54,7 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            'fade-in flex items-start gap-3 rounded-xl border border-border bg-popover p-4 shadow-lg',
+            'slide-in-right flex items-start gap-3 rounded-xl border border-border bg-popover p-4 shadow-lg backdrop-blur-sm',
             t.variant === 'error' && 'border-destructive/30',
             t.variant === 'success' && 'border-emerald-500/30',
           )}

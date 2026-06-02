@@ -57,6 +57,7 @@ function createWindow() {
         // Add separator + window controls to header
         const controls = document.createElement('div');
         controls.id = 'electron-controls';
+        const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
         controls.style.cssText = '-webkit-app-region:no-drag;display:flex;align-items:center;height:100%;margin-left:8px;padding-left:8px;border-left:1px solid ' + borderColor + ';';
 
         function makeBtn(svg, isClose) {

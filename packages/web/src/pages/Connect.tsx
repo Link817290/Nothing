@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Check, Terminal, Cpu, Globe } from 'lucide-react';
+import { Copy, Check, Terminal, Cpu, Globe, Monitor, Download } from 'lucide-react';
 
 export default function Connect() {
   const { t } = useTranslation();
@@ -24,7 +24,7 @@ export default function Connect() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-8">
-        <div className="space-y-8">
+        <div className="space-y-8 fade-in">
 
           {/* Server Info */}
           <Card>
@@ -111,6 +111,35 @@ export default function Connect() {
                 <ToolCard name="nothing_sent" desc={t('connect.tool_sent')} />
                 <ToolCard name="nothing_projects" desc={t('connect.tool_projects')} />
                 <ToolCard name="nothing_report" desc={t('connect.tool_report')} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Desktop App */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/5">
+                  <Monitor className="h-5 w-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle>{t('connect.desktop')}</CardTitle>
+                  <CardDescription>{t('connect.desktop_desc')}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
+                    <Download className="h-4 w-4" /> Windows (.exe)
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
+                    <Download className="h-4 w-4" /> Linux (.AppImage)
+                  </a>
+                </Button>
               </div>
             </CardContent>
           </Card>

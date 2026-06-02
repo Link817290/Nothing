@@ -100,7 +100,7 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/95 backdrop-blur-md md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/90 backdrop-blur-lg md:hidden">
         <MobileNavItem icon={LayoutDashboard} href="/dashboard" active={isActive('/dashboard')} label="Home" />
         <MobileNavItem icon={Inbox} href="/inbox" active={isActive('/inbox')} label="Inbox" badge={unreadCount || undefined} />
         <MobileNavItem icon={PenSquare} href="/compose" active={isActive('/compose')} label="Compose" />

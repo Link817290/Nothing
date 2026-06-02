@@ -48,9 +48,9 @@ export default function AdminSystem() {
     try {
       const res = await api.adminUpdateSettings(editSettings);
       setSettings(res.settings || editSettings);
-      toast({ title: 'Settings saved', variant: 'success' });
+      toast({ title: t('admin.settings_saved'), variant: 'success' });
     } catch (err: any) {
-      toast({ title: 'Failed to save', description: err.message, variant: 'error' });
+      toast({ title: t('admin.settings_save_failed'), description: err.message, variant: 'error' });
     }
     setSaving(false);
   };
@@ -168,7 +168,7 @@ export default function AdminSystem() {
                   </div>
                 ))}
                 {Object.keys(editSettings).length === 0 && (
-                  <p className="text-sm text-muted-foreground">t('admin.no_settings')</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.no_settings')}</p>
                 )}
               </div>
             </CardContent>
@@ -193,7 +193,7 @@ export default function AdminSystem() {
                     const ok = await confirm({ title: t('confirm.clear_all_title'), description: t('confirm.clear_all_desc'), confirmText: t('confirm.clear_all_btn'), variant: 'destructive' });
                     if (!ok) return;
                     await api.adminClearMessages();
-                    toast({ title: 'All messages deleted', variant: 'success' });
+                    toast({ title: t('admin.messages_cleared'), variant: 'success' });
                     load();
                   }}
                 >
@@ -213,14 +213,14 @@ export default function AdminSystem() {
                   onClick={async () => {
                     const ok = await confirm({ title: t('confirm.reset_title'), description: t('confirm.reset_desc'), confirmText: t('confirm.reset_btn'), variant: 'destructive' });
                     if (!ok) return;
-                    const pw = window.prompt('Enter your password to confirm reset:');
+                    const pw = window.prompt(t('admin.reset_confirm_prompt'));
                     if (!pw) return;
                     try {
                       await api.adminReset(pw);
-                      toast({ title: 'Server reset complete', variant: 'success' });
+                      toast({ title: t('admin.reset_complete'), variant: 'success' });
                       load();
                     } catch (err: any) {
-                      toast({ title: 'Reset failed', description: err.message, variant: 'error' });
+                      toast({ title: t('admin.reset_failed'), description: err.message, variant: 'error' });
                     }
                   }}
                 >
