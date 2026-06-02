@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { TopBar } from '@/components/layout/TopBar';
+import { TitleBar } from '@/components/layout/TitleBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Toaster } from '@/components/ui/toast';
 import { ConfirmProvider } from '@/components/ui/confirm-dialog';
@@ -27,10 +28,15 @@ export default function App() {
     }
   }, [token]);
 
+  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+
   // Login page -- no shell
   if (isLoginPage) return (
     <ConfirmProvider>
-      <Outlet />
+      <div className={isTauri ? 'rounded-xl overflow-hidden' : ''}>
+        <TitleBar />
+        <Outlet />
+      </div>
       <Toaster />
     </ConfirmProvider>
   );
@@ -38,7 +44,8 @@ export default function App() {
   // Authenticated shell
   return (
     <ConfirmProvider>
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className={`flex min-h-screen flex-col bg-background ${isTauri ? 'rounded-xl overflow-hidden' : ''}`}>
+        <TitleBar />
         <TopBar />
         <div className="flex flex-1">
           <Sidebar />
