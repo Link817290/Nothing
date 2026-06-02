@@ -37,81 +37,76 @@ function createWindow() {
       * { scrollbar-width: none !important; }
     `);
 
-    // Inject window controls — handles both login (no header) and app (with header)
+    // Inject CSS for window controls (uses CSS variables — auto-follows theme)
+    mainWindow.webContents.insertCSS(`
+      .ec-btn {
+        width: 36px; height: 36px; border: none; background: transparent;
+        color: var(--muted-foreground, #666);
+        cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 8px; transition: background 0.15s, color 0.15s;
+        -webkit-app-region: no-drag; padding: 0; outline: none;
+      }
+      .ec-btn:hover { background: var(--accent, rgba(128,128,128,0.1)); color: var(--foreground, #eee); }
+      .ec-btn.ec-close:hover { background: #e53e3e; color: #fff; }
+      .ec-wrap {
+        -webkit-app-region: no-drag; display: flex; align-items: center; gap: 2px; height: 100%;
+        margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--border, rgba(128,128,128,0.15));
+      }
+      #electron-floating {
+        position: fixed; top: 0; left: 0; right: 0; height: 40px; z-index: 9999;
+        display: flex; align-items: center; justify-content: flex-end;
+        padding-right: 8px; -webkit-app-region: drag;
+      }
+    `);
+
+    // Inject window controls
     mainWindow.webContents.executeJavaScript(`
-      (function injectControls() {
-        const isDark = document.documentElement.classList.contains('dark');
-        const fg = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
-        const hoverBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-        const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      (function() {
+        const SVG_MIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="7" y1="12" x2="17" y2="12"/></svg>';
+        const SVG_MAX = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+        const SVG_CLOSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="7" y1="17" x2="17" y2="7"/></svg>';
 
-        function makeBtn(svg, isClose) {
-          const btn = document.createElement('button');
-          btn.innerHTML = svg;
-          btn.style.cssText = 'width:40px;height:40px;border:none;background:transparent;color:' + fg + ';cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border-radius:9999px;transition:color 0.15s,background 0.15s;-webkit-app-region:no-drag;';
-          btn.onmouseover = () => {
-            if (isClose) { btn.style.background = '#e53e3e'; btn.style.color = '#fff'; }
-            else { btn.style.background = hoverBg; btn.style.color = isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)'; }
-          };
-          btn.onmouseout = () => { btn.style.background = 'transparent'; btn.style.color = fg; };
-          return btn;
+        function btns() {
+          const f = document.createDocumentFragment();
+          const mk = (svg, cls, fn) => { const b = document.createElement('button'); b.className = 'ec-btn' + (cls ? ' ' + cls : ''); b.innerHTML = svg; b.onclick = fn; return b; };
+          f.append(mk(SVG_MIN, '', () => window.electronAPI.minimize()));
+          f.append(mk(SVG_MAX, '', () => window.electronAPI.maximize()));
+          f.append(mk(SVG_CLOSE, 'ec-close', () => window.electronAPI.close()));
+          return f;
         }
 
-        function createButtons() {
-          const min = makeBtn('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>');
-          min.onclick = () => window.electronAPI.minimize();
-          const max = makeBtn('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>');
-          max.onclick = () => window.electronAPI.maximize();
-          const close = makeBtn('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="7" y1="17" x2="17" y2="7"/></svg>', true);
-          close.onclick = () => window.electronAPI.close();
-          return [min, max, close];
-        }
-
-        // Floating bar for pages without header (login page)
-        function addFloatingBar() {
+        function addFloating() {
           if (document.getElementById('electron-floating')) return;
           const bar = document.createElement('div');
           bar.id = 'electron-floating';
-          bar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:40px;z-index:9999;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;-webkit-app-region:drag;';
-          createButtons().forEach(b => bar.append(b));
+          bar.append(btns());
           document.body.append(bar);
         }
 
-        // Inject into existing header
         function addToHeader(header) {
           if (document.getElementById('electron-controls')) return;
-          // Remove floating bar if it exists
-          const floating = document.getElementById('electron-floating');
-          if (floating) floating.remove();
+          const old = document.getElementById('electron-floating');
+          if (old) old.remove();
 
           header.style.webkitAppRegion = 'drag';
-          header.querySelectorAll('button, a, input, select').forEach(el => {
+          header.querySelectorAll('button, a, input, select, [role=button]').forEach(el => {
             el.style.webkitAppRegion = 'no-drag';
           });
 
-          const controls = document.createElement('div');
-          controls.id = 'electron-controls';
-          controls.style.cssText = '-webkit-app-region:no-drag;display:flex;align-items:center;gap:2px;height:100%;margin-left:12px;padding-left:12px;border-left:1px solid ' + borderColor + ';';
-          createButtons().forEach(b => controls.append(b));
-          header.append(controls);
+          const wrap = document.createElement('div');
+          wrap.id = 'electron-controls';
+          wrap.className = 'ec-wrap';
+          wrap.append(btns());
+          header.append(wrap);
         }
 
-        // Try header first, fallback to floating bar
-        const header = document.querySelector('header');
-        if (header) {
-          addToHeader(header);
-        } else {
-          addFloatingBar();
-        }
+        const h = document.querySelector('header');
+        if (h) addToHeader(h); else addFloating();
 
-        // Watch for header appearing/disappearing (login <-> app transitions)
         new MutationObserver(() => {
           const h = document.querySelector('header');
-          if (h && !document.getElementById('electron-controls')) {
-            addToHeader(h);
-          } else if (!h && !document.getElementById('electron-floating')) {
-            addFloatingBar();
-          }
+          if (h && !document.getElementById('electron-controls')) addToHeader(h);
+          else if (!h && !document.getElementById('electron-floating')) addFloating();
         }).observe(document.body, { childList: true, subtree: true });
       })();
     `);

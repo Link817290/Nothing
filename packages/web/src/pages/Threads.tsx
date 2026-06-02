@@ -35,7 +35,7 @@ export default function Threads() {
         <p className="mt-0.5 text-xs text-muted-foreground">{threads.length} {t('threads.subtitle')}</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4">
+      <div className="px-4 md:px-10 py-4">
         {loading && (
           <div className="flex items-center justify-center p-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

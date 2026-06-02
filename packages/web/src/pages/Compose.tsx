@@ -57,7 +57,7 @@ export default function Compose() {
   const noAccounts = accounts.length === 0;
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div>
       <div className="px-4 py-6 md:px-10 md:py-8 fade-in">
 
         {/* Header */}

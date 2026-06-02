@@ -123,7 +123,8 @@ export default function LoginPage() {
         <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-2">
             <div className="flex items-center gap-2 mb-2">
-              <img src="/logo.png" alt="Nothing" className="h-7 w-7 dark:invert" />
+              <img src="/logo-dark.png" alt="Nothing" className="h-7 w-7 dark:hidden" />
+              <img src="/logo-light.png" alt="Nothing" className="h-7 w-7 hidden dark:block" />
               <span className="text-2xl font-bold tracking-tight">Nothing</span>
             </div>
             <p className="text-sm text-muted-foreground">

@@ -47,7 +47,7 @@ export function TopBar() {
       </Button>
 
       <Link to="/" className="flex shrink-0 items-center gap-2">
-        <img src="/logo.png" alt="Nothing" className="h-6 w-6 dark:invert" />
+        <img src={theme === 'dark' ? '/logo-light.png' : '/logo-dark.png'} alt="Nothing" className="h-6 w-6" />
         <span className="text-xl font-bold tracking-tight text-foreground hidden sm:inline">Nothing</span>
       </Link>
 

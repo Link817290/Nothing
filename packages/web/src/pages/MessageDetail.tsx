@@ -168,7 +168,7 @@ export default function MessageDetail() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-10 md:py-6">
+      <div className="px-4 py-4 md:px-10 md:py-6">
         <div className="fade-in">
           {/* Header */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -23,7 +23,7 @@ export default function Connect() {
         <p className="mt-0.5 text-sm text-muted-foreground">{t('connect.subtitle')}</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-8">
+      <div className="px-4 md:px-10 py-6 md:py-8">
         <div className="space-y-8 fade-in">
 
           {/* Server Info */}

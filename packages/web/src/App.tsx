@@ -38,12 +38,12 @@ export default function App() {
   // Authenticated shell
   return (
     <ConfirmProvider>
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex h-screen flex-col bg-background overflow-hidden">
         <TopBar />
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <main
-            className={`flex flex-1 flex-col overflow-auto bg-background transition-[margin] duration-300 ease-out pb-16 md:pb-0 ${
+            className={`flex-1 overflow-y-auto bg-background transition-[margin] duration-300 ease-out pb-16 md:pb-0 ${
               sidebarOpen ? 'md:ml-64' : ''
             }`}
           >

@@ -121,7 +121,7 @@ export default function AdminDomains() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">
+      <div className="px-4 md:px-10 py-4 md:py-6">
         <div className="space-y-4">
           {showAdd && (
             <Card>

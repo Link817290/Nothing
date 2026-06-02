@@ -68,7 +68,7 @@ export default function Dashboard() {
   const hasNoMessages = summary.sent === 0 && summary.received === 0;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div>
       <div className="px-4 py-6 md:px-10 md:py-8 space-y-6 md:space-y-8 fade-in">
 
         {/* Welcome */}

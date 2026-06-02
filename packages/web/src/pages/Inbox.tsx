@@ -152,7 +152,7 @@ export default function Inbox() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {loading && messages.length === 0 && (
           <div className="flex items-center justify-center p-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

@@ -136,7 +136,7 @@ export default function Settings() {
         <p className="mt-0.5 text-xs text-muted-foreground">{t('settings.subtitle')}</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6">
+      <div className="px-4 md:px-10 py-4 md:py-6">
         <div className="space-y-8 fade-in">
 
           {/* Profile */}
