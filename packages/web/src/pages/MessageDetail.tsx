@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ReactFlow, Handle, Position, type Node, type Edge } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -390,111 +392,103 @@ function ThreadTree({ items, currentId }: { items: ThreadItemData[]; currentId: 
 }
 
 
-function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId: string }) {
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const [drag, setDrag] = React.useState({ dragging: false, startX: 0, startY: 0, scrollX: 0, scrollY: 0 })
+function MsgNode({ data }: { data: any }) {
+  const navigate = useNavigate()
+  return (
+    <div
+      onClick={() => navigate(`/messages/${data.msgId}`)}
+      className={cn(
+        'rounded-xl border px-4 py-3 cursor-pointer hover:border-brand/50 hover:shadow-sm transition-all',
+        data.isCurrent ? 'border-brand bg-accent' : 'border-border bg-card',
+      )}
+      style={{ width: 220, fontFamily: 'var(--font-sans)' }}
+    >
+      <Handle type="target" position={Position.Left} className="!opacity-0 !w-0 !h-0" />
+      <div className="flex items-center justify-between">
+        <span className={cn('text-sm', data.isCurrent ? 'font-semibold' : 'font-medium')}>{data.from}</span>
+        <span className="text-xs text-muted-foreground">{data.time}</span>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground truncate">{data.preview}</p>
+      <Handle type="source" position={Position.Right} className="!opacity-0 !w-0 !h-0" />
+    </div>
+  )
+}
 
-  // Build tree structure
-  const childrenMap = new Map<string | null, ThreadItemData[]>()
+const msgNodeTypes = { msg: MsgNode }
+
+function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId: string }) {
+  const GAP_X = 300, GAP_Y = 100
   const idSet = new Set(items.map(i => i.id))
+
+  // Build tree
+  const childrenMap = new Map<string | null, string[]>()
   for (const item of items) {
     const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
     if (!childrenMap.has(parentId)) childrenMap.set(parentId, [])
-    childrenMap.get(parentId)!.push(item)
+    childrenMap.get(parentId)!.push(item.id)
   }
 
-  // Layout: assign x (depth) and y (row) to each node
-  const NODE_W = 240, NODE_H = 64, GAP_X = 56, GAP_Y = 24
+  // DFS layout
   const positions = new Map<string, { x: number; y: number }>()
-  let nextY = 0
+  let nextRow = 0
 
-  function layout(parentId: string | null, depth: number) {
-    const children = childrenMap.get(parentId) || []
-    for (const child of children) {
-      positions.set(child.id, { x: depth * (NODE_W + GAP_X), y: nextY * (NODE_H + GAP_Y) })
-      nextY++
-      layout(child.id, depth + 1)
+  function layoutTree(nodeId: string, depth: number) {
+    const children = childrenMap.get(nodeId) || []
+    if (children.length === 0) {
+      positions.set(nodeId, { x: depth * GAP_X, y: nextRow * GAP_Y })
+      nextRow++
+    } else {
+      const startRow = nextRow
+      for (const child of children) layoutTree(child, depth + 1)
+      const endRow = nextRow - 1
+      positions.set(nodeId, { x: depth * GAP_X, y: ((startRow + endRow) / 2) * GAP_Y })
     }
   }
-  layout(null, 0)
 
-  const canvasW = Math.max(800, (positions.size > 0 ? Math.max(...[...positions.values()].map(p => p.x)) : 0) + NODE_W + 80)
-  const canvasH = Math.max(300, nextY * (NODE_H + GAP_Y) + 60)
+  const roots = childrenMap.get(null) || []
+  for (const root of roots) layoutTree(root, 0)
 
-  const navigate = useNavigate()
+  const itemMap = new Map(items.map(i => [i.id, i]))
 
-  // Drag to pan
-  const onMouseDown = (e: React.MouseEvent) => {
-    const el = containerRef.current
-    if (!el) return
-    setDrag({ dragging: true, startX: e.clientX, startY: e.clientY, scrollX: el.scrollLeft, scrollY: el.scrollTop })
-  }
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!drag.dragging || !containerRef.current) return
-    containerRef.current.scrollLeft = drag.scrollX - (e.clientX - drag.startX)
-    containerRef.current.scrollTop = drag.scrollY - (e.clientY - drag.startY)
-  }
-  const onMouseUp = () => setDrag(d => ({ ...d, dragging: false }))
+  const nodes: Node[] = items.map(item => ({
+    id: item.id,
+    type: 'msg',
+    position: positions.get(item.id) || { x: 0, y: 0 },
+    data: {
+      msgId: item.id,
+      from: item.from.split('@')[0],
+      preview: item.preview.slice(0, 30),
+      time: formatDate(item.date),
+      isCurrent: item.id === currentId,
+    },
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  }))
+
+  const edges: Edge[] = items
+    .filter(item => item.in_reply_to && idSet.has(item.in_reply_to))
+    .map(item => ({
+      id: `e-${item.in_reply_to}-${item.id}`,
+      source: item.in_reply_to!,
+      target: item.id,
+      type: 'smoothstep',
+      style: { stroke: 'var(--muted-foreground)', strokeWidth: 1.5, opacity: 0.4 },
+    }))
+
+  const height = Math.min(400, Math.max(200, nextRow * GAP_Y + 60))
 
   return (
-    <div
-      ref={containerRef}
-      className="overflow-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      style={{ maxHeight: '500px' }}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
-    >
-      <svg width={canvasW} height={canvasH} className="select-none" style={{ fontFamily: 'var(--font-sans)' }}>
-        {/* Lines */}
-        {items.map(item => {
-          const pos = positions.get(item.id)
-          const parentId = item.in_reply_to && idSet.has(item.in_reply_to) ? item.in_reply_to : null
-          const parentPos = parentId ? positions.get(parentId) : null
-          if (!pos || !parentPos) return null
-          return (
-            <path
-              key={`line-${item.id}`}
-              d={`M${parentPos.x + NODE_W},${parentPos.y + NODE_H / 2} C${parentPos.x + NODE_W + GAP_X / 2},${parentPos.y + NODE_H / 2} ${pos.x - GAP_X / 2},${pos.y + NODE_H / 2} ${pos.x},${pos.y + NODE_H / 2}`}
-              fill="none"
-              stroke="var(--border)"
-              strokeWidth="1.5"
-            />
-          )
-        })}
-
-        {/* Nodes */}
-        {items.map(item => {
-          const pos = positions.get(item.id)
-          if (!pos) return null
-          const isCurrent = item.id === currentId
-          return (
-            <g
-              key={item.id}
-              transform={`translate(${pos.x}, ${pos.y})`}
-              onClick={() => navigate(`/messages/${item.id}`)}
-              className="cursor-pointer"
-            >
-              <rect
-                width={NODE_W} height={NODE_H} rx="8"
-                fill={isCurrent ? 'var(--accent)' : 'var(--card)'}
-                stroke={isCurrent ? 'var(--brand)' : 'var(--border)'}
-                strokeWidth={isCurrent ? 2 : 1}
-              />
-              <text x="12" y="26" fontSize="14" fontWeight={isCurrent ? 600 : 400} fill="var(--foreground)">
-                {item.from.split('@')[0]}
-              </text>
-              <text x="12" y="46" fontSize="13" fill="var(--muted-foreground)">
-                {item.preview.slice(0, 30)}{item.preview.length > 30 ? '…' : ''}
-              </text>
-              <text x={NODE_W - 12} y="26" fontSize="12" fill="var(--muted-foreground)" textAnchor="end">
-                {formatDate(item.date)}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+    <div className="rounded-lg border border-border bg-muted/20" style={{ height }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={msgNodeTypes}
+        fitView
+        minZoom={0.3}
+        maxZoom={2}
+        proOptions={{ hideAttribution: true }}
+        nodesDraggable={false}
+      />
     </div>
   )
 }

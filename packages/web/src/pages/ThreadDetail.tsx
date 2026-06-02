@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ReactFlow, Background, Controls, type Node, type Edge, Position } from '@xyflow/react';
+import { ReactFlow, Background, Controls, Handle, Position, type Node, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -227,12 +227,14 @@ function MessageNode({ data }: { data: any }) {
       className="rounded-xl border border-border bg-card px-4 py-3 cursor-pointer hover:border-brand/50 hover:shadow-sm transition-all"
       style={{ width: 220, fontFamily: 'var(--font-sans)' }}
     >
+      <Handle type="target" position={Position.Left} className="!opacity-0 !w-0 !h-0" />
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{data.from?.split('@')[0] || data.from}</span>
         <span className="text-xs text-muted-foreground">{data.time || formatDate(data.date)}</span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground truncate">{data.preview}</p>
       <span className="text-[10px] text-muted-foreground/60">{data.direction === 'outbound' ? '↗ sent' : '↙ received'}</span>
+      <Handle type="source" position={Position.Right} className="!opacity-0 !w-0 !h-0" />
     </div>
   );
 }
