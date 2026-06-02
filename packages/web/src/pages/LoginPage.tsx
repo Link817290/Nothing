@@ -123,10 +123,7 @@ export default function LoginPage() {
         <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-2">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="h-7 w-7 text-foreground" viewBox="0 0 128 128" fill="none">
-                <path d="M64 12C40 10 18 28 14 52C10 76 20 100 44 112C68 124 96 118 112 98C128 78 124 46 108 28C92 10 76 13 64 12Z" fill="currentColor"/>
-                <circle cx="72" cy="62" r="16" className="fill-background"/>
-              </svg>
+              <img src="/logo.png" alt="Nothing" className="h-7 w-7 dark:invert" />
               <span className="text-2xl font-bold tracking-tight">Nothing</span>
             </div>
             <p className="text-sm text-muted-foreground">
