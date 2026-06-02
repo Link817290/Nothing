@@ -21,7 +21,7 @@ import AdminSystem from './pages/admin/System';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 // Detect Tauri and add class for rounded window styling
-if ('__TAURI__' in window) {
+if ('__TAURI_INTERNALS__' in window) {
   document.documentElement.classList.add('tauri');
 }
 

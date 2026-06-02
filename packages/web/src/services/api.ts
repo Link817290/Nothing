@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 
 // Tauri desktop uses absolute URL; web uses relative
-const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 const BASE = isTauri ? (localStorage.getItem('nothing-server') || 'https://nothingmail.shop') + '/api' : '/api';
 
 async function request<T = any>(path: string, opts: RequestInit = {}): Promise<T> {

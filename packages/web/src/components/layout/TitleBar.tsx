@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
 
 /** Detect if running inside Tauri */
-const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 export function TitleBar() {
   if (!isTauri) return null;
