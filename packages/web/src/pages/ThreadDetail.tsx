@@ -156,29 +156,44 @@ export default function ThreadDetail() {
           </div>
         )}
 
-        {/* AI Summaries */}
+        {/* AI Summaries — latest on top, older collapsed */}
         {summaries.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
               <Sparkles className="h-3 w-3 inline mr-1" /> {t('threads.summaries')}
             </h2>
-            {summaries.map((s: any) => (
-              <div key={s.id} className="rounded-xl border border-border p-4 md:p-5">
-                <span className="text-xs text-muted-foreground">{s.generated_by} · {formatDate(s.created_at)}</span>
-                <div className="mt-2 text-sm text-foreground whitespace-pre-line leading-relaxed">{s.summary}</div>
-              </div>
-            ))}
+            {/* Latest summary — always visible */}
+            <div className="rounded-xl border border-border p-4 md:p-5">
+              <span className="text-xs text-muted-foreground">{summaries[0].generated_by} · {formatDate(summaries[0].created_at)}</span>
+              <div className="mt-2 text-sm text-foreground whitespace-pre-line leading-relaxed">{summaries[0].summary}</div>
+            </div>
+            {/* Older summaries — collapsed */}
+            {summaries.length > 1 && (
+              <details className="group">
+                <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  {summaries.length - 1} older {summaries.length - 1 === 1 ? 'summary' : 'summaries'}
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {summaries.slice(1).map((s: any) => (
+                    <div key={s.id} className="rounded-xl border border-border p-4 md:p-5">
+                      <span className="text-xs text-muted-foreground">{s.generated_by} · {formatDate(s.created_at)}</span>
+                      <div className="mt-2 text-sm text-foreground whitespace-pre-line leading-relaxed">{s.summary}</div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         )}
 
-        {/* Daily message links */}
-        {days.map((day: any) => (
+        {/* Daily message links — latest day first */}
+        {[...days].reverse().map((day: any) => (
           <div key={day.date}>
             <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-2">
               {day.date} · {day.message_count} {t('threads.messages')}
             </h2>
             <div className="space-y-1">
-              {day.messages.map((m: any) => (
+              {[...day.messages].reverse().map((m: any) => (
                 <Link to={`/messages/${m.id}`} key={m.id} className="block">
                   <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm hover:bg-accent/50 transition-colors">
                     {m.direction === 'outbound'
