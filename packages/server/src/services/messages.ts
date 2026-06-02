@@ -492,5 +492,6 @@ function rowToSummary(row: Record<string, any>) {
     source: row.source || undefined, agent: row.agent || undefined,
     channel: row.channel_id || undefined, unread: !row.is_read,
     has_attachments: row.has_attachments, project: row.project || undefined, labels,
+    direction: row.direction, in_reply_to: row.in_reply_to || null,
   }
 }
