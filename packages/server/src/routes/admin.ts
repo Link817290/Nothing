@@ -85,6 +85,7 @@ export async function adminRoutes(app: FastifyInstance) {
         try { await deleteAttachments(row.message_id) } catch {}
       }
     } catch {}
+    await run('DELETE FROM thread_summaries')
     await run('DELETE FROM messages')
     // Update sync timestamp so stalwart-sync won't re-pull old emails
     await run('UPDATE email_accounts SET last_sync_at = NOW()')
@@ -123,6 +124,7 @@ export async function adminRoutes(app: FastifyInstance) {
       console.warn('[ADMIN-RESET] Stalwart cleanup failed:', (err as Error).message)
     }
 
+    await run('DELETE FROM thread_summaries')
     await run('DELETE FROM capsule_events')
     await run('DELETE FROM artifacts')
     await run('DELETE FROM capsule_runs')
