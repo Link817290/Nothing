@@ -82,7 +82,14 @@ function createWindow() {
         controls.append(min, max, close);
         bar.append(left, controls);
         document.body.prepend(bar);
-        document.body.style.paddingTop = '32px';
+        // Offset the sticky header so it doesn't hide behind titlebar
+        const header = document.querySelector('header');
+        if (header) header.style.top = '32px';
+        // Offset sidebar
+        const aside = document.querySelector('aside');
+        if (aside) aside.style.top = '48px';
+        // Offset main content
+        document.body.style.marginTop = '32px';
       }
     `);
   });
