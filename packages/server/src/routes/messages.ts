@@ -166,17 +166,22 @@ export async function messageRoutes(app: FastifyInstance) {
         fullText += chunk
         reply.raw.write(`data: ${JSON.stringify({ chunk })}\n\n`)
       }
+
+      // Save before ending stream
+      try {
+        await createSummary({
+          threadId: id, userId: user.id, summary: fullText,
+          periodStart: messages[0].created_at,
+          periodEnd: messages[messages.length - 1].created_at,
+          messageIds: messages.map((m: any) => m.id),
+          generatedBy: 'manual',
+        })
+      } catch (e) {
+        console.error('[summary] Save failed:', (e as Error).message)
+      }
+
       reply.raw.write(`data: [DONE]\n\n`)
       reply.raw.end()
-
-      // Save after streaming complete
-      await createSummary({
-        threadId: id, userId: user.id, summary: fullText,
-        periodStart: messages[0].created_at,
-        periodEnd: messages[messages.length - 1].created_at,
-        messageIds: messages.map((m: any) => m.id),
-        generatedBy: 'manual',
-      })
       return
     }
 

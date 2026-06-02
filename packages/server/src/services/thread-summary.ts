@@ -103,14 +103,17 @@ export async function getMessagesForSummary(threadId: string, userId: string, me
   )
 
   if (lastSummary?.period_end) {
-    // Only messages after last summary
-    const lastIds = lastSummary.message_ids ? (typeof lastSummary.message_ids === 'string' ? JSON.parse(lastSummary.message_ids) : lastSummary.message_ids) : []
-    return queryAll(
+    // Only messages after last summary (exclude already-summarized by ID)
+    const lastIds: string[] = lastSummary.message_ids
+      ? (typeof lastSummary.message_ids === 'string' ? JSON.parse(lastSummary.message_ids) : lastSummary.message_ids)
+      : []
+    const rows = await queryAll(
       `SELECT id, from_address, to_address, subject, content, direction, created_at
-       FROM messages WHERE thread_id = $1 AND user_id = $2 AND created_at > $3
+       FROM messages WHERE thread_id = $1 AND user_id = $2 AND created_at >= $3
        ORDER BY created_at ASC`,
       [threadId, userId, lastSummary.period_end]
     )
+    return rows.filter(r => !lastIds.includes(r.id))
   }
 
   // No previous summary — get all messages
@@ -137,7 +140,7 @@ export function buildSummaryPrompt(messages: any[]): string {
 
 /** Generate summary using DeepSeek API — non-streaming (for storage) */
 export async function generateSummaryText(messages: any[]): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-cbcea3b46fff4fb1a122a8f38a4afd31'
+  const apiKey = process.env.DEEPSEEK_API_KEY
   const prompt = buildSummaryPrompt(messages)
 
   if (apiKey) {
@@ -171,7 +174,7 @@ export async function generateSummaryText(messages: any[]): Promise<string> {
 
 /** Stream summary via DeepSeek — yields chunks for SSE */
 export async function* streamSummaryText(messages: any[]): AsyncGenerator<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-cbcea3b46fff4fb1a122a8f38a4afd31'
+  const apiKey = process.env.DEEPSEEK_API_KEY
   const prompt = buildSummaryPrompt(messages)
 
   if (!apiKey) {

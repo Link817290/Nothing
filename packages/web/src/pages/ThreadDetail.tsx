@@ -58,8 +58,9 @@ export default function ThreadDetail() {
       const decoder = new TextDecoder();
       let full = '';
       let buffer = '';
+      let streamDone = false;
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
@@ -70,7 +71,7 @@ export default function ThreadDetail() {
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
-          if (data === '[DONE]') break;
+          if (data === '[DONE]') { streamDone = true; break; }
           try {
             const json = JSON.parse(data);
             if (json.chunk) {
@@ -80,6 +81,7 @@ export default function ThreadDetail() {
           } catch {}
         }
       }
+      reader.cancel().catch(() => {});
 
       if (full) {
         setSummaries(prev => [{ id: `new_${Date.now()}`, summary: full, created_at: new Date().toISOString(), generated_by: 'manual' }, ...prev]);
