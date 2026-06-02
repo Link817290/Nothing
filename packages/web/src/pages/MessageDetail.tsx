@@ -439,7 +439,7 @@ function ThreadCanvas({ items, currentId }: { items: ThreadItemData[]; currentId
   return (
     <div
       ref={containerRef}
-      className="overflow-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing"
+      className="overflow-auto rounded-lg border border-border bg-muted/20 cursor-grab active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={{ maxHeight: '500px' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
