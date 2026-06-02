@@ -63,7 +63,7 @@ function HtmlContent({ html }: { html: string }) {
       'img', 'blockquote', 'pre', 'code', 'hr',
       'style', 'font', 'center',
     ],
-    ALLOW_ATTR: [
+    ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title', 'width', 'height',
       'style', 'class', 'align', 'valign', 'bgcolor', 'color',
       'border', 'cellpadding', 'cellspacing', 'colspan', 'rowspan',
