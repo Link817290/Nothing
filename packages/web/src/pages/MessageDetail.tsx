@@ -147,7 +147,7 @@ export default function MessageDetail() {
   return (
     <>
       {/* Top bar */}
-      <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:gap-3 md:px-6">
+      <div className="sticky top-0 z-10 bg-background flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:gap-3 md:px-6">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/inbox"><ArrowLeft className="h-4 w-4" /> {t('nav.inbox')}</Link>
         </Button>

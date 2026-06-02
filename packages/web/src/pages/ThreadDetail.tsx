@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft, Sparkles, Inbox, Send, Users, MessageSquare, Calendar, Maximize2, X } from 'lucide-react';
 import { api } from '@/services/api';
+import { toast } from '@/components/ui/toast';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function ThreadDetail() {
@@ -101,7 +102,7 @@ export default function ThreadDetail() {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border px-4 md:px-10 py-4 md:py-5">
+      <div className="sticky top-0 z-10 bg-background flex items-center gap-3 border-b border-border px-4 md:px-10 py-4 md:py-5">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/threads"><ArrowLeft className="h-4 w-4" /> {t('threads.title')}</Link>
         </Button>
@@ -112,12 +113,16 @@ export default function ThreadDetail() {
             {summary.project && <Badge variant="outline" className="text-xs ml-2 px-1.5 py-0">{summary.project}</Badge>}
           </p>
         </div>
-        {total >= 5 && (
-          <Button variant="outline" size="sm" onClick={handleSummarize} disabled={summarizing}>
-            {summarizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline ml-1">{t('threads.summarize')}</span>
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={() => {
+          if (total < 5) {
+            toast({ title: t('threads.need_more'), variant: 'info' });
+            return;
+          }
+          handleSummarize();
+        }} disabled={summarizing}>
+          {summarizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          <span className="hidden sm:inline ml-1">{t('threads.summarize')}</span>
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-6 space-y-6 fade-in">

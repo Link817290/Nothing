@@ -93,7 +93,7 @@ export default function Inbox() {
 
   return (
     <>
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-10 md:py-4">
+      <div className="sticky top-0 z-10 bg-background flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-10 md:py-4">
         <div className="min-w-0">
           {q ? (
             <h1 className="text-lg md:text-xl font-bold tracking-tight truncate">Search: <span className="text-brand">{q}</span></h1>

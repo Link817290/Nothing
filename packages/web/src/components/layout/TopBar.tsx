@@ -46,9 +46,12 @@ export function TopBar() {
         <Menu className="h-4 w-4" />
       </Button>
 
-      <Link to="/" className="flex shrink-0 items-center gap-2.5">
-        <span className="text-xl font-bold tracking-tight text-foreground">nothing</span>
-        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+      <Link to="/" className="flex shrink-0 items-center gap-2">
+        <svg className="h-6 w-6 text-foreground" viewBox="0 0 128 128" fill="none">
+          <path d="M64 12C40 10 18 28 14 52C10 76 20 100 44 112C68 124 96 118 112 98C128 78 124 46 108 28C92 10 76 13 64 12Z" fill="currentColor"/>
+          <circle cx="72" cy="62" r="16" className="fill-background"/>
+        </svg>
+        <span className="text-xl font-bold tracking-tight text-foreground hidden sm:inline">Nothing</span>
       </Link>
 
       {/* Desktop search */}

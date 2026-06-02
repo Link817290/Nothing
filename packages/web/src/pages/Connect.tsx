@@ -18,7 +18,7 @@ export default function Connect() {
 
   return (
     <>
-      <div className="border-b border-border px-4 md:px-10 py-4 md:py-5">
+      <div className="sticky top-0 z-10 bg-background border-b border-border px-4 md:px-10 py-4 md:py-5">
         <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('connect.title')}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{t('connect.subtitle')}</p>
       </div>

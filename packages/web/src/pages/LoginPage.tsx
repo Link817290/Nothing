@@ -120,11 +120,14 @@ export default function LoginPage() {
           <div className="absolute -top-[40%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-brand/[0.03] blur-[120px]" />
           <div className="absolute -bottom-[30%] -left-[20%] h-[60vh] w-[60vh] rounded-full bg-brand/[0.02] blur-[100px]" />
         </div>
-        <Card className="relative z-10 w-full max-w-sm fade-in">
+        <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-2">
-            <div className="flex items-center gap-2.5 mb-2">
-              <span className="text-2xl font-bold tracking-tight">nothing</span>
-              <span className="h-2 w-2 rounded-full bg-brand" />
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="h-7 w-7 text-foreground" viewBox="0 0 128 128" fill="none">
+                <path d="M64 12C40 10 18 28 14 52C10 76 20 100 44 112C68 124 96 118 112 98C128 78 124 46 108 28C92 10 76 13 64 12Z" fill="currentColor"/>
+                <circle cx="72" cy="62" r="16" className="fill-background"/>
+              </svg>
+              <span className="text-2xl font-bold tracking-tight">Nothing</span>
             </div>
             <p className="text-sm text-muted-foreground">
               {t('login.verify_sent', { email: verifyEmail })}
@@ -179,7 +182,7 @@ export default function LoginPage() {
         <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-4">
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl font-bold tracking-tight">nothing</span>
+              <span className="text-2xl font-bold tracking-tight">Nothing</span>
               <span className="h-2 w-2 rounded-full bg-brand" />
             </div>
           </CardHeader>
