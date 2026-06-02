@@ -22,7 +22,6 @@ function createWindow() {
 
   mainWindow.loadURL(URL);
 
-  // Open external links in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) {
       shell.openExternal(url);
@@ -31,42 +30,29 @@ function createWindow() {
     return { action: 'allow' };
   });
 
-  // Inject titlebar + hide scrollbar
   mainWindow.webContents.on('did-finish-load', () => {
+    // Hide scrollbars
     mainWindow.webContents.insertCSS(`
       *::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
       * { scrollbar-width: none !important; }
     `);
 
+    // Inject window controls only (no branding — web has its own)
     mainWindow.webContents.executeJavaScript(`
-      if (!document.getElementById('electron-titlebar')) {
+      if (!document.getElementById('electron-controls')) {
         const isDark = document.documentElement.classList.contains('dark');
         const fg = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
         const hoverBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-        const borderColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 
-        const bar = document.createElement('div');
-        bar.id = 'electron-titlebar';
-        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:32px;-webkit-app-region:drag;z-index:99999;display:flex;align-items:center;justify-content:space-between;background:var(--background,#fff);border-bottom:1px solid ' + borderColor + ';font-family:Inter,-apple-system,sans-serif;';
-
-        const title = document.createElement('span');
-        title.textContent = 'nothing';
-        title.style.cssText = 'padding-left:16px;font-size:12px;font-weight:600;color:' + fg + ';letter-spacing:0.05em;';
-
-        const dot = document.createElement('span');
-        dot.style.cssText = 'width:5px;height:5px;border-radius:50%;background:#ea580c;margin-left:6px;';
-
-        const left = document.createElement('div');
-        left.style.cssText = 'display:flex;align-items:center;';
-        left.append(title, dot);
-
+        // Window control buttons — float top-right over existing header
         const controls = document.createElement('div');
-        controls.style.cssText = '-webkit-app-region:no-drag;display:flex;height:32px;';
+        controls.id = 'electron-controls';
+        controls.style.cssText = 'position:fixed;top:0;right:0;z-index:99999;display:flex;height:40px;-webkit-app-region:no-drag;';
 
         function makeBtn(label, isClose) {
           const btn = document.createElement('button');
           btn.textContent = label;
-          btn.style.cssText = 'width:46px;height:32px;border:none;background:transparent;color:' + fg + ';font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;';
+          btn.style.cssText = 'width:46px;height:40px;border:none;background:transparent;color:' + fg + ';font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;';
           btn.onmouseover = () => {
             if (isClose) { btn.style.background = '#e53e3e'; btn.style.color = '#fff'; }
             else { btn.style.background = hoverBg; }
@@ -80,16 +66,16 @@ function createWindow() {
         const close = makeBtn('✕', true); close.onclick = () => window.electronAPI.close();
 
         controls.append(min, max, close);
-        bar.append(left, controls);
-        document.body.prepend(bar);
-        // Offset the sticky header so it doesn't hide behind titlebar
+        document.body.append(controls);
+
+        // Make the existing header draggable
         const header = document.querySelector('header');
-        if (header) header.style.top = '32px';
-        // Offset sidebar
-        const aside = document.querySelector('aside');
-        if (aside) aside.style.top = '48px';
-        // Offset main content
-        document.body.style.marginTop = '32px';
+        if (header) header.style.webkitAppRegion = 'drag';
+
+        // Make buttons inside header NOT draggable
+        header?.querySelectorAll('button, a, input').forEach(el => {
+          el.style.webkitAppRegion = 'no-drag';
+        });
       }
     `);
   });
