@@ -65,7 +65,7 @@ export async function getThreadsNeedingSummary(): Promise<{ thread_id: string; u
   }))
 }
 
-/** Get messages for summary generation */
+/** Get messages for summary generation — only new messages since last summary */
 export async function getMessagesForSummary(threadId: string, userId: string, messageIds?: string[]) {
   if (messageIds?.length) {
     return queryAll(
@@ -74,10 +74,29 @@ export async function getMessagesForSummary(threadId: string, userId: string, me
       [messageIds, userId]
     )
   }
-  // Default: today's messages
+
+  // Find the latest summary's period_end for this thread
+  const lastSummary = await queryOne(
+    `SELECT period_end, message_ids FROM thread_summaries
+     WHERE thread_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 1`,
+    [threadId, userId]
+  )
+
+  if (lastSummary?.period_end) {
+    // Only messages after last summary
+    const lastIds = lastSummary.message_ids ? (typeof lastSummary.message_ids === 'string' ? JSON.parse(lastSummary.message_ids) : lastSummary.message_ids) : []
+    return queryAll(
+      `SELECT id, from_address, to_address, subject, content, direction, created_at
+       FROM messages WHERE thread_id = $1 AND user_id = $2 AND created_at > $3
+       ORDER BY created_at ASC`,
+      [threadId, userId, lastSummary.period_end]
+    )
+  }
+
+  // No previous summary — get all messages
   return queryAll(
     `SELECT id, from_address, to_address, subject, content, direction, created_at
-     FROM messages WHERE thread_id = $1 AND user_id = $2 AND created_at >= NOW() - interval '1 day'
+     FROM messages WHERE thread_id = $1 AND user_id = $2
      ORDER BY created_at ASC`,
     [threadId, userId]
   )
