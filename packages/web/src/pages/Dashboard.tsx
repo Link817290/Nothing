@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Loader2, Inbox, Send, Mail, AlertTriangle,
-  PenSquare, ArrowRight, Plus, Zap, FolderOpen,
+  PenSquare, ArrowRight, Plus, Zap, FolderOpen, GitBranch, Sparkles,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [unread, setUnread] = useState(0);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [threads, setThreads] = useState<any[]>([]);
+  const [todaySummaries, setTodaySummaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAuthStore((s) => s.user);
 
@@ -30,10 +32,26 @@ export default function Dashboard() {
       api.reports({ period: 'week' }),
       api.inbox({ limit: '1' }),
       api.listAccounts(),
-    ]).then(([r, inbox, accs]) => {
+      api.listThreads({ limit: '3' }),
+    ]).then(([r, inbox, accs, thr]) => {
       setReport(r);
       setUnread(inbox.total_unread || 0);
       setAccounts(accs.accounts || []);
+      setThreads(thr.threads || []);
+
+      // Load today's summaries from active threads
+      const today = new Date().toISOString().slice(0, 10);
+      const threadIds = (thr.threads || []).slice(0, 3).map((t: any) => t.thread_id);
+      Promise.all(
+        threadIds.map((tid: string) =>
+          fetch(`/api/threads/${tid}/summaries`, {
+            headers: { 'Authorization': `Bearer ${useAuthStore.getState().token}` },
+          }).then(r => r.json()).catch(() => ({ summaries: [] }))
+        )
+      ).then(results => {
+        const all = results.flatMap((r: any) => (r.summaries || []).map((s: any) => ({ ...s, thread_id: threadIds[results.indexOf(r)] })));
+        setTodaySummaries(all.filter((s: any) => s.created_at?.slice(0, 10) === today));
+      }).catch(() => {});
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -141,6 +159,58 @@ export default function Dashboard() {
                         <p className="text-sm font-medium truncate">{p.name}</p>
                         <p className="text-xs text-muted-foreground">{p.messages} {t('dashboard.messages')}</p>
                       </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Active Threads */}
+        {threads.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <GitBranch className="h-3 w-3 inline mr-1" /> {t('dashboard.active_threads') || 'Active Threads'}
+              </h2>
+              <Link to="/threads" className="text-xs text-brand hover:underline">{t('common.view_all') || 'View all'}</Link>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {threads.slice(0, 3).map((thr: any) => (
+                <Link key={thr.thread_id} to={`/threads/${thr.thread_id}`}>
+                  <Card className="transition-colors hover:bg-accent/50 hover:border-brand/30">
+                    <CardContent className="p-4">
+                      <p className="text-sm font-medium truncate">{thr.subject}</p>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{thr.message_count}m</span>
+                        <span>{thr.participant_count}p</span>
+                        {thr.has_unread && <span className="h-1.5 w-1.5 rounded-full bg-brand" />}
+                        <span className="ml-auto">{timeAgo(thr.last_activity)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Today's AI Summaries */}
+        {todaySummaries.length > 0 && (
+          <div>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Sparkles className="h-3 w-3 inline mr-1" /> {t('dashboard.today_summaries') || "Today's AI Summaries"}
+            </h2>
+            <div className="space-y-2">
+              {todaySummaries.map((s: any) => (
+                <Link key={s.id} to={`/threads/${s.thread_id}`}>
+                  <Card className="transition-colors hover:bg-accent/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Sparkles className="h-3 w-3 text-brand" />
+                        <span className="text-xs text-muted-foreground">{s.generated_by} · {timeAgo(s.created_at)}</span>
+                      </div>
+                      <p className="text-sm text-foreground line-clamp-2 leading-relaxed">{s.summary}</p>
                     </CardContent>
                   </Card>
                 </Link>
