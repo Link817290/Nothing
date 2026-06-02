@@ -16,17 +16,16 @@
     "directories": {
       "output": "dist"
     },
+    "icon": "icon_512.png",
     "win": {
       "target": ["nsis"],
       "icon": "icon.ico"
     },
     "mac": {
-      "target": ["dmg"],
-      "icon": "icon.icns"
+      "target": ["dmg"]
     },
     "linux": {
-      "target": ["AppImage"],
-      "icon": "icon.png"
+      "target": ["AppImage"]
     },
     "nsis": {
       "oneClick": true,
