@@ -19,6 +19,7 @@ export default function ThreadDetail() {
   const [summarizing, setSummarizing] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
+  const [threadMessages, setThreadMessages] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -28,9 +29,11 @@ export default function ThreadDetail() {
       fetch(`/api/threads/${id}/summaries`, {
         headers: { 'Authorization': `Bearer ${useAuthStore.getState().token}` },
       }).then(r => r.json()).catch(() => ({ summaries: [] })),
-    ]).then(([sum, sums]) => {
+      api.getThread(id),
+    ]).then(([sum, sums, thread]) => {
       setSummary(sum);
       setSummaries(sums.summaries || []);
+      setThreadMessages(thread.messages || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
 
@@ -92,7 +95,6 @@ export default function ThreadDetail() {
   const participants: string[] = summary.participants || [];
   const days: any[] = summary.days || [];
   const total: number = summary.total || 0;
-  const allMessages: any[] = days.flatMap((d: any) => d.messages || []);
 
   return (
     <>
@@ -127,7 +129,7 @@ export default function ThreadDetail() {
         </div>
 
         {/* Canvas */}
-        {allMessages.length > 1 && (
+        {threadMessages.length > 1 && (
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{t('threads.thread_map')}</h2>
@@ -139,7 +141,7 @@ export default function ThreadDetail() {
                 <Maximize2 className="h-4 w-4" />
               </button>
             </div>
-            <ThreadCanvas messages={allMessages} threadId={id || ''} />
+            <ThreadCanvas messages={threadMessages} threadId={id || ''} />
           </div>
         )}
 
@@ -206,7 +208,7 @@ export default function ThreadDetail() {
               </button>
             </div>
             <div className="flex-1 overflow-auto flex items-center justify-center p-6">
-              <ThreadCanvas messages={allMessages} threadId={id || ''} fullscreen />
+              <ThreadCanvas messages={threadMessages} threadId={id || ''} fullscreen />
             </div>
           </div>
         </>
@@ -226,8 +228,8 @@ function MessageNode({ data }: { data: any }) {
       style={{ width: 220, fontFamily: 'var(--font-sans)' }}
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">{data.from}</span>
-        <span className="text-xs text-muted-foreground">{data.time}</span>
+        <span className="text-sm font-medium text-foreground">{data.from?.split('@')[0] || data.from}</span>
+        <span className="text-xs text-muted-foreground">{data.time || formatDate(data.date)}</span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground truncate">{data.preview}</p>
       <span className="text-[10px] text-muted-foreground/60">{data.direction === 'outbound' ? '↗ sent' : '↙ received'}</span>
@@ -297,7 +299,7 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
     id: String(i),
     type: 'message',
     position: positions.get(i) || { x: i * GAP_X, y: 0 },
-    data: { msgId: m.id, from: m.from, preview: m.preview, time: m.time, direction: m.direction },
+    data: { msgId: m.id, from: m.from, preview: m.preview, time: m.time, date: m.date, direction: m.direction },
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
   }));
