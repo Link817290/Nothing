@@ -81,8 +81,6 @@ export const api = {
     request(`/messages/${id}/reply`, { method: 'POST', body: JSON.stringify({ text }) }),
   forward: (id: string, to: string, text?: string) =>
     request(`/messages/${id}/forward`, { method: 'POST', body: JSON.stringify({ to, text }) }),
-  getThread: (id: string) =>
-    request(`/threads/${id}`),
   search: (q: string) =>
     request(`/messages/search?q=${encodeURIComponent(q)}`),
 

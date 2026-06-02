@@ -55,7 +55,7 @@ function HtmlContent({ html }: { html: string }) {
   const [height, setHeight] = useState(300);
 
   const sanitized = DOMPurify.sanitize(html, {
-    ALLOW_TAGS: [
+    ALLOWED_TAGS: [
       'a', 'b', 'i', 'u', 'em', 'strong', 'p', 'br', 'div', 'span',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'ul', 'ol', 'li', 'dl', 'dt', 'dd',
