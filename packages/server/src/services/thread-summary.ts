@@ -14,6 +14,26 @@ export async function createSummary(opts: {
   periodStart?: string; periodEnd?: string;
   messageIds?: string[]; generatedBy?: string;
 }) {
+  // One summary per day per thread per user — upsert by date
+  const today = new Date().toISOString().slice(0, 10)
+  const existing = await queryOne(
+    `SELECT id FROM thread_summaries WHERE thread_id = $1 AND user_id = $2 AND created_at::date = $3::date`,
+    [opts.threadId, opts.userId, today]
+  )
+
+  if (existing) {
+    await run(
+      `UPDATE thread_summaries SET summary = $1, period_start = $2, period_end = $3, message_ids = $4, message_count = $5, generated_by = $6, created_at = NOW()
+       WHERE id = $7`,
+      [opts.summary, opts.periodStart || null, opts.periodEnd || null,
+       opts.messageIds ? JSON.stringify(opts.messageIds) : null,
+       opts.messageIds?.length || 0,
+       opts.generatedBy || 'manual',
+       existing.id]
+    )
+    return { id: existing.id }
+  }
+
   const id = genId()
   await run(
     `INSERT INTO thread_summaries (id, thread_id, user_id, summary, period_start, period_end, message_ids, message_count, generated_by)
