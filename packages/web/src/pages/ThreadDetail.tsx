@@ -258,8 +258,10 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
 
     if (m.in_reply_to) {
       parentIdx = idToIndex.get(m.in_reply_to);
-      // Parent not in set → fallback to previous message
       if (parentIdx === undefined && i > 0) parentIdx = i - 1;
+    } else if (i > 0) {
+      // No in_reply_to (old data) → chain to previous message
+      parentIdx = i - 1;
     }
 
     if (parentIdx !== undefined && parentIdx !== i) {
@@ -310,7 +312,7 @@ function ThreadCanvas({ messages, threadId, fullscreen }: { messages: any[]; thr
       className={cn(
         fullscreen ? 'w-full h-full' : 'rounded-xl border border-border bg-muted/20',
       )}
-      style={fullscreen ? { height: '100%' } : { height: Math.max(200, (nextRow || 1) * GAP_Y + 80) }}
+      style={fullscreen ? { height: '100%' } : { height: Math.min(350, Math.max(200, (nextRow || 1) * GAP_Y + 80)) }}
     >
       <ReactFlow
         nodes={nodes}
