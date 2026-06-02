@@ -144,14 +144,18 @@
   }
   html.tauri body {
     background: transparent;
-    border-radius: 12px;
-    overflow: hidden;
   }
   html.tauri #root {
     background: var(--background);
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  html.tauri #root > * {
+    min-height: 0;
   }
 
   body {
