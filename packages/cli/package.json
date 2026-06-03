@@ -1,6 +1,6 @@
 {
   "name": "nothing-cli",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Nothing — AI Agent email client & MCP Server",
   "type": "module",
   "bin": {
@@ -17,7 +17,7 @@
   "dependencies": {
     "@inquirer/prompts": "^7.5.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "@nothingmail/nmp": "^0.3.0",
+    "@nothingmail/nmp": "^0.4.0",
     "commander": "^13.1.0",
     "node-notifier": "^10.0.1"
   },
