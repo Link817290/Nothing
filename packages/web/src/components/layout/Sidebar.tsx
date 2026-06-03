@@ -64,21 +64,19 @@ export function Sidebar() {
             <NavItem icon={Send} label={t('nav.sent')} href="/sent" active={isActive('/sent')} />
             <NavItem icon={PenSquare} label={t('nav.compose')} href="/compose" active={isActive('/compose')} />
 
-            {projects.length > 0 && (
-              <>
-                <SectionLabel>Projects</SectionLabel>
-                {projects.map((p) => (
-                  <NavItem
-                    key={p.name}
-                    icon={FolderOpen}
-                    label={p.name}
-                    href={`/inbox?project=${p.name}`}
-                    badge={p.unread || undefined}
-                    dim
-                  />
-                ))}
-              </>
-            )}
+            <SectionLabel>Projects</SectionLabel>
+            <NavItem icon={FolderOpen} label={t('nav.projects') || 'All Projects'} href="/projects" active={isActive('/projects')} />
+            {projects.map((p) => (
+              <NavItem
+                key={p.name}
+                icon={FolderOpen}
+                label={p.name}
+                href={`/projects/${encodeURIComponent(p.name)}`}
+                active={isActive(`/projects/${p.name}`)}
+                badge={p.unread || undefined}
+                dim
+              />
+            ))}
 
             <SectionLabel>{t('nav.manage')}</SectionLabel>
             <NavItem icon={Plug} label={t('nav.connect')} href="/connect" active={isActive('/connect')} />

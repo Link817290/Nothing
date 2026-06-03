@@ -14,7 +14,8 @@
     "users": "用户",
     "domains": "域名",
     "mailboxes": "邮箱",
-    "system": "系统"
+    "system": "系统",
+    "projects": "所有项目"
   },
   "search": {
     "placeholder": "搜索消息..."
@@ -211,6 +212,29 @@
     "tool_report": "生成活动报告",
     "desktop": "桌面客户端",
     "desktop_desc": "Windows 和 Linux 原生应用"
+  },
+  "project": {
+    "title": "项目",
+    "subtitle": "将会话归入项目管理",
+    "empty": "暂无项目",
+    "empty_hint": "创建一个项目来整理你的会话",
+    "create": "新建项目",
+    "name": "项目名称",
+    "name_placeholder": "例如：后端重构、Q3 发布",
+    "description": "描述",
+    "description_placeholder": "这个项目是关于什么的？",
+    "threads": "个会话",
+    "messages": "条消息",
+    "unread": "条未读",
+    "delete_title": "删除项目",
+    "delete_unlink": "解散 — 保留所有消息",
+    "delete_all": "全部删除 — 移除项目及所有消息",
+    "deleted": "项目已删除",
+    "created": "项目已创建",
+    "add_thread": "加入项目",
+    "remove_thread": "移出项目",
+    "no_threads": "暂无会话",
+    "no_threads_hint": "当消息被标记此项目时，会话将出现在这里"
   },
   "admin": {
     "users_title": "用户管理",

@@ -14,7 +14,8 @@
     "users": "Users",
     "domains": "Domains",
     "mailboxes": "Mailboxes",
-    "system": "System"
+    "system": "System",
+    "projects": "All Projects"
   },
   "search": {
     "placeholder": "Search messages..."
@@ -211,6 +212,29 @@
     "tool_report": "Generate activity report",
     "desktop": "Desktop App",
     "desktop_desc": "Native app for Windows & Linux"
+  },
+  "project": {
+    "title": "Projects",
+    "subtitle": "Organize threads into projects",
+    "empty": "No projects yet",
+    "empty_hint": "Create a project to start organizing your threads",
+    "create": "New Project",
+    "name": "Project name",
+    "name_placeholder": "e.g. backend-refactor, q3-launch",
+    "description": "Description",
+    "description_placeholder": "What is this project about?",
+    "threads": "threads",
+    "messages": "messages",
+    "unread": "unread",
+    "delete_title": "Delete Project",
+    "delete_unlink": "Dissolve — keep all messages",
+    "delete_all": "Delete all — remove project and all messages",
+    "deleted": "Project deleted",
+    "created": "Project created",
+    "add_thread": "Add to project",
+    "remove_thread": "Remove from project",
+    "no_threads": "No threads in this project",
+    "no_threads_hint": "Threads will appear here when messages are tagged with this project"
   },
   "admin": {
     "users_title": "Users",
