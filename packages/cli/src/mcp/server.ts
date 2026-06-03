@@ -142,7 +142,14 @@ export async function startMcpServer() {
             inReplyTo: a.conversation_id as string | undefined,
             files: a.files as string[] | undefined,
             parent: parentPayload,
+            parentHasArtifact: parentPayload?.has_attachments,
             agentId: a.agent as string || 'unknown',
+            explicitContext: !!a.context,
+            explicitExpires: !!a.expires,
+            explicitFields: {
+              reply_schema: a.reply_schema as any,
+              artifact: undefined,
+            },
           })
 
           const result = await client.send({

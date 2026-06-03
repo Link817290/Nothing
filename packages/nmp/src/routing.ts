@@ -20,65 +20,55 @@ export interface RouteResult {
 export interface RouteInput {
   inReplyTo?: string | null
   parent?: NmpPayload | null
-  hasArtifact: boolean    // files attached or text contains deliverable
+  parentHasArtifact?: boolean   // whether parent message had attachments/artifacts
+  hasArtifact: boolean          // this message has files/deliverable
   text: string
-}
-
-// ─── Acknowledgment word list ────────────────────────────────────
-
-const ACK_WORDS = new Set([
-  // English
-  'ok', 'okay', 'got it', 'received', 'thanks', 'thank you', 'noted',
-  'agreed', 'approved', 'confirmed', 'yes', 'yep', 'sure', 'done',
-  'ack', 'acknowledged', 'rgr', 'roger', '+1', 'lgtm', 'sgtm',
-  // Chinese
-  '好', '好的', '收到', '了解', '知道了', '同意', '确认', '没问题',
-  '可以', '行', '嗯', '嗯嗯', '谢谢', '感谢', '批准', '通过',
-])
-
-function isAck(text: string): boolean {
-  const normalized = text.trim().toLowerCase().replace(/[.!。！~～\s]+$/g, '')
-  return ACK_WORDS.has(normalized)
 }
 
 // ─── Route Decision ──────────────────────────────────────────────
 
+/** Short text heuristic — not for classification, just to flag as "likely simple" */
+function isShortText(text: string): boolean {
+  return text.trim().length <= 20
+}
+
 /**
- * Determine route from hard facts. Pure function, no IO.
+ * Determine route from hard facts only. Pure function, no IO.
  *
- * R1: No inReplyTo → initiate (or discuss if ambiguous, needLLM=true)
- * R2: Parent is initiate + has reply_schema + this has artifact → deliver
+ * Only structural signals decide routes deterministically:
+ * R1: No inReplyTo → initiate (needLLM=true, agent confirms)
+ * R2: Parent has reply_schema + this has artifact → deliver
  * R3: Parent has artifact + this has artifact → revise
- * R4: Short ack text → acknowledge
- * R5: Fallback → discuss (needLLM=true, agent picks from 5 options)
+ * R4+R5: Everything else → agent classifies from closed set of 5
+ *
+ * The agent receives the route as a suggestion + needLLM flag.
+ * When needLLM=true, the agent should confirm or pick the correct route.
  */
 export function decideRoute(input: RouteInput): RouteResult {
-  const { inReplyTo, parent, hasArtifact, text } = input
+  const { inReplyTo, parent, hasArtifact, parentHasArtifact, text } = input
 
-  // R1: New message (no parent)
+  // R1: New message (no parent) → likely initiate, agent confirms
   if (!inReplyTo || !parent) {
-    // If text asks for something concrete, it's an initiation
-    // But we can't be sure without LLM — mark needLLM for ambiguous cases
     return { route: 'initiate', needLLM: true, confidence: 'medium' }
   }
 
-  // R2: Parent initiated with reply_schema + this has deliverable
+  // R2: Parent has reply_schema + this has deliverable → deliver
+  // reply_schema is the structural signal — type doesn't matter
   if (parent.reply_schema && hasArtifact) {
     return { route: 'deliver', needLLM: false, confidence: 'high' }
   }
 
-  // R3: Both parent and this have artifacts → revision
-  if (parent.artifact && hasArtifact) {
+  // R3: Both parent and this have artifacts → revision (hard fact)
+  // Check both parent.artifact field AND parentHasArtifact flag
+  const parentHadArtifact = !!(parent.artifact || parentHasArtifact)
+  if (parentHadArtifact && hasArtifact) {
     return { route: 'revise', needLLM: false, confidence: 'high' }
   }
 
-  // R4: Short acknowledgment
-  if (isAck(text)) {
-    return { route: 'acknowledge', needLLM: false, confidence: 'high' }
-  }
-
-  // R5: Fallback — agent should pick from closed set
-  return { route: 'discuss', needLLM: true, confidence: 'medium' }
+  // R4+R5: Can't determine from structure alone.
+  // Give agent a hint based on text length, but always needLLM=true.
+  const suggestedRoute: Route = isShortText(text) ? 'acknowledge' : 'discuss'
+  return { route: suggestedRoute, needLLM: true, confidence: 'medium' }
 }
 
 // ─── Route → Field Obligations ───────────────────────────────────
