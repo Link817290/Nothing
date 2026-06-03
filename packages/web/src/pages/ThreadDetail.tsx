@@ -53,7 +53,13 @@ export default function ThreadDetail() {
         body: JSON.stringify({ stream: true }),
       });
 
-      if (!res.ok || !res.body) throw new Error('Failed');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: err.error || t('threads.need_more'), variant: 'info' });
+        setSummarizing(false);
+        return;
+      }
+      if (!res.body) throw new Error('Failed');
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

@@ -151,7 +151,7 @@ export async function messageRoutes(app: FastifyInstance) {
 
     const { getMessagesForSummary, generateSummaryText, streamSummaryText, createSummary } = await import('../services/thread-summary.js')
     const messages = await getMessagesForSummary(id, user.id, body.message_ids)
-    if (messages.length === 0) return reply.code(400).send({ error: 'No messages to summarize' })
+    if (messages.length === 0) return reply.code(400).send({ error: 'No new messages to summarize. All messages have already been summarized.' })
 
     // Streaming mode
     if (body.stream) {
