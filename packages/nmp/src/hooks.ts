@@ -262,9 +262,18 @@ export function preReplyHook(
 
   if (!parent || typeof parent !== 'object') return { patch, satisfies, hints }
 
-  // Inherit conversation_id, project, labels from parent (only if caller didn't set)
+  // Inherit conversation_id from parent
   if (parent.conversation_id) patch.conversation_id = parent.conversation_id
-  if (parent.project && !callerFields?.project) patch.project = parent.project
+
+  // Thread belongs to one project — always inherit from parent, cannot override
+  if (parent.project) {
+    patch.project = parent.project
+    if (callerFields?.project && callerFields.project !== parent.project) {
+      hints.push(`Project forced to "${parent.project}" (inherited from thread). Cannot change project within a thread.`)
+    }
+  }
+
+  // Labels: inherit from parent if caller didn't set
   if (parent.labels?.length && !callerFields?.labels?.length) patch.labels = parent.labels
 
   // Context from files

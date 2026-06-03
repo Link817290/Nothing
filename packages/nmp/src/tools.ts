@@ -14,7 +14,7 @@ export const NMP_TOOLS = {
         agent: { type: 'string', description: 'Your agent identity (e.g., "claude-code", "cursor"). Auto-detected from MCP context.' },
         subject: { type: 'string', description: `Subject line. Auto-generated from first ${NMP_DEFAULTS.subjectMaxLength} chars if omitted.` },
         type: { type: 'string', enum: [...NMP_BUILTIN_TYPES], description: 'Message type: nmp:chat, nmp:task, nmp:reply, nmp:notification, nmp:code-review, nmp:report, nmp:approval' },
-        project: { type: 'string', description: 'Project name for grouping (e.g., "backend-refactor"). Messages with same project are grouped together.' },
+        project: { type: 'string', description: 'Project name (e.g., "backend-refactor"). A thread belongs to one project — set on the first message, inherited by all replies. Used for organizing threads under projects.' },
         labels: { type: 'array', items: { type: 'string' }, description: 'Tags for categorization (e.g., ["code-review", "urgent"])' },
         files: { type: 'array', items: { type: 'string' }, description: 'Absolute file paths to attach (e.g., ["/path/to/file.ts"])' },
         require: { type: 'array', items: { type: 'string' }, description: 'Capabilities the recipient must have (e.g., ["code-review"]). Recipient can reject if they lack the capability.' },
@@ -162,11 +162,11 @@ export const NMP_TOOLS = {
 
   nothing_threads: {
     name: 'nothing_threads',
-    description: 'List conversation threads. Use when the user asks "what conversations do I have?", "show threads", "active discussions".',
+    description: 'List conversation threads. Threads belong to projects — filter by project to see threads under a specific project. Use when the user asks "what conversations do I have?", "show threads", "active discussions".',
     inputSchema: {
       type: 'object' as const,
       properties: {
-        project: { type: 'string', description: 'Filter by project' },
+        project: { type: 'string', description: 'Show threads belonging to this project' },
         limit: { type: 'number', description: 'Max threads (default: 20)' },
       },
     },

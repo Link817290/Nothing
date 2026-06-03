@@ -377,12 +377,13 @@ export async function searchMessages(userId: string, query: { q: string; project
 // ─── Threads ───────────────────────────────────────────────────
 
 export async function listThreads(userId: string, query?: { project?: string; limit?: number }) {
+  // Thread's project is defined by its first message (all replies inherit it)
   let sql = `SELECT thread_id, MIN(subject) as subject, MIN(from_address) as from_address,
     COUNT(*) as message_count,
     COUNT(DISTINCT from_address) as participant_count,
     MIN(created_at) as started_at, MAX(created_at) as last_activity,
     MAX(CASE WHEN is_read = FALSE AND direction = 'inbound' THEN 1 ELSE 0 END) as has_unread,
-    MIN(project) as project
+    (SELECT project FROM messages m2 WHERE m2.thread_id = messages.thread_id AND m2.user_id = messages.user_id ORDER BY m2.created_at ASC LIMIT 1) as project
     FROM messages WHERE user_id = $1 AND thread_id IS NOT NULL`
   const p: unknown[] = [userId]
   let idx = 2
