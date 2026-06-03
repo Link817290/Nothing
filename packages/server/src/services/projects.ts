@@ -20,6 +20,15 @@ export async function createProject(userId: string, name: string, description?: 
 }
 
 export async function listProjects(userId: string) {
+  // Auto-sync: create project records for any project names in messages that don't exist in projects table
+  await run(
+    `INSERT INTO projects (id, user_id, name)
+     SELECT 'proj_' || substr(md5(m.project), 1, 8), $1, m.project
+     FROM (SELECT DISTINCT project FROM messages WHERE user_id = $1 AND project IS NOT NULL) m
+     WHERE NOT EXISTS (SELECT 1 FROM projects p WHERE p.user_id = $1 AND p.name = m.project)`,
+    [userId]
+  )
+
   const projects = await queryAll(
     `SELECT p.id, p.name, p.description, p.created_at,
        (SELECT COUNT(*) FROM messages m WHERE m.user_id = $1 AND m.project = p.name) as message_count,
