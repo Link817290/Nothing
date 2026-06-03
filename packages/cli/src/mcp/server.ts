@@ -484,8 +484,8 @@ export async function startMcpServer() {
           const sm = capsule.state_machine
           let text = `Capsule: ${capsule.name} v${capsule.version}\n`
           if (capsule.description) text += `${capsule.description}\n`
-          text += `\nApplies to: ${capsule.activation.task_types.join(', ')}\n`
-          text += `\nState Machine: ${sm.initial} → ${sm.final.join(', ')}\n`
+          text += `\nApplies to: ${capsule.activation?.task_types?.join(', ') || 'general'}\n`
+          text += `\nState Machine: ${sm?.initial || '?'} → ${sm?.final?.join(', ') || '?'}\n`
           for (const [name, state] of Object.entries(sm.states)) {
             text += `  ${name}: ${(state as any).goal}\n`
           }

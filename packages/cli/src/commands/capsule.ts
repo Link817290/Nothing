@@ -33,8 +33,8 @@ export async function capsuleInspect(id: string) {
   if (capsule.description) console.log(`  ${capsule.description}\n`)
 
   // Activation
-  console.log(`  Applies to: ${capsule.activation.task_types.join(', ')}`)
-  if (capsule.activation.keywords?.length) {
+  console.log(`  Applies to: ${capsule.activation?.task_types?.join(', ') || 'general'}`)
+  if (capsule.activation?.keywords?.length) {
     console.log(`  Keywords: ${capsule.activation.keywords.join(', ')}`)
   }
 
