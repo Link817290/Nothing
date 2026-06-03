@@ -90,15 +90,33 @@ export async function startMcpServer() {
     try {
       switch (name) {
         case 'nothing_send': {
+          let attachments: { filename: string; content: string; content_type?: string }[] | undefined
+          if (a.files && Array.isArray(a.files)) {
+            const fs = await import('fs')
+            const path = await import('path')
+            attachments = (a.files as string[]).map(f => ({
+              filename: path.basename(f),
+              content: fs.readFileSync(f).toString('base64'),
+            }))
+          }
           const result = await client.send({
             to: a.to as string, text: a.text as string,
             subject: a.subject as string | undefined,
             type: a.type as string | undefined,
+            agent: a.agent as string | undefined,
             project: a.project as string | undefined,
             labels: a.labels as string[] | undefined,
-            files: a.files as string[] | undefined,
-            require: a.require as string[] | undefined,
             priority: a.priority as string | undefined,
+            require: a.require as string[] | undefined,
+            attachments,
+            context: a.context as any,
+            capabilities: a.capabilities as string[] | undefined,
+            reply_schema: a.reply_schema as Record<string, unknown> | undefined,
+            conversation_id: a.conversation_id as string | undefined,
+            expires: a.expires as string | undefined,
+            help_request: a.help_request as Record<string, unknown> | undefined,
+            execution_capsule: a.execution_capsule as Record<string, unknown> | undefined,
+            ack: a.ack as boolean | undefined,
           })
           return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
         }
@@ -136,8 +154,17 @@ export async function startMcpServer() {
         }
 
         case 'nothing_reply': {
+          let attachments: { filename: string; content: string; content_type?: string }[] | undefined
+          if (a.files && Array.isArray(a.files)) {
+            const fs = await import('fs')
+            const path = await import('path')
+            attachments = (a.files as string[]).map(f => ({
+              filename: path.basename(f),
+              content: fs.readFileSync(f).toString('base64'),
+            }))
+          }
           const result = await client.reply(a.id as string, {
-            text: a.text as string, files: a.files as string[] | undefined,
+            text: a.text as string, attachments,
           })
           return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
         }
