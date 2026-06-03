@@ -169,10 +169,27 @@ export async function startMcpServer() {
     messages: [{ role: 'user', content: { type: 'text', text: NOTHING_INSTRUCTIONS } }],
   }))
 
-  // Tools
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: Object.values(NMP_TOOLS),
-  }))
+  // Tools — inject unread notification into tool list so agent sees it immediately
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const tools = Object.values(NMP_TOOLS).map(t => ({ ...t }))
+
+    // Read notifications and prepend to nothing_inbox description
+    try {
+      const { readNotifications } = await import('../config.js')
+      const notif = readNotifications()
+      if (notif.unread > 0) {
+        const inbox = tools.find((t: any) => t.name === 'nothing_inbox') as any
+        if (inbox) {
+          const preview = notif.messages.slice(0, 3).map((m: any) =>
+            `${m.from?.split('@')[0]}: ${m.subject || '(no subject)'}`
+          ).join('; ')
+          inbox.description = `[📬 ${notif.unread} unread: ${preview}] ` + inbox.description
+        }
+      }
+    } catch {}
+
+    return { tools }
+  })
 
   // Tool handlers
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
