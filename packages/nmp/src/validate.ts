@@ -81,13 +81,11 @@ export function validateExecutionCapsule(capsule: unknown): ValidationResult {
   if (!c.name || typeof c.name !== 'string') errors.push('Missing or invalid capsule name')
   if (!c.version || typeof c.version !== 'string') errors.push('Missing or invalid capsule version')
 
-  // Activation
-  if (!c.activation || typeof c.activation !== 'object') {
-    errors.push('Missing activation')
-  } else {
+  // Activation (optional)
+  if (c.activation && typeof c.activation === 'object') {
     const act = c.activation as Record<string, unknown>
-    if (!Array.isArray(act.task_types) || act.task_types.length === 0) {
-      errors.push('activation.task_types must be a non-empty array')
+    if (act.task_types !== undefined && (!Array.isArray(act.task_types) || act.task_types.length === 0)) {
+      errors.push('activation.task_types must be a non-empty array if provided')
     }
   }
 

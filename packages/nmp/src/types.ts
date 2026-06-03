@@ -208,7 +208,7 @@ export interface NmpCapsuleAuthor {
 }
 
 export interface NmpCapsuleActivation {
-  task_types: string[]
+  task_types?: string[]
   keywords?: string[]
   required_context?: string[]
   unsupported_context?: string[]
