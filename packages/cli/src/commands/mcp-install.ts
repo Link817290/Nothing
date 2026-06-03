@@ -77,6 +77,9 @@ export async function mcpInstall() {
     }
   }
 
+  // Codex — TOML config, handle separately
+  installCodexMcp(mcpConfig)
+
   // Write global instruction so agent always knows about Nothing
   injectGlobalInstruction()
 
@@ -100,11 +103,29 @@ You have Nothing email tools via MCP. At the start of EVERY conversation:
 3. Read ~/.nothing/memory.json for user preferences and context from prior sessions.
 4. Respect ~/.nothing/preferences.json for reply style, language, and signature.`
 
+function installCodexMcp(mcpConfig: Record<string, unknown>) {
+  const codexConfig = join(homedir(), '.codex', 'config.toml')
+  if (!existsSync(codexConfig)) return
+  try {
+    const content = readFileSync(codexConfig, 'utf-8')
+    if (content.includes('[mcp_servers.nothing]')) {
+      console.log(`  - Codex — already configured`)
+      return
+    }
+    const tomlBlock = `\n[mcp_servers.nothing]\ncommand = "${(mcpConfig as any).command}"\nargs = ${JSON.stringify((mcpConfig as any).args)}\n`
+    writeFileSync(codexConfig, content.trimEnd() + '\n' + tomlBlock)
+    console.log(`  ✓ Codex — ${codexConfig}`)
+  } catch {
+    console.log(`  ✗ Codex — failed`)
+  }
+}
+
 function injectGlobalInstruction() {
   const home = homedir()
   const targets = [
     join(home, '.claude', 'CLAUDE.md'),           // Claude Code global
     join(home, '.cursor', 'rules', 'nothing.md'), // Cursor global rules
+    join(home, '.codex', 'rules', 'nothing.md'),  // Codex global rules
   ]
 
   for (const target of targets) {
