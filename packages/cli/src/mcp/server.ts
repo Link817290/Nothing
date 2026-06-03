@@ -110,62 +110,66 @@ CODE CONTEXT (always fill when discussing code):
   - context.lines: Line range if relevant (e.g., "10-25")
   - context.language: Auto-inferred from extension if omitted
 
-BUILDING EXECUTION CAPSULES (skill — when user wants to delegate a structured task):
-  When user says things like "帮我让XX做..." "package this as a task" "create a capsule for..."
-  build an execution_capsule and send it via nothing_send. Follow this structure:
+EXPERIENCE CAPSULES (经验包 — boundary-controlled delegated tasks):
+  Trigger: "帮我让XX做...", "package this as a task", "create a capsule", "做个经验包"
 
-  1. DEFINE STATE MACHINE — Break the task into sequential states:
-     - initial: first state name
-     - final: ["done"] or ["delivered", "cancelled"]
-     - Each state has: goal, instructions, expected_outputs, allowed_tools, transitions
-     Example states: research → draft → review → deliver
+  A capsule = state machine + tool boundary + validators.
+  Sender builds it, receiver executes it via MCP tools.
 
-  2. DEFINE TOOL POLICY — What the executor can/cannot do:
-     - allow: ["read_file", "write_file", "search"] (tools they need)
-     - deny: ["rm", "deploy", "git push"] (dangerous operations)
+  ── STRUCTURE ──
 
-  3. DEFINE VALIDATORS — How to check outputs:
-     - file_exists: { path: "output.png" }
-     - file_type: { mime: "image/png" }
-     - schema: { properties: { name: {}, color: {} } }
-     - custom: { rule: "must have 3 variants" }
-
-  4. DEFINE ARTIFACTS — Expected deliverables:
-     - name: "logo-designs", type: "file", mime_type: "image/png"
-
-  5. SEND — Use nothing_send with:
-     - type: "nmp:execution-capsule"
-     - execution_capsule: { full capsule object }
-     - reply_schema: { expected response structure }
-
-  Template:
   {
-    "id": "cap_<random>", "name": "Task Name", "version": "1.0",
-    "description": "What needs to be done",
-    "activation": { "task_types": ["design", "code"] },
+    "id": "cap_<random>",
+    "name": "...",
+    "version": "1.0",
+    "description": "...",
     "state_machine": {
-      "initial": "start", "final": ["done"],
+      "initial": "<first_state>",
+      "final": ["<end_state>"],
       "states": {
-        "start": {
-          "goal": "Understand requirements",
-          "instructions": "Read the brief and clarify if needed",
-          "expected_outputs": ["understanding confirmed"],
-          "transitions": [{ "to": "work", "when": "requirements clear" }]
-        },
-        "work": {
-          "goal": "Produce the deliverable",
-          "expected_outputs": ["deliverable file"],
-          "allowed_tools": ["read_file", "write_file"],
-          "transitions": [{ "to": "done", "when": "output validated" }]
+        "<state_name>": {
+          "goal": "what to achieve in this state",
+          "instructions": "how to do it",
+          "expected_outputs": ["what success looks like"],
+          "allowed_tools": ["tools available in this state"],
+          "transitions": [{ "to": "<next_state>", "when": "condition" }]
         }
       }
     },
-    "tool_policy": { "allow": ["*"], "deny": ["rm", "deploy"] },
-    "validators": [{ "id": "v1", "type": "file_exists", "config": { "path": "output.*" } }],
-    "artifacts": [{ "name": "deliverable", "type": "file" }]
+    "tool_policy": {
+      "allow": ["tools the executor may use"],
+      "deny": ["operations that are forbidden"]
+    },
+    "validators": [
+      { "id": "v1", "type": "file_exists|file_type|schema|custom", "config": { ... } }
+    ],
+    "artifacts": [
+      { "name": "...", "type": "file", "mime_type": "..." }
+    ]
   }
 
-  Keep it simple — 2-4 states is enough for most tasks. Don't over-engineer.
+  ── RULES ──
+
+  - Design states based on the actual task. 2-4 states is typical.
+  - tool_policy.deny is the BOUNDARY — forbidden operations are enforced.
+  - Each state can have its own allowed_tools (narrower than global policy).
+  - Validators define how to check outputs — the executor calls validate after work.
+
+  ── EXECUTION FLOW (receiver side, via MCP tools) ──
+
+    nothing_capsule_inspect → understand the capsule
+    nothing_capsule_start   → begin, get initial state
+    nothing_capsule_next    → get current state goal + instructions
+    nothing_capsule_guard   → check EVERY command before running (boundary!)
+    nothing_capsule_event   → log state transitions / tool calls
+    nothing_capsule_validate → verify outputs meet requirements
+
+    Flow: inspect → start → loop { next → guard → work → event → validate } → done
+    Guard is mandatory — if denied, the executor must NOT proceed.
+
+  ── SENDING ──
+
+  Use nothing_send with type "nmp:execution-capsule" and execution_capsule field.
   Ask user only: "what should be done" and "who to send to". Infer the rest.
 
 MINIMAL DISRUPTION (highest priority rule):
