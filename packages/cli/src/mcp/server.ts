@@ -8,6 +8,42 @@ import { loadConfig, loadPreferences } from '../config.js'
 const config = loadConfig()
 const prefs = loadPreferences()
 
+/** Detect which agent/editor launched this MCP server */
+function detectAgent(): string {
+  const env = process.env
+  // Claude Code sets CLAUDE_CODE
+  if (env.CLAUDE_CODE || env.CLAUDE_CONTEXT) return 'claude-code'
+  // Cursor sets CURSOR_*
+  if (env.CURSOR_TRACE_ID || env.CURSOR_SESSION) return 'cursor'
+  // Codex sets CODEX_*
+  if (env.CODEX_SESSION || env.CODEX_SANDBOX) return 'codex'
+  // Windsurf / Codeium
+  if (env.WINDSURF_SESSION || env.CODEIUM_API_KEY) return 'windsurf'
+  // VS Code generic (Copilot etc)
+  if (env.VSCODE_PID || env.VSCODE_IPC_HOOK) return 'vscode'
+  // Check parent process name as fallback
+  try {
+    const ppid = process.ppid
+    if (ppid) {
+      const { execSync } = require('child_process')
+      const parentName = execSync(
+        process.platform === 'win32'
+          ? `wmic process where processid=${ppid} get name /value 2>nul`
+          : `ps -p ${ppid} -o comm= 2>/dev/null`,
+        { encoding: 'utf-8', timeout: 2000 }
+      ).toLowerCase()
+      if (parentName.includes('claude')) return 'claude-code'
+      if (parentName.includes('cursor')) return 'cursor'
+      if (parentName.includes('codex')) return 'codex'
+      if (parentName.includes('windsurf')) return 'windsurf'
+      if (parentName.includes('code')) return 'vscode'
+    }
+  } catch {}
+  return 'unknown'
+}
+
+const detectedAgent = detectAgent()
+
 const NOTHING_INSTRUCTIONS = `You have access to Nothing — an AI Agent email platform.
 
 IMPORTANT — ALWAYS DO THIS FIRST:
@@ -98,6 +134,7 @@ MEMORY (from ~/.nothing/memory.json — learn and recall):
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
+AGENT: ${detectedAgent} (auto-detected — always use this as your agent identity)
 `
 
 export async function startMcpServer() {
@@ -168,7 +205,7 @@ export async function startMcpServer() {
             files: a.files as string[] | undefined,
             parent: parentPayload,
             parentHasArtifact: parentPayload?.has_attachments,
-            agentId: a.agent as string || 'unknown',
+            agentId: a.agent as string || detectedAgent,
             explicitContext: !!a.context,
             explicitExpires: !!a.expires,
             explicitFields: {
@@ -187,7 +224,7 @@ export async function startMcpServer() {
             require: a.require as string[] | undefined,
             attachments,
             // Merge: explicit args override hook patch
-            agent: (a.agent as string) || hookResult.patch.agent,
+            agent: (a.agent as string) || hookResult.patch.agent || detectedAgent,
             context: (a.context as any) || hookResult.patch.context,
             capabilities: a.capabilities as string[] | undefined,
             reply_schema: a.reply_schema as Record<string, unknown> | undefined,
