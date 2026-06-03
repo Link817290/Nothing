@@ -183,6 +183,116 @@ program
     await reply(id, text, opts)
   })
 
+program
+  .command('sent')
+  .option('-p, --project <project>', 'Filter by project')
+  .option('-n, --limit <n>', 'Max messages to show', '20')
+  .description('View sent messages and delivery status')
+  .action(async (opts) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      const result = await client.sent({ project: opts.project, limit: opts.limit })
+      const msgs = result.messages || []
+      if (msgs.length === 0) { console.log('\n  No sent messages.\n'); return }
+      console.log()
+      for (const m of msgs) {
+        const status = (m.status || 'sent').padEnd(9)
+        console.log(`  [${status}] ${m.id}  To: ${m.to?.split('@')[0]?.padEnd(15)}  ${(m.subject || '(no subject)').slice(0, 40)}`)
+      }
+      console.log()
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
+program
+  .command('search <query>')
+  .option('-p, --project <project>', 'Filter by project')
+  .option('-n, --limit <n>', 'Max results', '20')
+  .description('Search messages by keyword')
+  .addHelpText('after', `
+  Examples:
+    $ nothing search "auth bug"
+    $ nothing search "deploy" -p backend`)
+  .action(async (query: string, opts) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      const result = await client.search(query, { project: opts.project, limit: Number(opts.limit) })
+      const msgs = result.messages || []
+      if (msgs.length === 0) { console.log(`\n  No results for "${query}".\n`); return }
+      console.log(`\n  ${msgs.length} result${msgs.length > 1 ? 's' : ''} for "${query}":\n`)
+      for (const m of msgs) {
+        const dir = m.direction === 'outbound' ? '↗' : '↙'
+        console.log(`  ${dir} [${m.id}] ${m.from?.split('@')[0]} → ${m.to?.split('@')[0]}: ${(m.subject || '(no subject)').slice(0, 40)}`)
+      }
+      console.log()
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
+program
+  .command('forward <id> <to>')
+  .option('-t, --text <note>', 'Add a note above the forwarded content')
+  .description('Forward a message to another recipient')
+  .action(async (id: string, to: string, opts) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      const result = await client.forward(id, to, opts.text)
+      console.log(`\n  ✓ Forwarded → ${to} (${result.message_id})\n`)
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
+program
+  .command('delete <id>')
+  .option('-y, --yes', 'Skip confirmation')
+  .description('Delete a message')
+  .action(async (id: string, opts) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    if (!opts.yes) {
+      const { confirm } = await import('@inquirer/prompts')
+      const ok = await confirm({ message: `Delete message ${id}?`, default: false })
+      if (!ok) return
+    }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      await client.deleteMessage(id)
+      console.log(`\n  ✓ Deleted ${id}\n`)
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
+program
+  .command('mark <id> <state>')
+  .description('Mark a message as read or unread')
+  .addHelpText('after', `
+  Examples:
+    $ nothing mark msg_abc123 read
+    $ nothing mark msg_abc123 unread`)
+  .action(async (id: string, state: string) => {
+    const { loadConfig } = await import('./config.js')
+    const { NothingClient } = await import('./client.js')
+    const config = loadConfig()
+    if (!config.initialized || !config.server_url || !config.token) { console.log('  Not initialized.'); return }
+    const isRead = state === 'read'
+    if (state !== 'read' && state !== 'unread') { console.log('  State must be "read" or "unread".'); return }
+    const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
+    try {
+      await client.markRead(id, isRead)
+      console.log(`\n  ✓ Marked ${id} as ${state}\n`)
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}`) }
+  })
+
 // ─── Threads ───────────────────────────────────────────────────
 
 program

@@ -274,6 +274,51 @@ export async function startMcpServer() {
           return { content: [{ type: 'text', text }] }
         }
 
+        // ─── Search / Forward / Delete / Mark / Threads ────────
+
+        case 'nothing_search': {
+          const result = await client.search(a.query as string, {
+            project: a.project as string | undefined,
+            limit: a.limit as number | undefined,
+          })
+          const msgs = result.messages || []
+          const text = msgs.length === 0
+            ? `No results for "${a.query}".`
+            : msgs.map((m: any) =>
+                `${m.direction === 'outbound' ? '↗' : '↙'} [${m.id}] ${m.from} → ${m.to}: ${m.subject || '(no subject)'}\n  ${m.preview || ''}`
+              ).join('\n\n')
+          return { content: [{ type: 'text', text }] }
+        }
+
+        case 'nothing_forward': {
+          const result = await client.forward(a.id as string, a.to as string, a.text as string | undefined)
+          return { content: [{ type: 'text', text: `Forwarded → ${a.to} (${result.message_id})` }] }
+        }
+
+        case 'nothing_delete': {
+          await client.deleteMessage(a.id as string)
+          return { content: [{ type: 'text', text: `Deleted ${a.id}` }] }
+        }
+
+        case 'nothing_mark': {
+          const isRead = (a.state as string) === 'read'
+          await client.markRead(a.id as string, isRead)
+          return { content: [{ type: 'text', text: `Marked ${a.id} as ${a.state}` }] }
+        }
+
+        case 'nothing_threads': {
+          const result = await client.listThreads(
+            a.project ? { project: a.project as string } : undefined
+          )
+          const threads = result.threads || []
+          const text = threads.length === 0
+            ? 'No threads yet.'
+            : threads.map((t: any) =>
+                `${t.has_unread ? '●' : '○'} [${t.thread_id}] ${t.subject || '(no subject)'} — ${t.message_count}msg, ${t.participant_count}p${t.project ? ', ' + t.project : ''}`
+              ).join('\n')
+          return { content: [{ type: 'text', text }] }
+        }
+
         // ─── Capsule Tools ──────────────────────────────────────
 
         case 'nothing_capsule_inspect': {

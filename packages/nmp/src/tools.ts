@@ -107,6 +107,71 @@ export const NMP_TOOLS = {
       },
     },
   },
+  nothing_search: {
+    name: 'nothing_search',
+    description: 'Search messages by keyword. Use when the user asks "find messages about...", "search for...", or "any messages mentioning...".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        query: { type: 'string', description: 'Search query (keyword, sender name, subject text)' },
+        project: { type: 'string', description: 'Filter by project' },
+        limit: { type: 'number', description: 'Max results (default: 20)' },
+      },
+      required: ['query'],
+    },
+  },
+
+  nothing_forward: {
+    name: 'nothing_forward',
+    description: 'Forward a message to another recipient. The original content is included. Use when the user says "forward this to...", "send this to bob too".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Message ID to forward' },
+        to: { type: 'string', description: 'Recipient email address' },
+        text: { type: 'string', description: 'Optional note to add above the forwarded content' },
+      },
+      required: ['id', 'to'],
+    },
+  },
+
+  nothing_delete: {
+    name: 'nothing_delete',
+    description: 'Delete a message. Use when the user says "delete that message", "remove it". This is permanent.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Message ID to delete' },
+      },
+      required: ['id'],
+    },
+  },
+
+  nothing_mark: {
+    name: 'nothing_mark',
+    description: 'Mark a message as read or unread. Use when the user says "mark as read", "mark unread", "I\'ll read this later".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Message ID' },
+        state: { type: 'string', enum: ['read', 'unread'], description: 'Mark as read or unread' },
+      },
+      required: ['id', 'state'],
+    },
+  },
+
+  nothing_threads: {
+    name: 'nothing_threads',
+    description: 'List conversation threads. Use when the user asks "what conversations do I have?", "show threads", "active discussions".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        project: { type: 'string', description: 'Filter by project' },
+        limit: { type: 'number', description: 'Max threads (default: 20)' },
+      },
+    },
+  },
+
   // ─── Execution Capsule Tools ────────────────────────────────
 
   nothing_capsule_inspect: {
