@@ -22,10 +22,10 @@ program
     nothing_read, nothing_reply, nothing_projects, nothing_report.
 
   More info: https://github.com/Link817290/Nothing`)
-  .version('0.8.0')
+  .version('0.8.1')
 
 // ─── Version check (non-blocking) ──────────────────────────────
-const CURRENT_VERSION = '0.8.0'
+const CURRENT_VERSION = '0.8.1'
 fetch('https://registry.npmjs.org/nothing-cli/latest')
   .then(r => r.json())
   .then(data => {
