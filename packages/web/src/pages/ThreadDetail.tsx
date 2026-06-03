@@ -156,7 +156,8 @@ export default function ThreadDetail() {
         {streamingText && (
           <div className="rounded-xl border border-brand/30 bg-accent/10 p-4 md:p-5">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-brand animate-pulse" />
+              <img src="/logo-dark.png" alt="" className="h-4 w-4 animate-breathe dark:hidden" />
+              <img src="/logo-light.png" alt="" className="h-4 w-4 animate-breathe hidden dark:block" />
               <span className="text-sm text-muted-foreground">{t('threads.summarize')}...</span>
             </div>
             <div className="text-sm text-foreground whitespace-pre-line leading-relaxed">{streamingText}<span className="animate-pulse">▊</span></div>

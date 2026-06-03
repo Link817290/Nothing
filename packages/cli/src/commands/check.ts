@@ -1,4 +1,4 @@
-import { loadConfig, writeNotifications } from '../config.js'
+import { loadConfig, writeNotifications, readNotifications } from '../config.js'
 import { NothingClient } from '../client.js'
 
 export async function check(opts?: { silent?: boolean }) {
@@ -12,7 +12,30 @@ export async function check(opts?: { silent?: boolean }) {
     const unread = result.total_unread || 0
     const messages = result.messages || []
 
+    // Check if there are new messages since last check
+    const prev = readNotifications()
+    const prevIds = new Set(prev.messages.map((m: any) => m.id))
+    const newMessages = messages.filter((m: any) => !prevIds.has(m.id))
+
     writeNotifications(messages)
+
+    // Desktop notification for new messages only
+    if (newMessages.length > 0) {
+      try {
+        const notifier = await import('node-notifier')
+        const title = newMessages.length === 1
+          ? newMessages[0].from?.split('@')[0] || 'New message'
+          : `${newMessages.length} new messages`
+        const body = newMessages.length === 1
+          ? newMessages[0].subject || '(no subject)'
+          : newMessages.map((m: any) => `${m.from?.split('@')[0]}: ${m.subject || '(no subject)'}`).join('\n')
+        notifier.default.notify({
+          title: `Nothing — ${title}`,
+          message: body,
+          sound: true,
+        })
+      } catch {}
+    }
 
     if (!opts?.silent) {
       if (unread === 0) {

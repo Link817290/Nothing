@@ -120,6 +120,54 @@ function createWindow() {
   ipcMain.on('window:close', () => mainWindow?.close());
 
   mainWindow.on('closed', () => { mainWindow = null; });
+
+  // ─── Badge: poll unread count every 60s ─────────────────────
+  const { nativeImage } = require('electron');
+
+  function createBadgeIcon(count) {
+    // Draw a red circle with white number (16x16 for Windows overlay)
+    const size = 16;
+    const canvas = `
+      <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8" cy="8" r="8" fill="#e53e3e"/>
+        <text x="8" y="12" text-anchor="middle" fill="white" font-size="${count > 9 ? 8 : 10}" font-family="Arial" font-weight="bold">${count > 99 ? '99+' : count}</text>
+      </svg>`;
+    return nativeImage.createFromBuffer(Buffer.from(canvas));
+  }
+
+  async function updateBadge() {
+    if (!mainWindow) return;
+    try {
+      const count = await mainWindow.webContents.executeJavaScript(`
+        (async () => {
+          try {
+            const token = localStorage.getItem('nothing-auth');
+            if (!token) return 0;
+            const parsed = JSON.parse(token);
+            const t = parsed?.state?.token;
+            if (!t) return 0;
+            const res = await fetch('/api/messages/inbox?unread=true&limit=1', {
+              headers: { 'Authorization': 'Bearer ' + t }
+            });
+            if (!res.ok) return 0;
+            const data = await res.json();
+            return data.total_unread || 0;
+          } catch { return 0; }
+        })()
+      `);
+      if (count > 0) {
+        mainWindow.setOverlayIcon(createBadgeIcon(count), `${count} unread`);
+      } else {
+        mainWindow.setOverlayIcon(null, '');
+      }
+    } catch {}
+  }
+
+  // Poll every 60 seconds
+  updateBadge();
+  setInterval(updateBadge, 60000);
+  // Also update when page navigates
+  mainWindow.webContents.on('did-navigate-in-page', () => setTimeout(updateBadge, 1000));
 }
 
 app.whenReady().then(createWindow);

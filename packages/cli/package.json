@@ -18,9 +18,11 @@
     "@inquirer/prompts": "^7.5.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@nothingmail/nmp": "^0.3.0",
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "node-notifier": "^10.0.1"
   },
   "devDependencies": {
+    "@types/node-notifier": "^8.0.5",
     "tsup": "^8.4.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
