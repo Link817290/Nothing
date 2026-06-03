@@ -17,6 +17,7 @@
       "output": "dist"
     },
     "icon": "icon_512.png",
+    "files": ["main.js", "preload.js", "splash.html", "icon_512.png"],
     "win": {
       "target": ["nsis"],
       "icon": "icon.ico"

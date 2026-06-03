@@ -21,11 +21,31 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL(URL);
+  // Show splash screen immediately, then load remote URL
+  mainWindow.loadFile(path.join(__dirname, 'splash.html'));
+  mainWindow.once('ready-to-show', () => mainWindow.show());
 
-  // Show window only after page is ready (avoids black screen flash)
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+  // Load the actual app in the background
+  // Wait a minimum 1.5s so splash is visible, then switch when remote is ready
+  const minSplash = new Promise(r => setTimeout(r, 1500));
+  const remoteReady = new Promise(resolve => {
+    const hidden = new BrowserWindow({ show: false, webPreferences: { preload: path.join(__dirname, 'preload.js'), nodeIntegration: false, contextIsolation: true } });
+    hidden.loadURL(URL);
+    hidden.webContents.once('did-finish-load', () => {
+      hidden.close();
+      resolve();
+    });
+    // Timeout fallback: switch after 8s even if not loaded
+    setTimeout(() => resolve(), 8000);
+  });
+
+  Promise.all([minSplash, remoteReady]).then(() => {
+    if (!mainWindow) return;
+    // Fade out splash then navigate to app
+    mainWindow.webContents.executeJavaScript(`document.body.classList.add('fade-out')`);
+    setTimeout(() => {
+      if (mainWindow) mainWindow.loadURL(URL);
+    }, 300);
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
