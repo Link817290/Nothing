@@ -47,6 +47,18 @@ export async function sendMessage(userId: string, req: SendRequest) {
     [id, userId, account.id, from, req.to, subject, req.text, JSON.stringify(payload), req.agent || null, req.project || null, JSON.stringify(req.labels || []), account.provider, id, hasAttachments]
   )
 
+  // Save outbound execution capsule
+  if (req.execution_capsule) {
+    try {
+      const { validateExecutionCapsule } = await import('@nothingmail/nmp')
+      const validation = validateExecutionCapsule(req.execution_capsule)
+      if (validation.valid) {
+        const { saveCapsule } = await import('./capsules.js')
+        await saveCapsule(userId, id, req.execution_capsule)
+      }
+    } catch {}
+  }
+
   // Save outbound attachments to disk
   if (hasAttachments) {
     const { saveAttachment } = await import('./attachments.js')
