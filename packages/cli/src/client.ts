@@ -15,12 +15,13 @@ export class NothingClient {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.token}`,
+    }
+    if (body) headers['Content-Type'] = 'application/json'
     const res = await fetch(`${this.serverUrl}${path}`, {
       method,
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     })
     if (!res.ok) {
