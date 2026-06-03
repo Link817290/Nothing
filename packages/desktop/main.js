@@ -13,7 +13,7 @@ function createWindow() {
     minHeight: 600,
     frame: false,
     show: false,
-    backgroundColor: '#09090b',
+    backgroundColor: '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -147,8 +147,9 @@ function createWindow() {
 
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  // ─── Badge: poll unread count every 60s ─────────────────────
-  const { nativeImage } = require('electron');
+  // ─── Badge + Notifications: poll every 60s ─────────────────
+  const { nativeImage, Notification } = require('electron');
+  let lastUnreadCount = 0;
 
   function createBadgeIcon(count) {
     // Draw a red circle with white number (16x16 for Windows overlay)
@@ -183,9 +184,19 @@ function createWindow() {
       `);
       if (count > 0) {
         mainWindow.setOverlayIcon(createBadgeIcon(count), `${count} unread`);
+        // Notify only when count increases (new messages arrived)
+        if (count > lastUnreadCount && lastUnreadCount >= 0) {
+          const diff = count - lastUnreadCount;
+          new Notification({
+            title: 'Nothing',
+            body: diff === 1 ? 'You have a new message' : `${diff} new messages`,
+            icon: path.join(__dirname, 'icon_512.png'),
+          }).show();
+        }
       } else {
         mainWindow.setOverlayIcon(null, '');
       }
+      lastUnreadCount = count;
     } catch {}
   }
 
