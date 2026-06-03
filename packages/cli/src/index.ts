@@ -22,7 +22,19 @@ program
     nothing_read, nothing_reply, nothing_projects, nothing_report.
 
   More info: https://github.com/Link817290/Nothing`)
-  .version('0.6.0')
+  .version('0.7.0')
+
+// ─── Version check (non-blocking) ──────────────────────────────
+const CURRENT_VERSION = '0.7.0'
+fetch('https://registry.npmjs.org/nothing-cli/latest')
+  .then(r => r.json())
+  .then(data => {
+    if (data.version && data.version !== CURRENT_VERSION) {
+      console.log(`\n  ⬆ Update available: ${CURRENT_VERSION} → ${data.version}`)
+      console.log(`    Run: npm i -g nothing-cli\n`)
+    }
+  })
+  .catch(() => {})
 
 // ─── Setup ──────────────────────────────────────────────────────
 
@@ -76,6 +88,26 @@ program
   .action(async (opts) => {
     const { reset } = await import('./commands/reset.js')
     await reset(opts)
+  })
+
+program
+  .command('update')
+  .description('Update nothing-cli to the latest version')
+  .action(async () => {
+    const { execSync } = await import('child_process')
+    try {
+      const res = await fetch('https://registry.npmjs.org/nothing-cli/latest')
+      const data = await res.json()
+      if (data.version === CURRENT_VERSION) {
+        console.log(`\n  ✓ Already on latest version (${CURRENT_VERSION})\n`)
+        return
+      }
+      console.log(`\n  Updating ${CURRENT_VERSION} → ${data.version}...`)
+      execSync('npm i -g nothing-cli', { stdio: 'inherit' })
+      console.log(`\n  ✓ Updated to ${data.version}\n`)
+    } catch (err) {
+      console.log(`  ✗ ${(err as Error).message}`)
+    }
   })
 
 program

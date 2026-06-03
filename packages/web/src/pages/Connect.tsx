@@ -115,34 +115,36 @@ export default function Connect() {
             </CardContent>
           </Card>
 
-          {/* Desktop App */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/5">
-                  <Monitor className="h-5 w-5 text-foreground" />
+          {/* Desktop App — hide if already in Electron */}
+          {!(window as any).electronAPI && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/5">
+                    <Monitor className="h-5 w-5 text-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>{t('connect.desktop')}</CardTitle>
+                    <CardDescription>{t('connect.desktop_desc')}</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>{t('connect.desktop')}</CardTitle>
-                  <CardDescription>{t('connect.desktop_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
+                      <Download className="h-4 w-4" /> Windows (.exe)
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
+                      <Download className="h-4 w-4" /> Linux (.AppImage)
+                    </a>
+                  </Button>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4" /> Windows (.exe)
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4" /> Linux (.AppImage)
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* API Key reminder */}
           <Card>

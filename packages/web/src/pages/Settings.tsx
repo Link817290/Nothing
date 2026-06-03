@@ -196,6 +196,9 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* App Version — only in Electron */}
+          {(window as any).electronAPI && <VersionCard />}
+
           {/* Email Accounts */}
           <Card>
             <CardHeader>
@@ -473,6 +476,61 @@ function ClaimMailboxCard({ onClaimed }: { onClaimed: () => void }) {
         <Button size="sm" onClick={handleClaim} disabled={claiming || password.length < 8}>
           {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('settings.claim_mailbox')}
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function VersionCard() {
+  const { t } = useTranslation();
+  const [current, setCurrent] = useState('...');
+  const [latest, setLatest] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    // Get current version from server /health
+    fetch('/health').then(r => r.json()).then(d => setCurrent(d.version || '?')).catch(() => {});
+    // Check latest release from GitHub
+    fetch('https://api.github.com/repos/Link817290/Nothing/releases/latest')
+      .then(r => r.json())
+      .then(d => setLatest(d.tag_name?.replace(/^desktop-v/, '') || null))
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, []);
+
+  const hasUpdate = latest && latest !== current && !checking;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('settings.app_version')}</CardTitle>
+        <CardDescription>{t('settings.app_version_desc')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">{t('settings.current_version')}</span>
+              <Badge variant="secondary">{current}</Badge>
+            </div>
+            {checking && <p className="text-xs text-muted-foreground">{t('settings.checking')}</p>}
+            {latest && !checking && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">{t('settings.latest_version')}</span>
+                <Badge variant={hasUpdate ? 'brand' : 'secondary'}>{latest}</Badge>
+              </div>
+            )}
+          </div>
+          {hasUpdate ? (
+            <Button variant="outline" size="sm" asChild>
+              <a href="https://github.com/Link817290/Nothing/releases/latest" target="_blank" rel="noopener noreferrer">
+                {t('settings.download_update')}
+              </a>
+            </Button>
+          ) : !checking ? (
+            <Badge variant="success">{t('settings.up_to_date')}</Badge>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   );
