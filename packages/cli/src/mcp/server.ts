@@ -41,8 +41,9 @@ SMART ENVELOPE (auto-tagging + routing — the system handles most of this):
   You may see "Smart Envelope Hints" in tool results — act on them naturally.
 
   What YOU still fill:
-  - project: ONLY set when the user explicitly asks to tag a project.
-    Do NOT infer or auto-fill. Leave empty if user doesn't mention a project.
+  - project: ONLY use an existing project that the user has created.
+    Do NOT infer, auto-fill, or create new project names on the fly.
+    Use nothing_projects to check which projects exist before tagging.
     Once set on the first message, all replies inherit it automatically.
     Threads belong to projects: project > thread > messages.
   - type: Pick the NMP type. Default "nmp:chat". Use nmp:task, nmp:code-review,
