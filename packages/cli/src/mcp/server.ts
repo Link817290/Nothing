@@ -110,6 +110,64 @@ CODE CONTEXT (always fill when discussing code):
   - context.lines: Line range if relevant (e.g., "10-25")
   - context.language: Auto-inferred from extension if omitted
 
+BUILDING EXECUTION CAPSULES (skill — when user wants to delegate a structured task):
+  When user says things like "帮我让XX做..." "package this as a task" "create a capsule for..."
+  build an execution_capsule and send it via nothing_send. Follow this structure:
+
+  1. DEFINE STATE MACHINE — Break the task into sequential states:
+     - initial: first state name
+     - final: ["done"] or ["delivered", "cancelled"]
+     - Each state has: goal, instructions, expected_outputs, allowed_tools, transitions
+     Example states: research → draft → review → deliver
+
+  2. DEFINE TOOL POLICY — What the executor can/cannot do:
+     - allow: ["read_file", "write_file", "search"] (tools they need)
+     - deny: ["rm", "deploy", "git push"] (dangerous operations)
+
+  3. DEFINE VALIDATORS — How to check outputs:
+     - file_exists: { path: "output.png" }
+     - file_type: { mime: "image/png" }
+     - schema: { properties: { name: {}, color: {} } }
+     - custom: { rule: "must have 3 variants" }
+
+  4. DEFINE ARTIFACTS — Expected deliverables:
+     - name: "logo-designs", type: "file", mime_type: "image/png"
+
+  5. SEND — Use nothing_send with:
+     - type: "nmp:execution-capsule"
+     - execution_capsule: { full capsule object }
+     - reply_schema: { expected response structure }
+
+  Template:
+  {
+    "id": "cap_<random>", "name": "Task Name", "version": "1.0",
+    "description": "What needs to be done",
+    "activation": { "task_types": ["design", "code"] },
+    "state_machine": {
+      "initial": "start", "final": ["done"],
+      "states": {
+        "start": {
+          "goal": "Understand requirements",
+          "instructions": "Read the brief and clarify if needed",
+          "expected_outputs": ["understanding confirmed"],
+          "transitions": [{ "to": "work", "when": "requirements clear" }]
+        },
+        "work": {
+          "goal": "Produce the deliverable",
+          "expected_outputs": ["deliverable file"],
+          "allowed_tools": ["read_file", "write_file"],
+          "transitions": [{ "to": "done", "when": "output validated" }]
+        }
+      }
+    },
+    "tool_policy": { "allow": ["*"], "deny": ["rm", "deploy"] },
+    "validators": [{ "id": "v1", "type": "file_exists", "config": { "path": "output.*" } }],
+    "artifacts": [{ "name": "deliverable", "type": "file" }]
+  }
+
+  Keep it simple — 2-4 states is enough for most tasks. Don't over-engineer.
+  Ask user only: "what should be done" and "who to send to". Infer the rest.
+
 MINIMAL DISRUPTION (highest priority rule):
   - Default: zero questions, zero blocking. Most messages just send directly.
   - When you see Smart Envelope Hints, try filling gaps with sensible defaults
