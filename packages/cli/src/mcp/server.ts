@@ -172,6 +172,57 @@ EXPERIENCE CAPSULES (经验包 — boundary-controlled delegated tasks):
   Use nothing_send with type "nmp:execution-capsule" and execution_capsule field.
   Ask user only: "what should be done" and "who to send to". Infer the rest.
 
+EXECUTING EXPERIENCE CAPSULES (when you RECEIVE an nmp:execution-capsule message):
+  When you read a message with type "nmp:execution-capsule", execute it step by step.
+
+  ── STEP 1: INSPECT ──
+  Call nothing_capsule_inspect with the capsule id.
+  Read: state machine, tool policy, validators, artifacts.
+  Understand what is expected before doing anything.
+
+  ── STEP 2: START ──
+  Call nothing_capsule_start with the capsule_id.
+  You get: run_id, current_state, goal, instructions, allowed_tools.
+  Save the run_id — you need it for all subsequent calls.
+
+  ── STEP 3: WORK LOOP ──
+  Repeat until you reach a final state:
+
+    a) Call nothing_capsule_next with run_id.
+       Read the current state's goal, instructions, expected_outputs.
+
+    b) Before EVERY command or tool call:
+       Call nothing_capsule_guard with run_id + the command string.
+       - "allow" → proceed
+       - "deny" → DO NOT execute. Log event and skip or find alternative.
+       - "confirm" → ask the user before proceeding
+
+    c) Do the actual work (read files, write files, search, etc.)
+       Only use tools listed in the state's allowed_tools.
+
+    d) Call nothing_capsule_event to log what you did:
+       { type: "tool_call", state: "<current>", message: "what happened" }
+
+    e) When the state's expected_outputs are met, log a transition event:
+       { type: "state_transition", state: "<current>", data: { to: "<next>" } }
+       Then call nothing_capsule_next again to move forward.
+
+  ── STEP 4: VALIDATE ──
+  Before finishing, call nothing_capsule_validate for each artifact.
+  If validation fails, go back and fix the output.
+
+  ── STEP 5: COMPLETE ──
+  When you reach a final state, reply to the sender with the results.
+  Use nothing_reply with a summary of what was done + artifact references.
+
+  ── KEY RULES ──
+  - ALWAYS guard before executing. This is non-negotiable.
+  - If guard denies, log it and do NOT run the command.
+  - Stay within the current state's allowed_tools.
+  - Log every significant action as an event.
+  - Validate all artifacts before declaring done.
+  - If stuck, reply to sender asking for clarification rather than guessing.
+
 MINIMAL DISRUPTION (highest priority rule):
   - Default: zero questions, zero blocking. Most messages just send directly.
   - When you see Smart Envelope Hints, try filling gaps with sensible defaults
