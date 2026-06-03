@@ -66,6 +66,7 @@ export function generateMarkdown(
 
   // ## Execution Capsule (optional — summary for AI reading)
   if (payload.execution_capsule) {
+   try {
     const cap = payload.execution_capsule
     const sm = cap.state_machine
     const parts: string[] = [
@@ -103,6 +104,7 @@ export function generateMarkdown(
       const vParts = cap.validators.map((v: any) => `- ${v.rule || v.id || v.type || 'check'}`)
       sections.push(`## Validators\n\n${vParts.join('\n')}`)
     }
+   } catch { /* capsule markdown generation failed — skip, don't crash */ }
   }
 
   return sections.join('\n\n') + '\n'

@@ -154,8 +154,8 @@ export class NothingClient {
     return this.request<{ success: boolean }>('PUT', `/api/projects/${id}`, data)
   }
 
-  deleteProject(id: string) {
-    return this.request<{ success: boolean }>('DELETE', `/api/projects/${id}`)
+  deleteProject(id: string, mode: 'unlink' | 'delete_all' = 'unlink') {
+    return this.request<{ success: boolean }>('DELETE', `/api/projects/${id}?mode=${mode}`)
   }
 
   report(query?: { period?: string; project?: string }) {

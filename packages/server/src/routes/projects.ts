@@ -33,9 +33,11 @@ export async function projectRoutes(app: FastifyInstance) {
     return updateProject(req.user!.id, id, body)
   })
 
-  // Delete project
+  // Delete project — ?mode=unlink (default) or ?mode=delete_all
   app.delete('/api/projects/:id', async (req: FastifyRequest) => {
     const { id } = req.params as { id: string }
-    return deleteProject(req.user!.id, id)
+    const q = req.query as Record<string, string>
+    const mode = q.mode === 'delete_all' ? 'delete_all' : 'unlink'
+    return deleteProject(req.user!.id, id, mode as 'unlink' | 'delete_all')
   })
 }

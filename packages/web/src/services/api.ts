@@ -88,8 +88,8 @@ export const api = {
     request('/projects', { method: 'POST', body: JSON.stringify({ name, description }) }),
   updateProject: (id: string, data: { name?: string; description?: string }) =>
     request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteProject: (id: string) =>
-    request(`/projects/${id}`, { method: 'DELETE' }),
+  deleteProject: (id: string, mode: 'unlink' | 'delete_all' = 'unlink') =>
+    request(`/projects/${id}?mode=${mode}`, { method: 'DELETE' }),
   reports: (params?: Record<string, string>) =>
     request(`/reports${params ? '?' + new URLSearchParams(params) : ''}`),
 

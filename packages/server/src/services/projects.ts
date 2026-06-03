@@ -66,12 +66,25 @@ export async function updateProject(userId: string, id: string, data: { name?: s
   return { success: true }
 }
 
-export async function deleteProject(userId: string, id: string) {
+export async function deleteProject(userId: string, id: string, mode: 'unlink' | 'delete_all' = 'unlink') {
   const project = await queryOne(`SELECT * FROM projects WHERE id = $1 AND user_id = $2`, [id, userId])
   if (!project) throw new Error('Project not found')
 
-  // Clear project tag from messages (don't delete messages)
-  await run(`UPDATE messages SET project = NULL WHERE user_id = $1 AND project = $2`, [userId, project.name])
+  if (mode === 'delete_all') {
+    // Delete all messages (and their attachments) in this project
+    const msgs = await queryAll(`SELECT id FROM messages WHERE user_id = $1 AND project = $2`, [userId, project.name])
+    if (msgs.length > 0) {
+      try {
+        const { deleteAttachments } = await import('./attachments.js')
+        for (const m of msgs) await deleteAttachments(m.id).catch(() => {})
+      } catch {}
+      await run(`DELETE FROM messages WHERE user_id = $1 AND project = $2`, [userId, project.name])
+    }
+  } else {
+    // Just unlink — clear project tag, keep messages
+    await run(`UPDATE messages SET project = NULL WHERE user_id = $1 AND project = $2`, [userId, project.name])
+  }
+
   await run(`DELETE FROM projects WHERE id = $1`, [id])
   return { success: true }
 }
