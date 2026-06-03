@@ -21,5 +21,11 @@ export { schemaRegistry, resolveSchema } from './schemas.js'
 export { validatePayload, validateMarkdown, validateExecutionCapsule, validateHelpRequest } from './validate.js'
 export type { ValidationResult } from './validate.js'
 
+// Smart Envelope — routing + hooks
+export { decideRoute, ROUTE_CONTRACT, ROUTE_THREAD_SHAPE } from './routing.js'
+export type { Route, RouteResult, RouteInput, FieldObligation } from './routing.js'
+export { preSendHook, postReadHook, preReplyHook } from './hooks.js'
+export type { PreSendInput, PreSendResult, PreReplyResult } from './hooks.js'
+
 // MCP tool definitions
 export { NMP_TOOLS } from './tools.js'

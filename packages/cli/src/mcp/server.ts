@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema, GetPromptRequestSchema, ListPromptsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { NMP_TOOLS } from '@nothingmail/nmp'
+import { NMP_TOOLS, preSendHook, postReadHook, preReplyHook } from '@nothingmail/nmp'
 import { NothingClient } from '../client.js'
 import { loadConfig } from '../config.js'
 
@@ -99,26 +99,44 @@ export async function startMcpServer() {
               content: fs.readFileSync(f).toString('base64'),
             }))
           }
+
+          // Smart Envelope: preSendHook — auto-fill T1 fields + route + hints
+          const hookResult = preSendHook({
+            text: a.text as string,
+            type: a.type as string | undefined,
+            inReplyTo: a.conversation_id as string | undefined,
+            files: a.files as string[] | undefined,
+            parent: null, // TODO Phase 3: fetch parent by inReplyTo
+            agentId: a.agent as string || 'unknown',
+          })
+
           const result = await client.send({
             to: a.to as string, text: a.text as string,
             subject: a.subject as string | undefined,
             type: a.type as string | undefined,
-            agent: a.agent as string | undefined,
             project: a.project as string | undefined,
             labels: a.labels as string[] | undefined,
             priority: a.priority as string | undefined,
             require: a.require as string[] | undefined,
             attachments,
-            context: a.context as any,
+            // Merge: explicit args override hook patch
+            agent: (a.agent as string) || hookResult.patch.agent,
+            context: (a.context as any) || hookResult.patch.context,
             capabilities: a.capabilities as string[] | undefined,
             reply_schema: a.reply_schema as Record<string, unknown> | undefined,
-            conversation_id: a.conversation_id as string | undefined,
-            expires: a.expires as string | undefined,
+            conversation_id: (a.conversation_id as string) || hookResult.patch.conversation_id,
+            expires: (a.expires as string) || hookResult.patch.expires,
             help_request: a.help_request as Record<string, unknown> | undefined,
             execution_capsule: a.execution_capsule as Record<string, unknown> | undefined,
             ack: a.ack as boolean | undefined,
           })
-          return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+
+          // Append hints to tool result so agent sees them
+          let output = JSON.stringify(result, null, 2)
+          if (hookResult.hints.length > 0) {
+            output += '\n\n--- Smart Envelope Hints ---\n' + hookResult.hints.map(h => `• ${h}`).join('\n')
+          }
+          return { content: [{ type: 'text', text: output }] }
         }
 
         case 'nothing_inbox': {
@@ -146,7 +164,15 @@ export async function startMcpServer() {
 
         case 'nothing_read': {
           const msg = await client.read(a.id as string)
-          let text = `From: ${msg.from}\nTo: ${msg.to}\nSubject: ${msg.subject}\nDate: ${msg.date}\n`
+
+          // Smart Envelope: postReadHook — inject contract prompts
+          const readHints = postReadHook(msg.json_payload || {})
+
+          let text = ''
+          if (readHints.length > 0) {
+            text += readHints.join('\n') + '\n\n---\n\n'
+          }
+          text += `From: ${msg.from}\nTo: ${msg.to}\nSubject: ${msg.subject}\nDate: ${msg.date}\n`
           if (msg.project) text += `Project: ${msg.project}\n`
           if (msg.labels?.length) text += `Labels: ${msg.labels.join(', ')}\n`
           text += `\n${msg.content}`
@@ -163,10 +189,24 @@ export async function startMcpServer() {
               content: fs.readFileSync(f).toString('base64'),
             }))
           }
+
+          // Smart Envelope: preReplyHook — soft-validate against parent schema
+          let parentPayload = null
+          try {
+            const parentMsg = await client.read(a.id as string)
+            parentPayload = parentMsg.json_payload || null
+          } catch {}
+          const replyHook = preReplyHook(a.text as string, a.files as string[] | undefined, parentPayload)
+
           const result = await client.reply(a.id as string, {
             text: a.text as string, attachments,
           })
-          return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+
+          let output = JSON.stringify(result, null, 2)
+          if (replyHook.satisfies === false) {
+            output += '\n\n--- Smart Envelope Hints ---\n' + replyHook.hints.map(h => `• ${h}`).join('\n')
+          }
+          return { content: [{ type: 'text', text: output }] }
         }
 
         case 'nothing_projects': {
