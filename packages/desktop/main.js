@@ -12,6 +12,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     frame: false,
+    show: false,
     backgroundColor: '#09090b',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -21,6 +22,11 @@ function createWindow() {
   });
 
   mainWindow.loadURL(URL);
+
+  // Show window only after page is ready (avoids black screen flash)
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) {
