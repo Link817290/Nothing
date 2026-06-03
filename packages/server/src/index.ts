@@ -9,6 +9,7 @@ import { messageRoutes } from './routes/messages.js'
 import { adminRoutes } from './routes/admin.js'
 import { mailEngineRoutes } from './routes/mailengine.js'
 import { capsuleRoutes } from './routes/capsules.js'
+import { projectRoutes } from './routes/projects.js'
 import { startImapPolling, stopImapPolling } from './mail/imap.js'
 import { startStalwartPolling, stopStalwartPolling } from './mail/stalwart-sync.js'
 
@@ -63,6 +64,7 @@ async function main() {
   await app.register(adminRoutes)
   await app.register(mailEngineRoutes)
   await app.register(capsuleRoutes)
+  await app.register(projectRoutes)
 
   // Start polling (non-blocking)
   startImapPolling(30000)

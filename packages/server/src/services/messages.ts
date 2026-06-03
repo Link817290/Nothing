@@ -11,6 +11,13 @@ function genId() {
 // ─── Send ──────────────────────────────────────────────────────
 
 export async function sendMessage(userId: string, req: SendRequest) {
+  // Validate project exists if specified
+  if (req.project) {
+    const { validateProject } = await import('./projects.js')
+    const exists = await validateProject(userId, req.project)
+    if (!exists) throw new Error(`Project "${req.project}" does not exist. Create it first.`)
+  }
+
   const account = req.account_id
     ? await getUserAccount(userId, req.account_id)
     : await getFirstAccount(userId)

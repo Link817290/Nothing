@@ -145,6 +145,18 @@ export class NothingClient {
     return this.request<{ projects: any[] }>('GET', '/api/projects')
   }
 
+  createProject(name: string, description?: string) {
+    return this.request<{ id: string; name: string; description?: string }>('POST', '/api/projects', { name, description })
+  }
+
+  updateProject(id: string, data: { name?: string; description?: string }) {
+    return this.request<{ success: boolean }>('PUT', `/api/projects/${id}`, data)
+  }
+
+  deleteProject(id: string) {
+    return this.request<{ success: boolean }>('DELETE', `/api/projects/${id}`)
+  }
+
   report(query?: { period?: string; project?: string }) {
     const params = new URLSearchParams()
     if (query?.period) params.set('period', query.period)

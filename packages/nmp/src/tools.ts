@@ -96,6 +96,31 @@ export const NMP_TOOLS = {
     },
   },
 
+  nothing_project_create: {
+    name: 'nothing_project_create',
+    description: 'Create a new project. Projects organize threads and messages. Use when user says "create a project for...", "start a new project".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string', description: 'Project name (e.g., "backend-refactor", "q3-launch")' },
+        description: { type: 'string', description: 'Optional description' },
+      },
+      required: ['name'],
+    },
+  },
+
+  nothing_project_delete: {
+    name: 'nothing_project_delete',
+    description: 'Delete a project. Messages are untagged but not deleted. Use when user says "remove that project", "delete project X".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Project ID or name' },
+      },
+      required: ['id'],
+    },
+  },
+
   nothing_report: {
     name: 'nothing_report',
     description: 'Generate an activity report showing messages sent/received, project breakdown, items needing reply, and top threads. Use when the user asks "weekly summary", "what happened this week?", "give me a report", or "any messages I missed?".',

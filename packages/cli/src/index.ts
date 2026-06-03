@@ -350,10 +350,28 @@ program
 
 program
   .command('projects')
-  .description('List all projects with message counts')
+  .description('List all projects')
   .action(async () => {
     const { projects } = await import('./commands/projects.js')
     await projects()
+  })
+
+program
+  .command('project:create <name>')
+  .option('-d, --description <desc>', 'Project description')
+  .description('Create a new project')
+  .action(async (name: string, opts) => {
+    const { projectCreate } = await import('./commands/projects.js')
+    await projectCreate(name, opts)
+  })
+
+program
+  .command('project:delete <id>')
+  .option('-y, --yes', 'Skip confirmation')
+  .description('Delete a project (messages are untagged, not deleted)')
+  .action(async (id: string, opts) => {
+    const { projectDelete } = await import('./commands/projects.js')
+    await projectDelete(id, opts)
   })
 
 program

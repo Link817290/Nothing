@@ -258,9 +258,21 @@ export async function startMcpServer() {
         case 'nothing_projects': {
           const result = await client.projects()
           const text = result.projects.length === 0
-            ? 'No projects yet.'
-            : result.projects.map((p: any) => `${p.name}: ${p.total} messages, ${p.unread} unread`).join('\n')
+            ? 'No projects. Create one with nothing_project_create.'
+            : result.projects.map((p: any) =>
+                `${p.name}${p.description ? ' — ' + p.description : ''}: ${p.thread_count || 0} threads, ${p.message_count || 0} messages, ${p.unread || 0} unread`
+              ).join('\n')
           return { content: [{ type: 'text', text }] }
+        }
+
+        case 'nothing_project_create': {
+          const result = await client.createProject(a.name as string, a.description as string | undefined)
+          return { content: [{ type: 'text', text: `Project "${result.name}" created (${result.id})` }] }
+        }
+
+        case 'nothing_project_delete': {
+          await client.deleteProject(a.id as string)
+          return { content: [{ type: 'text', text: `Project deleted. Messages untagged.` }] }
         }
 
         case 'nothing_report': {

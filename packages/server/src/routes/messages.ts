@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { authenticate, requirePermission } from '../middleware/auth.js'
 import {
   sendMessage, getInbox, getSent, getMessage, replyMessage,
-  getProjects, getReport, deleteMessage, setReadStatus,
+  getReport, deleteMessage, setReadStatus,
   forwardMessage, searchMessages, getThread, listThreads, getThreadSummary,
 } from '../services/messages.js'
 import type { SendRequest, InboxQuery } from '../types/index.js'
@@ -218,12 +218,6 @@ export async function messageRoutes(app: FastifyInstance) {
     reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(att.filename)}"`)
     reply.header('Content-Length', att.content.length)
     return reply.send(att.content)
-  })
-
-  // ─── Projects ──────────────────────────────────────────────────
-  app.get('/api/projects', async (req) => {
-    const user = (req as any).user as { id: string }
-    return getProjects(user.id)
   })
 
   // ─── Reports ───────────────────────────────────────────────────

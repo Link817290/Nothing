@@ -84,6 +84,12 @@ export const api = {
 
   // ── Projects & Reports ───────────────────────────────
   projects: () => request('/projects'),
+  createProject: (name: string, description?: string) =>
+    request('/projects', { method: 'POST', body: JSON.stringify({ name, description }) }),
+  updateProject: (id: string, data: { name?: string; description?: string }) =>
+    request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteProject: (id: string) =>
+    request(`/projects/${id}`, { method: 'DELETE' }),
   reports: (params?: Record<string, string>) =>
     request(`/reports${params ? '?' + new URLSearchParams(params) : ''}`),
 
