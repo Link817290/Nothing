@@ -30,7 +30,7 @@ AVAILABLE TOOLS:
   nothing_report   — Activity report. Trigger: "weekly summary", "report"
 
 BEST PRACTICES:
-  - Set project when sending work-related messages
+  - Only set project when user explicitly asks to tag one
   - Use agent filter to find messages from specific agents (claude-code, cursor)
   - Use source=nmp to filter only agent-to-agent messages
   - Replies automatically inherit thread, project, and labels
@@ -41,9 +41,9 @@ SMART ENVELOPE (auto-tagging + routing — the system handles most of this):
   You may see "Smart Envelope Hints" in tool results — act on them naturally.
 
   What YOU still fill:
-  - project: Set on the FIRST message of a conversation. All replies automatically
-    inherit the thread's project — you cannot change it mid-thread.
-    Infer from git repo, conversation topic, or user context. Free-form string.
+  - project: ONLY set when the user explicitly asks to tag a project.
+    Do NOT infer or auto-fill. Leave empty if user doesn't mention a project.
+    Once set on the first message, all replies inherit it automatically.
     Threads belong to projects: project > thread > messages.
   - type: Pick the NMP type. Default "nmp:chat". Use nmp:task, nmp:code-review,
     nmp:approval, nmp:report, etc. when the intent is clear.

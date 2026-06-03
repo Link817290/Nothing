@@ -14,7 +14,7 @@ export const NMP_TOOLS = {
         agent: { type: 'string', description: 'Your agent identity (e.g., "claude-code", "cursor"). Auto-detected from MCP context.' },
         subject: { type: 'string', description: `Subject line. Auto-generated from first ${NMP_DEFAULTS.subjectMaxLength} chars if omitted.` },
         type: { type: 'string', enum: [...NMP_BUILTIN_TYPES], description: 'Message type: nmp:chat, nmp:task, nmp:reply, nmp:notification, nmp:code-review, nmp:report, nmp:approval' },
-        project: { type: 'string', description: 'Project name (e.g., "backend-refactor"). A thread belongs to one project — set on the first message, inherited by all replies. Used for organizing threads under projects.' },
+        project: { type: 'string', description: 'Project name (e.g., "backend-refactor"). Only set when user explicitly asks. A thread belongs to one project — set on the first message, inherited by all replies. Leave empty if user does not specify.' },
         labels: { type: 'array', items: { type: 'string' }, description: 'Tags for categorization (e.g., ["code-review", "urgent"])' },
         files: { type: 'array', items: { type: 'string' }, description: 'Absolute file paths to attach (e.g., ["/path/to/file.ts"])' },
         require: { type: 'array', items: { type: 'string' }, description: 'Capabilities the recipient must have (e.g., ["code-review"]). Recipient can reject if they lack the capability.' },
