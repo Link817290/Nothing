@@ -2,8 +2,8 @@ import { input, select, password } from '@inquirer/prompts'
 import { loadConfig, saveConfig, paths } from '../config.js'
 import { mcpInstall } from './mcp-install.js'
 
-export async function init(opts?: { server?: string; key?: string }) {
-  // Non-interactive mode: nothing init --server URL --key API_KEY
+export async function init(opts?: { server?: string; key?: string; username?: string; password?: string; email?: string }) {
+  // Non-interactive login: nothing init -s URL -k API_KEY
   if (opts?.server && opts?.key) {
     const url = opts.server.replace(/\/$/, '')
     try {
@@ -15,6 +15,29 @@ export async function init(opts?: { server?: string; key?: string }) {
       saveConfig({ server_url: url, token: opts.key, email: user.email, initialized: true })
       await finishSetup(user.email)
     } catch { console.log('  ✗ Connection failed.\n') }
+    return
+  }
+
+  // Non-interactive register: nothing init -s URL -u username -p password [-e email]
+  if (opts?.server && opts?.username && opts?.password) {
+    const url = opts.server.replace(/\/$/, '')
+    try {
+      const res = await fetch(`${url}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: opts.username, password: opts.password, external_email: opts.email }),
+      })
+      const data = await res.json() as any
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      if (data.needs_verification) {
+        console.log(`  Verification code sent to ${data.external_email}. Use interactive mode to complete.`)
+        return
+      }
+      saveConfig({ server_url: url, token: data.api_key, email: data.user?.email, initialized: true })
+      console.log(`  ✓ Account created: ${data.user?.email}`)
+      console.log(`  API Key: ${data.api_key}\n`)
+      await finishSetup(data.user?.email)
+    } catch (err) { console.log(`  ✗ ${(err as Error).message}\n`) }
     return
   }
 

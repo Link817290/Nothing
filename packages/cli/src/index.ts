@@ -40,13 +40,17 @@ fetch('https://registry.npmjs.org/nothing-cli/latest')
 
 program
   .command('init')
-  .option('-s, --server <url>', 'Server URL (non-interactive)')
-  .option('-k, --key <apiKey>', 'API Key (non-interactive)')
+  .option('-s, --server <url>', 'Server URL')
+  .option('-k, --key <apiKey>', 'API Key (login mode)')
+  .option('-u, --username <name>', 'Username (register mode)')
+  .option('-p, --password <pass>', 'Password (register mode)')
+  .option('-e, --email <email>', 'External email for verification (register mode)')
   .description('Connect to a Nothing server (login with API Key or register a new account)')
   .addHelpText('after', `
   Examples:
-    $ nothing init                   Interactive setup
-    $ nothing init -s https://nothingmail.shop -k ntk_xxx   Non-interactive (for AI agents)
+    $ nothing init                                           Interactive setup
+    $ nothing init -s https://nothingmail.shop -k ntk_xxx    Login with API Key
+    $ nothing init -s https://nothingmail.shop -u alice -p MyPass123   Register (admin/first user)
 
   Login flow:
     → Enter server URL
