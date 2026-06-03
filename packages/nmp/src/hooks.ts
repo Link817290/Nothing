@@ -12,7 +12,13 @@
 
 import type { NmpPayload, NmpContext } from './types.js'
 import { decideRoute, ROUTE_CONTRACT, type Route, type RouteResult } from './routing.js'
-import { extname } from 'path'
+
+/** Extract file extension (no dependency on node:path — works in browser too) */
+function extname(filePath: string): string {
+  const base = filePath.split(/[/\\]/).pop() || ''
+  const dot = base.lastIndexOf('.')
+  return dot > 0 ? base.slice(dot) : ''
+}
 
 // ─── Tier-1: Deterministic auto-fill helpers ─────────────────────
 

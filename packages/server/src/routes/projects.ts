@@ -1,7 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { authenticate } from '../middleware/auth.js'
 import { createProject, listProjects, getProject, updateProject, deleteProject } from '../services/projects.js'
 
 export async function projectRoutes(app: FastifyInstance) {
+  app.addHook('onRequest', authenticate)
+
   // List projects
   app.get('/api/projects', async (req: FastifyRequest) => {
     const projects = await listProjects(req.user!.id)

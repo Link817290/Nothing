@@ -244,19 +244,6 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
 
 // ─── Projects ──────────────────────────────────────────────────
 
-export async function getProjects(userId: string) {
-  const rows = await queryAll(
-    `SELECT project, COUNT(*) as total,
-       SUM(CASE WHEN is_read = FALSE AND direction = 'inbound' THEN 1 ELSE 0 END) as unread,
-       MAX(created_at) as last_activity
-     FROM messages WHERE user_id = $1 AND project IS NOT NULL GROUP BY project ORDER BY last_activity DESC`,
-    [userId]
-  )
-  return {
-    projects: rows.map(r => ({ name: r.project, total: parseInt(r.total), unread: parseInt(r.unread), last_activity: r.last_activity })),
-  }
-}
-
 // ─── Reports ───────────────────────────────────────────────────
 
 export async function getReport(userId: string, query: { period?: string; project?: string }) {
