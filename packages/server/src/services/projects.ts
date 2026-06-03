@@ -22,10 +22,10 @@ export async function createProject(userId: string, name: string, description?: 
 export async function listProjects(userId: string) {
   const projects = await queryAll(
     `SELECT p.id, p.name, p.description, p.created_at,
-       (SELECT COUNT(*) FROM messages m WHERE m.user_id = p.user_id AND m.project = p.name) as message_count,
-       (SELECT COUNT(DISTINCT thread_id) FROM messages m WHERE m.user_id = p.user_id AND m.project = p.name AND m.thread_id IS NOT NULL) as thread_count,
-       (SELECT COUNT(*) FROM messages m WHERE m.user_id = p.user_id AND m.project = p.name AND m.is_read = FALSE AND m.direction = 'inbound') as unread
-     FROM projects p WHERE p.user_id = $1 ORDER BY p.updated_at DESC`,
+       (SELECT COUNT(*) FROM messages m WHERE m.user_id = $1 AND m.project = p.name) as message_count,
+       (SELECT COUNT(DISTINCT m.thread_id) FROM messages m WHERE m.user_id = $1 AND m.project = p.name AND m.thread_id IS NOT NULL) as thread_count,
+       (SELECT COUNT(*) FROM messages m WHERE m.user_id = $1 AND m.project = p.name AND m.is_read = FALSE AND m.direction = 'inbound') as unread
+     FROM projects p WHERE p.user_id = $1 ORDER BY p.updated_at DESC NULLS LAST`,
     [userId]
   )
   return projects.map(p => ({
