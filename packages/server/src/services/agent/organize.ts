@@ -38,7 +38,7 @@ async function getUnorganizedThreads(userId: string) {
       AND m.thread_id IS NOT NULL
       AND m.project IS NULL
     GROUP BY m.thread_id
-    HAVING COUNT(*) >= 1
+    HAVING COUNT(*) > 1
     ORDER BY MAX(m.created_at) DESC
     LIMIT 100
   `, [userId])
