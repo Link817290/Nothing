@@ -36,27 +36,40 @@ BEST PRACTICES:
   - Replies automatically inherit thread, project, and labels
   - Check nothing_report weekly to stay on top of activity
 
-SMART TAGGING (infer from context, be natural):
-  - project: Use whatever project/product/client the user is working on. Infer from
-    git repo, conversation context, or the topic being discussed. Free-form string.
-  - type: Pick the NMP type that best fits the intent. Use "nmp:" prefix for built-in
-    types (chat, task, code-review, report, notification, approval, escalation, error, ack)
-    or create custom types like "myapp:deploy-request". Default to "nmp:chat".
-  - labels: Tag freely with any relevant keywords. No fixed list — use whatever
-    describes the message best. Multiple labels encouraged.
-  - priority: Set based on urgency cues in the conversation. Default "normal".
+SMART ENVELOPE (auto-tagging + routing — the system handles most of this):
+  The hooks auto-fill agent identity, code context, expires, and route.
+  You may see "Smart Envelope Hints" in tool results — act on them naturally.
+
+  What YOU still fill:
+  - project: Infer from git repo, conversation, or topic. Free-form string.
+  - type: Pick the NMP type. Default "nmp:chat". Use nmp:task, nmp:code-review,
+    nmp:approval, nmp:report, etc. when the intent is clear.
+  - labels: Tag freely with relevant keywords. Multiple encouraged.
+  - priority: Based on urgency. Default "normal".
   - agent: Always identify yourself (e.g., "claude-code", "cursor").
 
-  The goal is to make messages searchable and filterable later. Tag generously
-  but accurately. When in doubt, add a label rather than skip it.
+  Rich fields (fill ONLY when clearly needed — do NOT add speculatively):
+  - reply_schema: ONLY when user explicitly asks for structured responses
+    (e.g., "reply with {approved: bool, reason: string}")
+  - help_request: ONLY when user explicitly asks for help with goal + constraints
+  - capabilities/require: ONLY when user mentions skill requirements
+  - execution_capsule: ONLY for formal experience packages with state machines
 
 CODE CONTEXT (always fill when discussing code):
-  When sending messages about code, ALWAYS include the context field:
   - context.repo: Run "git remote get-url origin" to get the repo URL
-  - context.file: The file being discussed (absolute or relative path)
+  - context.file: The file being discussed
   - context.lines: Line range if relevant (e.g., "10-25")
-  - context.language: Programming language (auto-inferred from extension if omitted)
-  This enables archiving, search, and traceability per repository.
+  - context.language: Auto-inferred from extension if omitted
+
+MINIMAL DISRUPTION (highest priority rule):
+  - Default: zero questions, zero blocking. Most messages just send directly.
+  - When you see Smart Envelope Hints, try filling gaps with sensible defaults
+    BEFORE asking the user. Only ask if "not filling would clearly cause an error
+    AND this message is important."
+  - One hint per message max. Never chain questions.
+  - Better to skip a field than to ask one extra question.
+  - After sending, you MAY add ONE brief suggestion if truly important.
+    Never before sending.
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
@@ -108,13 +121,27 @@ export async function startMcpServer() {
             }))
           }
 
+          // Smart Envelope: fetch parent payload if in a conversation
+          let parentPayload: any = null
+          if (a.conversation_id) {
+            try {
+              const thread = await client.getThread(a.conversation_id as string)
+              const msgs = thread.messages || []
+              if (msgs.length > 0) {
+                const last = msgs[msgs.length - 1]
+                const full = await client.read(last.id)
+                parentPayload = full.json_payload || null
+              }
+            } catch {}
+          }
+
           // Smart Envelope: preSendHook — auto-fill T1 fields + route + hints
           const hookResult = preSendHook({
             text: a.text as string,
             type: a.type as string | undefined,
             inReplyTo: a.conversation_id as string | undefined,
             files: a.files as string[] | undefined,
-            parent: null, // TODO Phase 3: fetch parent by inReplyTo
+            parent: parentPayload,
             agentId: a.agent as string || 'unknown',
           })
 

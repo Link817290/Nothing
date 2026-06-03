@@ -162,6 +162,10 @@ export class NothingClient {
     return this.request<{ threads: any[] }>('GET', `/api/threads${qs ? '?' + qs : ''}`)
   }
 
+  getThread(threadId: string) {
+    return this.request<{ messages: any[] }>('GET', `/api/threads/${threadId}`)
+  }
+
   getThreadSummaries(threadId: string) {
     return this.request<{ summaries: any[] }>('GET', `/api/threads/${threadId}/summaries`)
   }
