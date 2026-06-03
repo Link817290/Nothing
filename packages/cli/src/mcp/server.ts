@@ -19,6 +19,8 @@ function detectAgent(): string {
   if (env.CODEX_SESSION || env.CODEX_SANDBOX) return 'codex'
   // Windsurf / Codeium
   if (env.WINDSURF_SESSION || env.CODEIUM_API_KEY) return 'windsurf'
+  // OpenCode
+  if (env.OPENCODE_SESSION || env.OPENCODE) return 'opencode'
   // VS Code generic (Copilot etc)
   if (env.VSCODE_PID || env.VSCODE_IPC_HOOK) return 'vscode'
   // Check parent process name as fallback
@@ -36,6 +38,7 @@ function detectAgent(): string {
       if (parentName.includes('cursor')) return 'cursor'
       if (parentName.includes('codex')) return 'codex'
       if (parentName.includes('windsurf')) return 'windsurf'
+      if (parentName.includes('opencode')) return 'opencode'
       if (parentName.includes('code')) return 'vscode'
     }
   } catch {}
