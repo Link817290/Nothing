@@ -61,8 +61,35 @@ export function clearNotifications() {
   if (existsSync(NOTIFICATIONS_FILE)) unlinkSync(NOTIFICATIONS_FILE)
 }
 
+// ─── User Preferences ─────────────────────────────────────────
+
+const PREFS_FILE = join(NOTHING_DIR, 'preferences.json')
+
+export interface UserPreferences {
+  reply_style?: 'professional' | 'casual' | 'concise' | 'friendly' | 'formal'
+  reply_language?: string        // e.g. "zh", "en", "ja"
+  signature?: string             // appended to outgoing messages
+  default_account?: string       // account id
+  default_project?: string       // project name
+  inbox_filter?: 'all' | 'unread' | 'nmp'
+}
+
+export function loadPreferences(): UserPreferences {
+  ensureDir()
+  if (!existsSync(PREFS_FILE)) return {}
+  try {
+    return JSON.parse(readFileSync(PREFS_FILE, 'utf-8'))
+  } catch { return {} }
+}
+
+export function savePreferences(prefs: UserPreferences) {
+  ensureDir()
+  writeFileSync(PREFS_FILE, JSON.stringify(prefs, null, 2))
+}
+
 export const paths = {
   dir: NOTHING_DIR,
   config: CONFIG_FILE,
   notifications: NOTIFICATIONS_FILE,
+  preferences: PREFS_FILE,
 }

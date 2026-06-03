@@ -111,6 +111,29 @@ program
   })
 
 program
+  .command('config')
+  .description('View or set preferences (reply style, language, signature)')
+  .option('--style <style>', 'Reply style: professional, casual, concise, friendly, formal')
+  .option('--language <lang>', 'Reply language: en, zh, ja, etc.')
+  .option('--signature <sig>', 'Message signature (use "" to clear)')
+  .action(async (opts) => {
+    const { loadPreferences, savePreferences } = await import('./config.js')
+    const prefs = loadPreferences()
+    let changed = false
+    if (opts.style) { prefs.reply_style = opts.style; changed = true }
+    if (opts.language) { prefs.reply_language = opts.language; changed = true }
+    if (opts.signature !== undefined) { prefs.signature = opts.signature || undefined; changed = true }
+    if (changed) {
+      savePreferences(prefs)
+      console.log('\n  ✓ Preferences saved\n')
+    }
+    console.log('  Reply style:    ', prefs.reply_style || '(not set)')
+    console.log('  Reply language: ', prefs.reply_language || '(not set)')
+    console.log('  Signature:      ', prefs.signature || '(none)')
+    console.log()
+  })
+
+program
   .command('check')
   .option('--silent', 'No output (for cron)')
   .description('Check for new messages and update notification file')

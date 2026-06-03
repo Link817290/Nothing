@@ -3,9 +3,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema, GetPromptRequestSchema, ListPromptsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { NMP_TOOLS, preSendHook, postReadHook, preReplyHook } from '@nothingmail/nmp'
 import { NothingClient } from '../client.js'
-import { loadConfig } from '../config.js'
+import { loadConfig, loadPreferences } from '../config.js'
 
 const config = loadConfig()
+const prefs = loadPreferences()
 
 const NOTHING_INSTRUCTIONS = `You have access to Nothing — an AI Agent email platform.
 
@@ -74,6 +75,21 @@ MINIMAL DISRUPTION (highest priority rule):
   - Better to skip a field than to ask one extra question.
   - After sending, you MAY add ONE brief suggestion if truly important.
     Never before sending.
+
+USER PREFERENCES (from ~/.nothing/preferences.json — respect these):
+${prefs.reply_style ? `  Reply style: ${prefs.reply_style} — match this tone in all outgoing messages.` : ''}
+${prefs.reply_language ? `  Reply language: ${prefs.reply_language} — write messages in this language unless user specifies otherwise.` : ''}
+${prefs.signature ? `  Signature: "${prefs.signature}" — append this to every outgoing message.` : ''}
+${!prefs.reply_style && !prefs.reply_language && !prefs.signature ? '  (no preferences set)' : ''}
+
+MEMORY (from ~/.nothing/memory.json — learn and recall):
+  You have a memory file at ~/.nothing/memory.json. Use it to:
+  - Remember user preferences mentioned in conversation (e.g., "I prefer short replies")
+  - Remember frequent contacts and how user refers to them (e.g., "bob = bob@company.com")
+  - Remember project context that persists across sessions
+  To save: read the file, add/update entries, write back.
+  To recall: read the file at conversation start.
+  Keep entries concise. Max 50 entries. Oldest get pruned.
 
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
