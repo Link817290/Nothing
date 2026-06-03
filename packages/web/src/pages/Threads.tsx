@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, GitBranch, MessageSquare, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, GitBranch, MessageSquare, Users, Wand2 } from 'lucide-react';
 import { api } from '@/services/api';
+import { OrganizePanel } from '@/components/agent/OrganizePanel';
 
 interface ThreadItem {
   thread_id: string;
@@ -22,18 +24,41 @@ export default function Threads() {
   const { t } = useTranslation();
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOrganize, setShowOrganize] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     api.listThreads().then(r => setThreads(r.threads || []))
       .catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(load, []);
+
+  const unorganizedCount = threads.filter(t => !t.project).length;
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-background border-b border-border px-4 md:px-10 py-4 md:py-5">
-        <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('threads.title')}</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">{threads.length} {t('threads.subtitle')}</p>
+      <div className="sticky top-0 z-10 bg-background border-b border-border px-4 md:px-10 py-4 md:py-5 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight">{t('threads.title')}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">{threads.length} {t('threads.subtitle')}</p>
+        </div>
+        {unorganizedCount > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full gap-1.5"
+            onClick={() => setShowOrganize(true)}
+          >
+            <Wand2 className="h-3.5 w-3.5" />
+            Organize
+            <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">{unorganizedCount}</Badge>
+          </Button>
+        )}
       </div>
+
+      {showOrganize && (
+        <OrganizePanel onClose={() => setShowOrganize(false)} onApplied={load} />
+      )}
 
       <div className="px-4 md:px-10 py-4">
         {loading && (

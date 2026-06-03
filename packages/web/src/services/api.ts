@@ -93,6 +93,16 @@ export const api = {
   reports: (params?: Record<string, string>) =>
     request(`/reports${params ? '?' + new URLSearchParams(params) : ''}`),
 
+  // ── Agent ────────────────────────────────────────
+  organizeThreads: () =>
+    request('/agent/organize', { method: 'POST' }),
+  applyOrganize: (actions: { project_name: string; description?: string; thread_ids: string[]; is_new_project: boolean }[]) =>
+    request('/agent/organize/apply', { method: 'POST', body: JSON.stringify({ actions }) }),
+  removeThreadProject: (threadId: string) =>
+    request(`/threads/${threadId}/project`, { method: 'DELETE' }),
+  assignThreadProject: (threadId: string, project: string) =>
+    request(`/threads/${threadId}/project`, { method: 'PUT', body: JSON.stringify({ project }) }),
+
   // ── Admin ────────────────────────────────────────────
   adminUsers: () => request('/admin/users'),
   adminBanUser: (id: string) => request(`/admin/users/${id}/ban`, { method: 'POST' }),
