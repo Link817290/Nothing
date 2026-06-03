@@ -120,7 +120,7 @@ function installCodexMcp(mcpConfig: Record<string, unknown>) {
   }
 }
 
-function injectGlobalInstruction() {
+export function injectGlobalInstruction() {
   const home = homedir()
   const targets = [
     join(home, '.claude', 'CLAUDE.md'),           // Claude Code global

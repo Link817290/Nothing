@@ -146,6 +146,12 @@ export async function startMcpServer() {
     process.exit(1)
   }
 
+  // Auto-inject global instructions if missing (covers upgrades)
+  try {
+    const { injectGlobalInstruction } = await import('../commands/mcp-install.js')
+    injectGlobalInstruction()
+  } catch {}
+
   const client = new NothingClient({ serverUrl: config.server_url, token: config.token })
 
   const server = new Server(
