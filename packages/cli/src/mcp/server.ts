@@ -10,10 +10,15 @@ const prefs = loadPreferences()
 
 const NOTHING_INSTRUCTIONS = `You have access to Nothing — an AI Agent email platform.
 
-NOTIFICATIONS:
-  Check ~/.nothing/notifications.json at the start of each conversation.
-  If there are unread messages, briefly mention them to the user.
+IMPORTANT — ALWAYS DO THIS FIRST:
+  At the START of every conversation, IMMEDIATELY check ~/.nothing/notifications.json.
+  If there are unread messages, tell the user RIGHT AWAY before doing anything else.
   Example: "You have 2 unread messages from apple and bob. Want to check them?"
+  This is your highest priority action when a conversation begins.
+
+  When the user mentions anything related to email, messages, sending, inbox,
+  contacts, or communication — you have Nothing tools available. Use them.
+  Don't wait for the user to explicitly say "use Nothing".
 
 SETUP (if not configured):
   If the user hasn't set up Nothing yet, guide them:
