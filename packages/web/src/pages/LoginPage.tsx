@@ -116,10 +116,7 @@ export default function LoginPage() {
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-[40%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-brand/[0.03] blur-[120px]" />
-          <div className="absolute -bottom-[30%] -left-[20%] h-[60vh] w-[60vh] rounded-full bg-brand/[0.02] blur-[100px]" />
-        </div>
+        <div className="pointer-events-none absolute inset-0" />
         <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-2">
             <div className="flex items-center gap-2 mb-2">
@@ -173,15 +170,13 @@ export default function LoginPage() {
   if (apiKey) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-[40%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-brand/[0.03] blur-[120px]" />
-          <div className="absolute -bottom-[30%] -left-[20%] h-[60vh] w-[60vh] rounded-full bg-brand/[0.02] blur-[100px]" />
-        </div>
+        <div className="pointer-events-none absolute inset-0" />
         <Card className="relative z-10 w-full max-w-md fade-in">
           <CardHeader className="items-center text-center pb-4">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
+              <img src="/logo-dark.png" alt="Nothing" className="h-8 w-8 dark:hidden" />
+              <img src="/logo-light.png" alt="Nothing" className="h-8 w-8 hidden dark:block" />
               <span className="text-2xl font-bold tracking-tight">Nothing</span>
-              <span className="h-2 w-2 rounded-full bg-brand" />
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -225,9 +220,10 @@ export default function LoginPage() {
       </div>
       <Card className="relative z-10 w-full max-w-sm fade-in">
         <CardHeader className="items-center text-center pb-2">
-          <div className="flex items-center gap-2.5 mb-2">
-            <span className="text-2xl font-bold tracking-tight">nothing</span>
-            <span className="h-2 w-2 rounded-full bg-brand" />
+          <div className="flex items-center gap-2 mb-2">
+            <img src="/logo-dark.png" alt="Nothing" className="h-8 w-8 dark:hidden" />
+            <img src="/logo-light.png" alt="Nothing" className="h-8 w-8 hidden dark:block" />
+            <span className="text-2xl font-bold tracking-tight">Nothing</span>
           </div>
           <p className="text-sm text-muted-foreground">
             {isFirstTime
