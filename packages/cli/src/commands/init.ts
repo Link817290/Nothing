@@ -134,7 +134,16 @@ async function registerFlow(url: string, mailDomain: string | null) {
     console.log(`  Your email will be: ${username}@${mailDomain}\n`)
   }
 
-  const pass = await password({ message: 'Password (min 8, upper+lower+number)' })
+  const pass = await password({
+    message: 'Password',
+    validate: (v) => {
+      if (v.length < 8) return 'At least 8 characters'
+      if (!/[A-Z]/.test(v)) return 'Need at least one uppercase letter'
+      if (!/[a-z]/.test(v)) return 'Need at least one lowercase letter'
+      if (!/[0-9]/.test(v)) return 'Need at least one number'
+      return true
+    },
+  })
   const name = await input({ message: 'Display name (optional)', default: '' })
 
   // Check if first user (no verification needed)
