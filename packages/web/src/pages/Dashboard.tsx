@@ -28,13 +28,15 @@ export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
+    const safe = <T,>(p: Promise<T>, fallback: T) => p.catch(() => fallback);
+
     Promise.all([
-      api.reports({ period: 'week' }),
-      api.inbox({ limit: '1' }),
-      api.listAccounts(),
-      api.listThreads({ limit: '3' }),
+      safe(api.reports({ period: 'week' }), null),
+      safe(api.inbox({ limit: '1' }), { total_unread: 0 }),
+      safe(api.listAccounts(), { accounts: [] }),
+      safe(api.listThreads({ limit: '3' }), { threads: [] }),
     ]).then(([r, inbox, accs, thr]) => {
-      setReport(r);
+      if (r) setReport(r);
       setUnread(inbox.total_unread || 0);
       setAccounts(accs.accounts || []);
       setThreads(thr.threads || []);
@@ -42,6 +44,7 @@ export default function Dashboard() {
       // Load today's summaries from active threads
       const today = new Date().toISOString().slice(0, 10);
       const threadIds = (thr.threads || []).slice(0, 3).map((t: any) => t.thread_id);
+      if (threadIds.length === 0) return;
       Promise.all(
         threadIds.map((tid: string) =>
           fetch(`/api/threads/${tid}/summaries`, {
@@ -49,10 +52,10 @@ export default function Dashboard() {
           }).then(r => r.json()).catch(() => ({ summaries: [] }))
         )
       ).then(results => {
-        const all = results.flatMap((r: any) => (r.summaries || []).map((s: any) => ({ ...s, thread_id: threadIds[results.indexOf(r)] })));
+        const all = results.flatMap((r: any, i: number) => (r.summaries || []).map((s: any) => ({ ...s, thread_id: threadIds[i] })));
         setTodaySummaries(all.filter((s: any) => s.created_at?.slice(0, 10) === today));
       }).catch(() => {});
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) {

@@ -389,7 +389,7 @@ export async function listThreads(userId: string, query?: { project?: string; li
     COUNT(DISTINCT from_address) as participant_count,
     MIN(created_at) as started_at, MAX(created_at) as last_activity,
     MAX(CASE WHEN is_read = FALSE AND direction = 'inbound' THEN 1 ELSE 0 END) as has_unread,
-    (SELECT project FROM messages m2 WHERE m2.thread_id = messages.thread_id AND m2.user_id = messages.user_id ORDER BY m2.created_at ASC LIMIT 1) as project
+    MIN(project) as project
     FROM messages WHERE user_id = $1 AND thread_id IS NOT NULL`
   const p: unknown[] = [userId]
   let idx = 2
