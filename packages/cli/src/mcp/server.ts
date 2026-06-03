@@ -50,6 +50,14 @@ SMART TAGGING (infer from context, be natural):
   The goal is to make messages searchable and filterable later. Tag generously
   but accurately. When in doubt, add a label rather than skip it.
 
+CODE CONTEXT (always fill when discussing code):
+  When sending messages about code, ALWAYS include the context field:
+  - context.repo: Run "git remote get-url origin" to get the repo URL
+  - context.file: The file being discussed (absolute or relative path)
+  - context.lines: Line range if relevant (e.g., "10-25")
+  - context.language: Programming language (auto-inferred from extension if omitted)
+  This enables archiving, search, and traceability per repository.
+
 CURRENT USER: ${config.email || 'not configured'}
 SERVER: ${config.server_url || 'not configured'}
 `
