@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { listUsers, banUser } from '../services/auth.js'
 import { getAllSettings, setSetting } from '../services/settings.js'
-import { queryOne, queryAll, run } from '../repositories/db.js'
+import { queryOne, queryAll, run, withTransaction } from '../repositories/db.js'
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook('onRequest', authenticate)
@@ -77,7 +77,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Delete all messages (keeps users and accounts)
   app.delete('/api/admin/messages', async () => {
-    // Clean up attachment files
+    // Clean up attachment files on disk (best-effort, before transaction)
     try {
       const attachments = await queryAll('SELECT DISTINCT message_id FROM attachments')
       const { deleteAttachments } = await import('../services/attachments.js')
@@ -85,16 +85,19 @@ export async function adminRoutes(app: FastifyInstance) {
         try { await deleteAttachments(row.message_id) } catch {}
       }
     } catch {}
-    await run('DELETE FROM thread_summaries')
-    await run('DELETE FROM experience_packs')
-    await run('DELETE FROM capsule_events')
-    await run('DELETE FROM artifacts')
-    await run('DELETE FROM capsule_runs')
-    await run('DELETE FROM execution_capsules')
-    await run('DELETE FROM attachments')
-    await run('DELETE FROM messages')
-    // Update sync timestamp so stalwart-sync won't re-pull old emails
-    await run('UPDATE email_accounts SET last_sync_at = NOW()')
+
+    await withTransaction(async (q) => {
+      await q('DELETE FROM thread_summaries')
+      await q('DELETE FROM experience_packs')
+      await q('DELETE FROM capsule_events')
+      await q('DELETE FROM artifacts')
+      await q('DELETE FROM capsule_runs')
+      await q('DELETE FROM execution_capsules')
+      await q('DELETE FROM attachments')
+      await q('DELETE FROM messages')
+      await q('UPDATE email_accounts SET last_sync_at = NOW()')
+    })
+
     return { success: true, message: 'All messages deleted' }
   })
 
@@ -130,20 +133,23 @@ export async function adminRoutes(app: FastifyInstance) {
       console.warn('[ADMIN-RESET] Stalwart cleanup failed:', (err as Error).message)
     }
 
-    await run('DELETE FROM thread_summaries')
-    await run('DELETE FROM experience_packs')
-    await run('DELETE FROM capsule_events')
-    await run('DELETE FROM artifacts')
-    await run('DELETE FROM capsule_runs')
-    await run('DELETE FROM execution_capsules')
-    await run('DELETE FROM attachments')
-    await run('DELETE FROM verification_codes')
-    await run('DELETE FROM tasks')
-    await run('DELETE FROM messages')
-    await run('DELETE FROM email_accounts')
-    await run('DELETE FROM api_keys WHERE user_id != $1', [user.id])
-    await run('DELETE FROM users WHERE id != $1', [user.id])
-    await run('DELETE FROM server_settings')
+    await withTransaction(async (q) => {
+      await q('DELETE FROM thread_summaries')
+      await q('DELETE FROM experience_packs')
+      await q('DELETE FROM capsule_events')
+      await q('DELETE FROM artifacts')
+      await q('DELETE FROM capsule_runs')
+      await q('DELETE FROM execution_capsules')
+      await q('DELETE FROM attachments')
+      await q('DELETE FROM verification_codes')
+      await q('DELETE FROM tasks')
+      await q('DELETE FROM messages')
+      await q('DELETE FROM email_accounts')
+      await q('DELETE FROM api_keys WHERE user_id != $1', [user.id])
+      await q('DELETE FROM users WHERE id != $1', [user.id])
+      await q('DELETE FROM server_settings')
+    })
+
     return { success: true, message: 'Server reset. Only your admin account remains.' }
   })
 }

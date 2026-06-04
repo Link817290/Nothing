@@ -288,3 +288,19 @@ export async function queryOne(sql: string, params: unknown[] = []): Promise<Rec
 export async function run(sql: string, params: unknown[] = []): Promise<void> {
   await getPool().query(sql, params)
 }
+
+export async function withTransaction<T>(fn: (query: (sql: string, params?: unknown[]) => Promise<void>) => Promise<T>): Promise<T> {
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const query = async (sql: string, params: unknown[] = []) => { await client.query(sql, params) }
+    const result = await fn(query)
+    await client.query('COMMIT')
+    return result
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
