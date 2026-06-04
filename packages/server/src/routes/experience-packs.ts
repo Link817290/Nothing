@@ -129,6 +129,7 @@ function formatPack(row: Record<string, any>) {
     id: row.id,
     capsule_id: row.capsule_id,
     name: row.name,
+    version: row.version || null,
     kind: row.kind,
     description: row.description,
     author_email: row.author_email,

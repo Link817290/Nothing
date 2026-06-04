@@ -13,6 +13,7 @@ interface Pack {
   id: string;
   capsule_id: string;
   name: string;
+  version?: string;
   kind: string;
   description?: string;
   author_email?: string;
@@ -129,7 +130,10 @@ export default function ExperiencePacks() {
                         {p.installed && (
                           <span className="h-2 w-2 rounded-full bg-brand shrink-0" />
                         )}
-                        <p className="font-semibold text-foreground truncate">{p.name}</p>
+                        <p className="font-semibold text-foreground truncate">
+                          {p.name}
+                          {p.version && <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">v{p.version}</span>}
+                        </p>
                       </div>
                       {p.description && (
                         <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.description}</p>

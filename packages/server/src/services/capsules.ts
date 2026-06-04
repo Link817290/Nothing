@@ -12,8 +12,8 @@ export async function saveCapsule(userId: string, messageId: string, capsule: Nm
   const existing = await queryOne('SELECT id FROM execution_capsules WHERE id = $1', [capsule.id])
   if (existing) {
     await run(
-      `UPDATE execution_capsules SET capsule_json = $1, updated_at = NOW() WHERE id = $2`,
-      [JSON.stringify(capsule), capsule.id]
+      `UPDATE execution_capsules SET capsule_json = $1, name = $2, version = $3, description = $4, source_message_id = $5, updated_at = NOW() WHERE id = $6`,
+      [JSON.stringify(capsule), capsule.name, capsule.version, capsule.description || null, messageId, capsule.id]
     )
     return capsule.id
   }

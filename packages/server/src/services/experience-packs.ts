@@ -25,8 +25,8 @@ export async function registerPack(
 
   if (existing) {
     await run(
-      `UPDATE experience_packs SET name = $1, keywords = $2, metadata_json = $3, updated_at = NOW() WHERE id = $4 AND owner_user_id = $5`,
-      [pack.name, keywords, JSON.stringify(pack), packId, userId],
+      `UPDATE experience_packs SET name = $1, keywords = $2, metadata_json = $3, source_message_id = $4, author_email = $5, updated_at = NOW() WHERE id = $6 AND owner_user_id = $7`,
+      [pack.name, keywords, JSON.stringify(pack), messageId, fromAddress || pack.source?.author || null, packId, userId],
     )
     return packId
   }
@@ -49,16 +49,18 @@ export async function registerPack(
 // ─── List ────────────────────────────────────────────────────
 
 export async function listPacks(userId: string, opts?: { installed?: boolean; keyword?: string }) {
-  // "installed" filter → only from experience_packs table
+  // "installed" filter → join with execution_capsules for version
   if (opts?.installed !== undefined) {
-    let sql = 'SELECT * FROM experience_packs WHERE owner_user_id = $1 AND installed = $2'
+    let sql = `SELECT p.*, c.version FROM experience_packs p
+      LEFT JOIN execution_capsules c ON c.id = p.capsule_id
+      WHERE p.owner_user_id = $1 AND p.installed = $2`
     const params: unknown[] = [userId, opts.installed]
     let idx = 3
     if (opts.keyword) {
-      sql += ` AND (keywords @> ARRAY[$${idx}]::text[] OR name ILIKE '%' || $${idx} || '%')`
+      sql += ` AND (p.keywords @> ARRAY[$${idx}]::text[] OR p.name ILIKE '%' || $${idx} || '%')`
       params.push(opts.keyword)
     }
-    sql += ' ORDER BY created_at DESC'
+    sql += ' ORDER BY p.created_at DESC'
     return queryAll(sql, params)
   }
 
@@ -100,6 +102,7 @@ export async function listPacks(userId: string, opts?: { installed?: boolean; ke
       id: r.pack_id || r.capsule_id,
       capsule_id: r.capsule_id,
       name: r.name,
+      version: r.version || null,
       kind: r.kind || 'execution_capsule',
       description: r.description,
       author_email: r.author_email,
@@ -137,7 +140,7 @@ export async function searchPacks(userId: string, keyword: string) {
   // Search across both tables: installed packs + all capsules
   const rows = await queryAll(
     `SELECT
-       c.id AS capsule_id, c.name, c.description, c.source_message_id,
+       c.id AS capsule_id, c.name, c.version, c.description, c.source_message_id,
        c.created_at, c.capsule_json,
        p.id AS pack_id, p.installed, p.keywords, p.author_email, p.kind
      FROM execution_capsules c
@@ -158,6 +161,7 @@ export async function searchPacks(userId: string, keyword: string) {
       id: r.pack_id || r.capsule_id,
       capsule_id: r.capsule_id,
       name: r.name,
+      version: r.version || null,
       kind: r.kind || 'execution_capsule',
       description: r.description,
       author_email: r.author_email,
