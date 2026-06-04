@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Inbox, Send, PenSquare, Settings, Plug,
-  FolderOpen, Users, Globe, Mail, Server, GitBranch,
+  FolderOpen, Users, Globe, Mail, Server, GitBranch, PackageOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
@@ -79,6 +79,7 @@ export function Sidebar() {
             ))}
 
             <SectionLabel>{t('nav.manage')}</SectionLabel>
+            <NavItem icon={PackageOpen} label={t('nav.packs')} href="/packs" active={isActive('/packs')} />
             <NavItem icon={Plug} label={t('nav.connect')} href="/connect" active={isActive('/connect')} />
             <NavItem icon={Settings} label={t('nav.settings')} href="/settings" active={isActive('/settings')} />
 

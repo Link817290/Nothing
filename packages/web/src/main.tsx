@@ -15,6 +15,7 @@ import Compose from './pages/Compose';
 import Settings from './pages/Settings';
 import Connect from './pages/Connect';
 import Projects from './pages/Projects';
+import ExperiencePacks from './pages/ExperiencePacks';
 import ProjectDetail from './pages/ProjectDetail';
 import AdminUsers from './pages/admin/Users';
 import AdminDomains from './pages/admin/Domains';
@@ -59,6 +60,7 @@ const router = createBrowserRouter([
       { path: 'compose', element: <P><Compose /></P> },
       { path: 'projects', element: <P><Projects /></P> },
       { path: 'projects/:name', element: <P><ProjectDetail /></P> },
+      { path: 'packs', element: <P><ExperiencePacks /></P> },
       { path: 'connect', element: <P><Connect /></P> },
       { path: 'settings', element: <P><Settings /></P> },
       { path: 'admin/users', element: <P><AdminUsers /></P> },

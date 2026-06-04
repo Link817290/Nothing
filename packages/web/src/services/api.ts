@@ -93,6 +93,19 @@ export const api = {
   reports: (params?: Record<string, string>) =>
     request(`/reports${params ? '?' + new URLSearchParams(params) : ''}`),
 
+  // ── Experience Packs ──────────────────────────────
+  experiencePacks: (params?: Record<string, string>) =>
+    request(`/experience-packs${params ? '?' + new URLSearchParams(params) : ''}`),
+  experiencePack: (id: string) => request(`/experience-packs/${id}`),
+  searchExperiencePacks: (q: string) =>
+    request(`/experience-packs/search?q=${encodeURIComponent(q)}`),
+  saveExperiencePack: (capsuleId: string) =>
+    request('/experience-packs', { method: 'POST', body: JSON.stringify({ capsule_id: capsuleId }) }),
+  installExperiencePack: (id: string) =>
+    request(`/experience-packs/${id}/install`, { method: 'PUT' }),
+  uninstallExperiencePack: (id: string) =>
+    request(`/experience-packs/${id}/uninstall`, { method: 'PUT' }),
+
   // ── Agent ────────────────────────────────────────
   organizeThreads: () =>
     request('/agent/organize', { method: 'POST' }),

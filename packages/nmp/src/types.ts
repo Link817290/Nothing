@@ -146,6 +146,7 @@ export interface NmpPayload {
   capsule_run?: NmpCapsuleRun
   capsule_event?: NmpCapsuleEvent
   artifact?: NmpArtifact
+  experience_pack?: NmpExperiencePack
 }
 
 // ─── Help Request ─────────────────────────────────────────────────
@@ -355,6 +356,28 @@ export interface NmpArtifactProvenance {
   run_id?: string
   state?: string
   validators?: string[]
+}
+
+// ─── Experience Pack ─────────────────────────────────────────────
+
+export interface NmpExperiencePackActivation {
+  keywords?: string[]
+  task_types?: string[]
+}
+
+export interface NmpExperiencePackSource {
+  message_id?: string
+  author?: string
+}
+
+export interface NmpExperiencePack {
+  id: string
+  name: string
+  kind: 'execution_capsule'
+  installable?: boolean
+  runnable?: boolean
+  activation?: NmpExperiencePackActivation
+  source?: NmpExperiencePackSource
 }
 
 /** Parsed nmp.md content (Part 2) */

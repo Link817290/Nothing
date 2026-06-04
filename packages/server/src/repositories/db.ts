@@ -190,6 +190,26 @@ CREATE TABLE IF NOT EXISTS artifacts (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── Experience Packs ────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS experience_packs (
+  id TEXT PRIMARY KEY,
+  owner_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  capsule_id TEXT REFERENCES execution_capsules(id) ON DELETE CASCADE,
+  source_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'execution_capsule',
+  description TEXT,
+  author_email TEXT,
+  installable BOOLEAN NOT NULL DEFAULT TRUE,
+  runnable BOOLEAN NOT NULL DEFAULT TRUE,
+  installed BOOLEAN NOT NULL DEFAULT FALSE,
+  keywords TEXT[] DEFAULT '{}',
+  metadata_json JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ─── Thread Summaries ────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS thread_summaries (
@@ -216,12 +236,15 @@ CREATE INDEX IF NOT EXISTS idx_events_run ON capsule_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_events_user_run ON capsule_events(user_id, run_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_user ON artifacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_experience_packs_owner ON experience_packs(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_experience_packs_capsule ON experience_packs(capsule_id);
 
 -- Trigram index for full-text search (safe if extension not available)
 DO $$ BEGIN
   CREATE EXTENSION IF NOT EXISTS pg_trgm;
   CREATE INDEX IF NOT EXISTS idx_messages_subject_trgm ON messages USING gin (subject gin_trgm_ops);
   CREATE INDEX IF NOT EXISTS idx_messages_content_trgm ON messages USING gin (content gin_trgm_ops);
+  CREATE INDEX IF NOT EXISTS idx_experience_packs_keywords ON experience_packs USING gin (keywords);
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 `

@@ -105,6 +105,7 @@ export interface SendRequest {
   capsule_run?: any
   capsule_event?: any
   artifact?: any
+  experience_pack?: any
 }
 
 export interface InboxQuery {

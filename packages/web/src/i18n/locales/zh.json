@@ -15,7 +15,8 @@
     "domains": "域名",
     "mailboxes": "邮箱",
     "system": "系统",
-    "projects": "所有项目"
+    "projects": "所有项目",
+    "packs": "经验包"
   },
   "search": {
     "placeholder": "搜索消息..."
@@ -235,6 +236,23 @@
     "remove_thread": "移出项目",
     "no_threads": "暂无会话",
     "no_threads_hint": "当消息被标记此项目时，会话将出现在这里"
+  },
+  "packs": {
+    "title": "经验包",
+    "subtitle": "可运行的胶囊化工作流",
+    "empty": "暂无经验包",
+    "empty_hint": "收到执行胶囊邮件后，经验包会出现在这里",
+    "search_placeholder": "按关键词搜索...",
+    "installed": "已安装",
+    "all": "全部",
+    "install": "安装",
+    "uninstall": "卸载",
+    "keywords": "关键词",
+    "from": "来自",
+    "capsule": "胶囊",
+    "no_results": "没有匹配的经验包",
+    "install_success": "已安装",
+    "uninstall_success": "已卸载"
   },
   "admin": {
     "users_title": "用户管理",

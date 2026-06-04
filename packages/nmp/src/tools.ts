@@ -278,4 +278,29 @@ export const NMP_TOOLS = {
       required: ['run_id', 'artifact_path'],
     },
   },
+  // ─── Experience Pack Tools ──────────────────────────────────
+
+  nothing_experience_packs: {
+    name: 'nothing_experience_packs',
+    description: 'Browse experience packs (经验包) — installable capsule-based workflows. Use when user asks "what packs do I have?", "show experience packs", "what capsules are available?".',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        installed: { type: 'boolean', description: 'Only show installed packs (default: show all)' },
+        keyword: { type: 'string', description: 'Filter by activation keyword' },
+      },
+    },
+  },
+
+  nothing_experience_pack_search: {
+    name: 'nothing_experience_pack_search',
+    description: 'Search experience packs by keyword. Use when user mentions a task that might match a pack (e.g., "写作", "writing", "code review", "deploy"). Returns matching packs with activation info and capsule ID for launching.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        keyword: { type: 'string', description: 'Keyword to search (e.g., "写作", "deploy", "review")' },
+      },
+      required: ['keyword'],
+    },
+  },
 } as const

@@ -15,7 +15,8 @@
     "domains": "Domains",
     "mailboxes": "Mailboxes",
     "system": "System",
-    "projects": "All Projects"
+    "projects": "All Projects",
+    "packs": "Experience Packs"
   },
   "search": {
     "placeholder": "Search messages..."
@@ -235,6 +236,23 @@
     "remove_thread": "Remove from project",
     "no_threads": "No threads in this project",
     "no_threads_hint": "Threads will appear here when messages are tagged with this project"
+  },
+  "packs": {
+    "title": "Experience Packs",
+    "subtitle": "Capsule-based workflows you can run",
+    "empty": "No experience packs yet",
+    "empty_hint": "Packs appear here when you receive execution capsules via email",
+    "search_placeholder": "Search by keyword...",
+    "installed": "Installed",
+    "all": "All",
+    "install": "Install",
+    "uninstall": "Uninstall",
+    "keywords": "Keywords",
+    "from": "From",
+    "capsule": "Capsule",
+    "no_results": "No packs matching this keyword",
+    "install_success": "Pack installed",
+    "uninstall_success": "Pack uninstalled"
   },
   "admin": {
     "users_title": "Users",

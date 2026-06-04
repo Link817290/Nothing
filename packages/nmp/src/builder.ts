@@ -2,7 +2,7 @@ import {
   NMP_VERSION, NMP_HEADERS, NMP_ATTACHMENT_NAME, NMP_DEFAULTS,
   resolveType,
   type NmpType, type NmpPriority, type NmpContext, type NmpPayload, type NmpEmail,
-  type NmpHelpRequest, type NmpExecutionCapsule, type NmpCapsuleRun, type NmpCapsuleEvent, type NmpArtifact,
+  type NmpHelpRequest, type NmpExecutionCapsule, type NmpCapsuleRun, type NmpCapsuleEvent, type NmpArtifact, type NmpExperiencePack,
 } from './types.js'
 import { generateMarkdown, generatePlainText } from './markdown.js'
 
@@ -47,6 +47,7 @@ export class NmpBuilder {
   private _capsuleRun?: NmpCapsuleRun
   private _capsuleEvent?: NmpCapsuleEvent
   private _artifact?: NmpArtifact
+  private _experiencePack?: NmpExperiencePack
 
   static create(): NmpBuilder {
     return new NmpBuilder()
@@ -78,6 +79,7 @@ export class NmpBuilder {
   capsuleRun(run: NmpCapsuleRun): this { this._capsuleRun = run; this._type = 'nmp:capsule-run'; return this }
   capsuleEvent(evt: NmpCapsuleEvent): this { this._capsuleEvent = evt; this._type = 'nmp:capsule-event'; return this }
   artifactCreated(art: NmpArtifact): this { this._artifact = art; this._type = 'nmp:artifact-created'; return this }
+  experiencePack(pack: NmpExperiencePack): this { this._experiencePack = pack; return this }
 
   /** Build the NMP payload object */
   buildPayload(): NmpPayload {
@@ -102,6 +104,7 @@ export class NmpBuilder {
       capsule_run: this._capsuleRun,
       capsule_event: this._capsuleEvent,
       artifact: this._artifact,
+      experience_pack: this._experiencePack,
     }
   }
 

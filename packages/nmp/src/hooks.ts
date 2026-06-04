@@ -213,6 +213,13 @@ export function postReadHook(payload: NmpPayload | null | undefined): string[] {
     lines.push(`   Use nothing_capsule_inspect to view state machine and tool policy.`)
   }
 
+  if (payload.experience_pack) {
+    const pack = payload.experience_pack
+    lines.push(`📦 Experience Pack: ${pack.name || 'unnamed'} [${pack.id}]`)
+    if (pack.activation?.keywords?.length) lines.push(`   Keywords: ${pack.activation.keywords.join(', ')}`)
+    lines.push(`   Use nothing_experience_packs to browse, or install via nothing_experience_pack_search.`)
+  }
+
   if (payload.ack) {
     lines.push(`📨 The sender requests a delivery acknowledgment. Send a brief confirmation after reading.`)
   }

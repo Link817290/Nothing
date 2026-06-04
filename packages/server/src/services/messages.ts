@@ -37,6 +37,7 @@ export async function sendMessage(userId: string, req: SendRequest) {
     capsule_run: req.capsule_run,
     capsule_event: req.capsule_event,
     artifact: req.artifact,
+    experience_pack: req.experience_pack,
   }
 
   const hasAttachments = (req.attachments?.length || 0) > 0
@@ -55,6 +56,17 @@ export async function sendMessage(userId: string, req: SendRequest) {
       if (validation.valid) {
         const { saveCapsule } = await import('./capsules.js')
         await saveCapsule(userId, id, req.execution_capsule)
+        // Auto-register experience pack
+        try {
+          const capsule = req.execution_capsule
+          const { registerPack } = await import('./experience-packs.js')
+          await registerPack(userId, capsule.id, id, (req as any).experience_pack || {
+            id: capsule.id, name: capsule.name, kind: 'execution_capsule',
+            installable: true, runnable: true,
+            activation: { keywords: capsule.activation?.keywords || [] },
+            source: { message_id: id, author: from },
+          }, from)
+        } catch {}
       }
     } catch {}
   }
@@ -154,6 +166,12 @@ export async function getMessage(userId: string, id: string) {
     project: row.project || undefined,
     labels: typeof row.labels === 'string' ? JSON.parse(row.labels) : (row.labels || []),
     context: payload?.context, status: row.status, source: row.source,
+    json_payload: payload,
+    execution_capsule: payload?.execution_capsule || undefined,
+    help_request: payload?.help_request || undefined,
+    capsule_run: payload?.capsule_run || undefined,
+    capsule_event: payload?.capsule_event || undefined,
+    artifact: payload?.artifact || undefined,
     attachments: await (async () => {
       try {
         const { listAttachments } = await import('./attachments.js')

@@ -34,10 +34,18 @@ export async function listCapsules(userId: string) {
 }
 
 export async function getCapsule(userId: string, id: string): Promise<NmpExecutionCapsule | null> {
-  const row = await queryOne(
+  // Try capsule ID first
+  let row = await queryOne(
     'SELECT * FROM execution_capsules WHERE id = $1 AND owner_user_id = $2',
     [id, userId]
   )
+  // Fallback: try message ID (source_message_id)
+  if (!row) {
+    row = await queryOne(
+      'SELECT * FROM execution_capsules WHERE source_message_id = $1 AND owner_user_id = $2',
+      [id, userId]
+    )
+  }
   if (!row) return null
   return typeof row.capsule_json === 'string' ? JSON.parse(row.capsule_json) : row.capsule_json
 }

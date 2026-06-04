@@ -171,7 +171,36 @@ export async function capsuleRoutes(app: FastifyInstance) {
       created_at: new Date().toISOString(),
     })
 
-    return { event_id: eventId }
+    // P0 fix: auto-advance state on state_completed event
+    let transitioned = false
+    if (body.type === 'state_completed' && body.data) {
+      const toState = (body.data as any).to_state
+        || (body.data as any).transition?.split('->').pop()?.trim()
+        || (typeof body.data.transition === 'string' ? body.data.transition.split('->').pop()?.trim() : undefined)
+
+      if (toState) {
+        const data = await getRunWithCapsule(user.id, id)
+        if (data?.capsule) {
+          const currentStateDef = data.capsule.state_machine.states[data.current_state]
+          const validTransition = currentStateDef?.transitions?.find((t: any) => t.to === toState)
+          if (validTransition) {
+            const isFinal = data.capsule.state_machine.final.includes(toState)
+            await updateRunState(user.id, id, toState, isFinal ? 'completed' : 'running')
+            await appendEvent(user.id, id, {
+              id: '', run_id: id,
+              type: 'state_entered',
+              state: toState,
+              message: `Auto-entered state: ${toState}`,
+              data: { state: toState, is_final: isFinal, auto_advanced: true },
+              created_at: new Date().toISOString(),
+            })
+            transitioned = true
+          }
+        }
+      }
+    }
+
+    return { event_id: eventId, ...(transitioned ? { transitioned: true } : {}) }
   })
 
   app.get('/api/capsule-runs/:id/events', { preHandler: authenticate }, async (req) => {

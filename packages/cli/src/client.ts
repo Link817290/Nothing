@@ -241,4 +241,30 @@ export class NothingClient {
   validateArtifact(runId: string, artifactName: string, artifactPath?: string, size?: number) {
     return this.request<any>('POST', `/api/capsule-runs/${runId}/validate`, { artifact_name: artifactName, artifact_path: artifactPath, size })
   }
+
+  // ─── Experience Packs ──────────────────────────────────────────
+
+  listExperiencePacks(query?: { installed?: boolean; keyword?: string }) {
+    const params = new URLSearchParams()
+    if (query?.installed !== undefined) params.set('installed', String(query.installed))
+    if (query?.keyword) params.set('keyword', query.keyword)
+    const qs = params.toString()
+    return this.request<{ packs: any[] }>('GET', `/api/experience-packs${qs ? '?' + qs : ''}`)
+  }
+
+  getExperiencePack(id: string) {
+    return this.request<any>('GET', `/api/experience-packs/${id}`)
+  }
+
+  searchExperiencePacks(keyword: string) {
+    return this.request<{ packs: any[] }>('GET', `/api/experience-packs/search?q=${encodeURIComponent(keyword)}`)
+  }
+
+  installExperiencePack(id: string) {
+    return this.request<{ success: boolean }>('PUT', `/api/experience-packs/${id}/install`)
+  }
+
+  uninstallExperiencePack(id: string) {
+    return this.request<{ success: boolean }>('PUT', `/api/experience-packs/${id}/uninstall`)
+  }
 }

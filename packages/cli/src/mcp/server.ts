@@ -73,6 +73,8 @@ AVAILABLE TOOLS:
   nothing_sent     — Check sent status. Trigger: "did they reply", "delivery status"
   nothing_projects — List projects. Trigger: "project overview", "what projects"
   nothing_report   — Activity report. Trigger: "weekly summary", "report"
+  nothing_experience_packs — Browse experience packs. Trigger: "show packs", "what capsules", "经验包"
+  nothing_experience_pack_search — Search packs by keyword. Trigger: "写作", "deploy", task keywords
 
 BEST PRACTICES:
   - Only set project when user explicitly asks to tag one
@@ -110,8 +112,27 @@ CODE CONTEXT (always fill when discussing code):
   - context.lines: Line range if relevant (e.g., "10-25")
   - context.language: Auto-inferred from extension if omitted
 
-EXPERIENCE CAPSULES (经验包 — boundary-controlled delegated tasks):
-  Trigger: "帮我让XX做...", "package this as a task", "create a capsule", "做个经验包"
+EXPERIENCE PACKS (经验包):
+
+  Installed experience packs are pre-built workflows users can run.
+  When a user describes a task, search installed packs by keyword
+  (nothing_experience_pack_search). If a match is found and installed,
+  offer to run it. If confirmed, start via nothing_capsule_start and
+  enter STRICT EXECUTION MODE.
+
+  Browse: nothing_experience_packs
+  Search: nothing_experience_pack_search
+  Create & send to others: nothing_send with execution_capsule
+
+  Example flow:
+    User: "帮我写一封交付延期说明"
+    → nothing_experience_pack_search("写作")
+    → found installed pack "工作写作模式"
+    → "你有「工作写作模式」经验包，要用它来写吗？"
+    → user confirms
+    → nothing_capsule_start(capsule_id) → STRICT EXECUTION MODE
+
+EXPERIENCE CAPSULES (经验包 — execution format):
 
   A capsule = state machine + tool boundary + validators.
   Sender builds it, receiver executes it via MCP tools.
@@ -215,13 +236,35 @@ EXECUTING EXPERIENCE CAPSULES (when you RECEIVE an nmp:execution-capsule message
   When you reach a final state, reply to the sender with the results.
   Use nothing_reply with a summary of what was done + artifact references.
 
-  ── KEY RULES ──
-  - ALWAYS guard before executing. This is non-negotiable.
-  - If guard denies, log it and do NOT run the command.
-  - Stay within the current state's allowed_tools.
-  - Log every significant action as an event.
-  - Validate all artifacts before declaring done.
-  - If stuck, reply to sender asking for clarification rather than guessing.
+  ── STRICT EXECUTION MODE ──
+  When a capsule run is active, you enter STRICT EXECUTION MODE:
+
+  1. TOOL LOCKDOWN: You may ONLY use tools listed in the current state's
+     allowed_tools. ALL other tools are FORBIDDEN. Do not call any tool
+     (Read, Write, Bash, Grep, etc.) unless it appears in allowed_tools
+     or is a nothing_capsule_* tool.
+
+  2. MANDATORY GUARD: Before EVERY shell command or tool call, you MUST
+     call nothing_capsule_guard. If it returns "deny", you MUST NOT
+     execute that command. No exceptions. No workarounds.
+
+  3. STATE MACHINE ONLY: Follow the state machine transitions exactly.
+     Do not skip states. Do not invent new states. Do not do work
+     outside the current state's goal.
+
+  4. NO SIDE EFFECTS: Do not install packages, modify files, or run
+     commands that are not directly required by the current state's goal
+     and instructions.
+
+  5. LOG EVERYTHING: Every tool call, state transition, and validation
+     must be recorded via nothing_capsule_event.
+
+  6. VALIDATE BEFORE DONE: Call nothing_capsule_validate for each artifact
+     before transitioning to a final state. If validation fails, fix and
+     re-validate.
+
+  7. IF STUCK: Reply to sender asking for help. Do NOT guess or bypass
+     the state machine.
 
 MINIMAL DISRUPTION (highest priority rule):
   - Default: zero questions, zero blocking. Most messages just send directly.
@@ -554,13 +597,16 @@ export async function startMcpServer() {
         case 'nothing_capsule_start': {
           const result = await client.startCapsule(a.capsule_id as string, a.inputs as Record<string, unknown> | undefined)
           const state = result.capsule?.state_machine?.states?.[result.current_state]
-          let text = `Run started: ${result.id}\nState: ${result.current_state}\n`
+          const deny = result.capsule?.tool_policy?.deny || []
+          let text = `⚠ STRICT EXECUTION MODE ACTIVE\nRun: ${result.id}\nState: ${result.current_state}\n`
           if (state) {
             text += `\nGoal: ${state.goal}\n`
             if (state.instructions) text += `Instructions: ${state.instructions}\n`
-            if (state.allowed_tools?.length) text += `Tools: ${state.allowed_tools.join(', ')}\n`
-            if (state.expected_outputs?.length) text += `Expected: ${state.expected_outputs.join(', ')}\n`
+            if (state.allowed_tools?.length) text += `ALLOWED tools (use ONLY these): ${state.allowed_tools.join(', ')}\n`
+            if (state.expected_outputs?.length) text += `Expected outputs: ${state.expected_outputs.join(', ')}\n`
           }
+          if (deny.length) text += `DENIED operations: ${deny.join(', ')}\n`
+          text += `\nYou MUST call nothing_capsule_guard before every command.\nDo NOT use tools outside allowed_tools.`
           return { content: [{ type: 'text', text }] }
         }
 
@@ -569,12 +615,15 @@ export async function startMcpServer() {
           if (step.is_final) return { content: [{ type: 'text', text: `Run completed (state: ${step.current_state})` }] }
           let text = `State: ${step.current_state} [${step.status}]\n\nGoal: ${step.goal}\n`
           if (step.instructions) text += `Instructions: ${step.instructions}\n`
-          if (step.allowed_tools?.length) text += `Tools: ${step.allowed_tools.join(', ')}\n`
-          if (step.expected_outputs?.length) text += `Expected: ${step.expected_outputs.join(', ')}\n`
+          if (step.allowed_tools?.length) {
+            text += `ALLOWED tools (ONLY these): ${step.allowed_tools.join(', ')}\n`
+          }
+          if (step.expected_outputs?.length) text += `Expected outputs: ${step.expected_outputs.join(', ')}\n`
           if (step.transitions?.length) {
             text += `\nTransitions:\n`
             step.transitions.forEach((t: any) => { text += `  → ${t.to} when ${t.when}\n` })
           }
+          text += `\n⚠ Guard every command. Do NOT use tools outside the list above.`
           return { content: [{ type: 'text', text }] }
         }
 
@@ -599,6 +648,33 @@ export async function startMcpServer() {
           for (const r of result.results) {
             text += `  ${r.passed ? '✓' : '✗'} ${r.id}: ${r.message}\n`
           }
+          return { content: [{ type: 'text', text }] }
+        }
+
+        // ─── Experience Pack Tools ──────────────────────────────
+
+        case 'nothing_experience_packs': {
+          const result = await client.listExperiencePacks({
+            installed: a.installed as boolean | undefined,
+            keyword: a.keyword as string | undefined,
+          })
+          if (result.packs.length === 0) {
+            return { content: [{ type: 'text', text: 'No experience packs found.' }] }
+          }
+          const text = result.packs.map((p: any) =>
+            `${p.installed ? '✓' : '○'} ${p.name} [${p.id}]\n  Keywords: ${(p.keywords || []).join(', ') || '—'}\n  Capsule: ${p.capsule_id}${p.author_email ? '\n  From: ' + p.author_email : ''}`
+          ).join('\n\n')
+          return { content: [{ type: 'text', text }] }
+        }
+
+        case 'nothing_experience_pack_search': {
+          const result = await client.searchExperiencePacks(a.keyword as string)
+          if (result.packs.length === 0) {
+            return { content: [{ type: 'text', text: `No experience packs matching "${a.keyword}".` }] }
+          }
+          const text = result.packs.map((p: any) =>
+            `${p.installed ? '✓' : '○'} ${p.name} [${p.id}]\n  Keywords: ${(p.keywords || []).join(', ')}\n  Capsule: ${p.capsule_id} — use nothing_capsule_start to run`
+          ).join('\n\n')
           return { content: [{ type: 'text', text }] }
         }
 
