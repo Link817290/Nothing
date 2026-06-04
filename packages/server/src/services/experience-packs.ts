@@ -49,23 +49,68 @@ export async function registerPack(
 // ─── List ────────────────────────────────────────────────────
 
 export async function listPacks(userId: string, opts?: { installed?: boolean; keyword?: string }) {
-  let sql = 'SELECT * FROM experience_packs WHERE owner_user_id = $1'
+  // "installed" filter → only from experience_packs table
+  if (opts?.installed !== undefined) {
+    let sql = 'SELECT * FROM experience_packs WHERE owner_user_id = $1 AND installed = $2'
+    const params: unknown[] = [userId, opts.installed]
+    let idx = 3
+    if (opts.keyword) {
+      sql += ` AND (keywords @> ARRAY[$${idx}]::text[] OR name ILIKE '%' || $${idx} || '%')`
+      params.push(opts.keyword)
+    }
+    sql += ' ORDER BY created_at DESC'
+    return queryAll(sql, params)
+  }
+
+  // "all" → merge execution_capsules + experience_packs (installed status)
+  let keywordFilter = ''
   const params: unknown[] = [userId]
   let idx = 2
-
-  if (opts?.installed !== undefined) {
-    sql += ` AND installed = $${idx}`
-    params.push(opts.installed)
-    idx++
-  }
   if (opts?.keyword) {
-    sql += ` AND (keywords @> ARRAY[$${idx}]::text[] OR name ILIKE '%' || $${idx} || '%')`
+    keywordFilter = ` AND (c.name ILIKE '%' || $${idx} || '%')`
     params.push(opts.keyword)
     idx++
   }
 
-  sql += ' ORDER BY installed DESC, created_at DESC'
-  return queryAll(sql, params)
+  const rows = await queryAll(
+    `SELECT
+       c.id AS capsule_id,
+       c.name,
+       c.version,
+       c.description,
+       c.source_message_id,
+       c.created_at,
+       c.capsule_json,
+       p.id AS pack_id,
+       p.installed,
+       p.keywords,
+       p.author_email,
+       p.kind
+     FROM execution_capsules c
+     LEFT JOIN experience_packs p ON p.capsule_id = c.id AND p.owner_user_id = $1
+     WHERE c.owner_user_id = $1${keywordFilter}
+     ORDER BY COALESCE(p.installed, FALSE) DESC, c.created_at DESC`,
+    params,
+  )
+
+  return rows.map((r) => {
+    const capsule = typeof r.capsule_json === 'string' ? JSON.parse(r.capsule_json) : r.capsule_json
+    const keywords = r.keywords || capsule?.activation?.keywords || []
+    return {
+      id: r.pack_id || r.capsule_id,
+      capsule_id: r.capsule_id,
+      name: r.name,
+      kind: r.kind || 'execution_capsule',
+      description: r.description,
+      author_email: r.author_email,
+      installable: true,
+      runnable: true,
+      installed: r.installed || false,
+      keywords: Array.isArray(keywords) ? keywords : [],
+      source_message_id: r.source_message_id,
+      created_at: r.created_at,
+    }
+  })
 }
 
 // ─── Get ─────────────────────────────────────────────────────
@@ -89,14 +134,41 @@ export async function getPack(userId: string, id: string) {
 // ─── Search ──────────────────────────────────────────────────
 
 export async function searchPacks(userId: string, keyword: string) {
-  return queryAll(
-    `SELECT * FROM experience_packs
-     WHERE owner_user_id = $1
-       AND (keywords @> ARRAY[$2]::text[] OR name ILIKE '%' || $2 || '%')
-     ORDER BY installed DESC, created_at DESC
+  // Search across both tables: installed packs + all capsules
+  const rows = await queryAll(
+    `SELECT
+       c.id AS capsule_id, c.name, c.description, c.source_message_id,
+       c.created_at, c.capsule_json,
+       p.id AS pack_id, p.installed, p.keywords, p.author_email, p.kind
+     FROM execution_capsules c
+     LEFT JOIN experience_packs p ON p.capsule_id = c.id AND p.owner_user_id = $1
+     WHERE c.owner_user_id = $1
+       AND (c.name ILIKE '%' || $2 || '%'
+            OR p.keywords @> ARRAY[$2]::text[]
+            OR c.capsule_json::text ILIKE '%' || $2 || '%')
+     ORDER BY COALESCE(p.installed, FALSE) DESC, c.created_at DESC
      LIMIT 20`,
     [userId, keyword],
   )
+
+  return rows.map((r) => {
+    const capsule = typeof r.capsule_json === 'string' ? JSON.parse(r.capsule_json) : r.capsule_json
+    const keywords = r.keywords || capsule?.activation?.keywords || []
+    return {
+      id: r.pack_id || r.capsule_id,
+      capsule_id: r.capsule_id,
+      name: r.name,
+      kind: r.kind || 'execution_capsule',
+      description: r.description,
+      author_email: r.author_email,
+      installable: true,
+      runnable: true,
+      installed: r.installed || false,
+      keywords: Array.isArray(keywords) ? keywords : [],
+      source_message_id: r.source_message_id,
+      created_at: r.created_at,
+    }
+  })
 }
 
 // ─── Install / Uninstall ─────────────────────────────────────
