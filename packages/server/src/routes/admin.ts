@@ -87,6 +87,11 @@ export async function adminRoutes(app: FastifyInstance) {
     } catch {}
     await run('DELETE FROM thread_summaries')
     await run('DELETE FROM experience_packs')
+    await run('DELETE FROM capsule_events')
+    await run('DELETE FROM artifacts')
+    await run('DELETE FROM capsule_runs')
+    await run('DELETE FROM execution_capsules')
+    await run('DELETE FROM attachments')
     await run('DELETE FROM messages')
     // Update sync timestamp so stalwart-sync won't re-pull old emails
     await run('UPDATE email_accounts SET last_sync_at = NOW()')
@@ -131,6 +136,7 @@ export async function adminRoutes(app: FastifyInstance) {
     await run('DELETE FROM artifacts')
     await run('DELETE FROM capsule_runs')
     await run('DELETE FROM execution_capsules')
+    await run('DELETE FROM attachments')
     await run('DELETE FROM verification_codes')
     await run('DELETE FROM tasks')
     await run('DELETE FROM messages')
