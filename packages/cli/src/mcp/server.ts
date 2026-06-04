@@ -486,6 +486,8 @@ export async function startMcpServer() {
 
           const result = await client.reply(a.id as string, {
             text: a.text as string, attachments,
+            execution_capsule: a.execution_capsule as any,
+            experience_pack: a.experience_pack as any,
           })
 
           let output = JSON.stringify(result, null, 2)

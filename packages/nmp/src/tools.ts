@@ -75,13 +75,15 @@ export const NMP_TOOLS = {
 
   nothing_reply: {
     name: 'nothing_reply',
-    description: 'Reply to a message within its thread. Use when the user says "reply to that", "tell them yes", "respond with...". Automatically inherits project, labels, and thread context from the original message.',
+    description: 'Reply to a message within its thread. Use when the user says "reply to that", "tell them yes", "respond with...". Automatically inherits project, labels, and thread context from the original message. Can include execution_capsule for version iteration.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         id: { type: 'string', description: 'Message ID to reply to' },
         text: { type: 'string', description: 'Reply body' },
         files: { type: 'array', items: { type: 'string' }, description: 'File paths to attach' },
+        execution_capsule: { type: 'object', description: 'Execution Capsule (for iterating capsule versions in a thread)' },
+        experience_pack: { type: 'object', description: 'Experience Pack metadata (for registry)' },
       },
       required: ['id', 'text'],
     },
