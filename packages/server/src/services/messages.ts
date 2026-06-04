@@ -189,7 +189,7 @@ export async function getMessage(userId: string, id: string) {
 
 // ─── Reply ─────────────────────────────────────────────────────
 
-export async function replyMessage(userId: string, id: string, req: { text: string; files?: string[]; attachments?: { filename: string; content: string; content_type?: string }[] }) {
+export async function replyMessage(userId: string, id: string, req: { text: string; files?: string[]; attachments?: { filename: string; content: string; content_type?: string }[]; execution_capsule?: any; experience_pack?: any }) {
   const original = await queryOne(`SELECT * FROM messages WHERE id = $1 AND user_id = $2`, [id, userId])
   if (!original) throw new Error('Message not found')
 
@@ -205,9 +205,11 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   const origLabels = typeof original.labels === 'string' ? JSON.parse(original.labels) : (original.labels || [])
 
   const payload: NmpPayload = {
-    nmp: 1, type: 'nmp:reply',
+    nmp: 1, type: req.execution_capsule ? 'nmp:execution-capsule' : 'nmp:reply',
     project: original.project || undefined,
     labels: origLabels,
+    execution_capsule: req.execution_capsule,
+    experience_pack: req.experience_pack,
   }
 
   await run(
@@ -222,6 +224,28 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
     for (const att of req.attachments) {
       await saveAttachment(replyId, att.filename, att.content_type || 'application/octet-stream', Buffer.from(att.content, 'base64'))
     }
+  }
+
+  // Save capsule + register experience pack (version iteration in thread)
+  if (req.execution_capsule) {
+    try {
+      const { validateExecutionCapsule } = await import('@nothingmail/nmp')
+      const validation = validateExecutionCapsule(req.execution_capsule)
+      if (validation.valid) {
+        const { saveCapsule } = await import('./capsules.js')
+        await saveCapsule(userId, replyId, req.execution_capsule)
+        try {
+          const capsule = req.execution_capsule
+          const { registerPack } = await import('./experience-packs.js')
+          await registerPack(userId, capsule.id, replyId, req.experience_pack || {
+            id: capsule.id, name: capsule.name, kind: 'execution_capsule',
+            installable: true, runnable: true,
+            activation: { keywords: capsule.activation?.keywords || [] },
+            source: { message_id: replyId, author: from },
+          }, from)
+        } catch {}
+      }
+    } catch {}
   }
 
   let status = 'sent'
