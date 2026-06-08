@@ -184,9 +184,17 @@ END $$;
 export async function initDb(databaseUrl: string): Promise<void> {
   pool = new Pool({ connectionString: databaseUrl })
 
-  // Test connection
+  // Test connection + migrate
   const client = await pool.connect()
   try {
+    // Drop legacy capsule tables (v0.1–v0.6 → v0.7 migration)
+    await client.query(`
+      DROP TABLE IF EXISTS experience_packs;
+      DROP TABLE IF EXISTS capsule_events;
+      DROP TABLE IF EXISTS artifacts;
+      DROP TABLE IF EXISTS capsule_runs;
+      DROP TABLE IF EXISTS execution_capsules;
+    `)
     await client.query(SCHEMA)
   } finally {
     client.release()
