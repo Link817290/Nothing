@@ -2,7 +2,7 @@ import { execSync } from 'child_process'
 import { platform } from 'os'
 
 const CRON_COMMENT = '# nothing-mail-check'
-const CRON_INTERVAL = '*/5 * * * *' // every 5 minutes
+const CRON_INTERVAL = '* * * * *' // every minute
 
 export function installWatch(): boolean {
   const os = platform()
@@ -12,7 +12,7 @@ export function installWatch(): boolean {
     try {
       const npmPath = execSync('where nothing', { encoding: 'utf-8' }).trim().split('\n')[0]
       execSync(
-        `schtasks /create /tn "NothingMailCheck" /tr "${npmPath} check --silent" /sc minute /mo 5 /f`,
+        `schtasks /create /tn "NothingMailCheck" /tr "${npmPath} check --silent" /sc minute /mo 1 /f`,
         { stdio: 'ignore' }
       )
       return true

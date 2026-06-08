@@ -112,15 +112,20 @@ CODE CONTEXT (always fill when discussing code):
 
 SAGE (智者 — expert service protocols):
 
-  Sages are expert service protocols that define what an expert can help with.
-  When a user is struggling with a task or not satisfied with results,
-  search for a matching sage (nothing_sage_search). If found:
-    1. Tell the user a sage is available and what it can do
-    2. User confirms → send nmp:task to the expert via nothing_send
-    3. Expert processes the request and replies with results
+  Sages are experts with specific capabilities. Each sage has an email
+  address — they're real people (or their agents) who can help.
 
-  This should feel smooth and natural — not a separate workflow.
-  The user just says "帮我审查这个 PR" and you check if there's a sage for it.
+  When a user needs help or is unsatisfied with results:
+    1. Search: nothing_sage_search with relevant keyword
+    2. Found? Tell user: "有个专家能帮你做这个，要找他帮忙吗？"
+    3. User confirms → nothing_send to the sage's expert email:
+       - type: nmp:task
+       - to: the expert's email (from search result)
+       - text: describe what you need in natural language
+    4. Expert works and replies in the same thread
+    5. You receive the result via inbox
+
+  This is just email — happens in a normal thread, not a separate system.
 
   Browse: nothing_sages
   Search: nothing_sage_search
@@ -461,7 +466,7 @@ export async function startMcpServer() {
             return { content: [{ type: 'text', text: `No sages matching "${a.keyword}".` }] }
           }
           const text = result.sages.map((s: any) =>
-            `${s.installed ? '✓' : '○'} ${s.name} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ')}`
+            `${s.installed ? '✓' : '○'} ${s.name} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ')}${s.author_email ? '\n  Expert: ' + s.author_email + ' — use nothing_send to request help' : ''}`
           ).join('\n\n')
           return { content: [{ type: 'text', text }] }
         }
