@@ -448,14 +448,14 @@ export async function startMcpServer() {
 
         case 'nothing_sages': {
           const result = await client.listSages({
-            installed: a.installed as boolean | undefined,
+            favorited: a.installed as boolean | undefined,
             keyword: a.keyword as string | undefined,
           })
           if (result.sages.length === 0) {
             return { content: [{ type: 'text', text: 'No sages found.' }] }
           }
           const text = result.sages.map((s: any) =>
-            `${s.installed ? '✓' : '○'} ${s.name}${s.version ? ' v' + s.version : ''} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ') || '—'}${s.author_email ? '\n  From: ' + s.author_email : ''}`
+            `${s.favorited ? '★' : '○'} ${s.name}${s.version ? ' v' + s.version : ''} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ') || '—'}${s.author_email ? '\n  From: ' + s.author_email : ''}`
           ).join('\n\n')
           return { content: [{ type: 'text', text }] }
         }
@@ -466,7 +466,7 @@ export async function startMcpServer() {
             return { content: [{ type: 'text', text: `No sages matching "${a.keyword}".` }] }
           }
           const text = result.sages.map((s: any) =>
-            `${s.installed ? '✓' : '○'} ${s.name} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ')}${s.author_email ? '\n  Expert: ' + s.author_email + ' — use nothing_send to request help' : ''}`
+            `${s.favorited ? '★' : '○'} ${s.name} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ')}${s.author_email ? '\n  Expert: ' + s.author_email + ' — use nothing_send to request help' : ''}`
           ).join('\n\n')
           return { content: [{ type: 'text', text }] }
         }

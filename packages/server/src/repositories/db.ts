@@ -144,7 +144,8 @@ CREATE TABLE IF NOT EXISTS sages (
   description TEXT,
   version TEXT,
   author_email TEXT,
-  installed BOOLEAN NOT NULL DEFAULT FALSE,
+  public BOOLEAN NOT NULL DEFAULT FALSE,
+  favorited BOOLEAN NOT NULL DEFAULT FALSE,
   keywords TEXT[] DEFAULT '{}',
   sage_json JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -187,13 +188,24 @@ export async function initDb(databaseUrl: string): Promise<void> {
   // Test connection + migrate
   const client = await pool.connect()
   try {
-    // Drop legacy capsule tables (v0.1–v0.6 → v0.7 migration)
+    // Drop legacy tables (v0.1–v0.7 migration)
     await client.query(`
       DROP TABLE IF EXISTS experience_packs;
       DROP TABLE IF EXISTS capsule_events;
       DROP TABLE IF EXISTS artifacts;
       DROP TABLE IF EXISTS capsule_runs;
       DROP TABLE IF EXISTS execution_capsules;
+    `)
+    // Rename installed → favorited + add public column (v0.7 → v0.8)
+    await client.query(`
+      DO $$ BEGIN
+        ALTER TABLE sages RENAME COLUMN installed TO favorited;
+      EXCEPTION WHEN undefined_column THEN NULL;
+      END $$;
+      DO $$ BEGIN
+        ALTER TABLE sages ADD COLUMN public BOOLEAN NOT NULL DEFAULT FALSE;
+      EXCEPTION WHEN duplicate_column THEN NULL;
+      END $$;
     `)
     await client.query(SCHEMA)
   } finally {

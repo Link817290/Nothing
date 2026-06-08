@@ -243,15 +243,15 @@
     "empty": "No sages yet",
     "empty_hint": "Sages define what experts can help you with",
     "search_placeholder": "Search by keyword...",
-    "installed": "Installed",
+    "favorited": "Favorited",
     "all": "All",
-    "install": "Install",
-    "uninstall": "Uninstall",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
     "keywords": "Keywords",
     "from": "From",
     "no_results": "No sages matching this keyword",
-    "install_success": "Sage installed",
-    "uninstall_success": "Sage uninstalled"
+    "favorite_success": "Sage favorited",
+    "unfavorite_success": "Sage unfavorited"
   },
   "admin": {
     "users_title": "Users",

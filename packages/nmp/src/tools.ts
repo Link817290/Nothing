@@ -205,7 +205,7 @@ export const NMP_TOOLS = {
     inputSchema: {
       type: 'object' as const,
       properties: {
-        installed: { type: 'boolean', description: 'Only show installed sages (default: show all)' },
+        favorited: { type: 'boolean', description: 'Only show favorited sages (default: show all)' },
         keyword: { type: 'string', description: 'Filter by keyword' },
       },
     },

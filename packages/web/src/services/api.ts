@@ -99,10 +99,12 @@ export const api = {
   sage: (id: string) => request(`/sages/${id}`),
   searchSages: (q: string) =>
     request(`/sages/search?q=${encodeURIComponent(q)}`),
-  installSage: (id: string) =>
-    request(`/sages/${id}/install`, { method: 'PUT' }),
-  uninstallSage: (id: string) =>
-    request(`/sages/${id}/uninstall`, { method: 'PUT' }),
+  favoriteSage: (id: string) =>
+    request(`/sages/${id}/favorite`, { method: 'PUT' }),
+  unfavoriteSage: (id: string) =>
+    request(`/sages/${id}/unfavorite`, { method: 'PUT' }),
+  publicSages: (username: string) =>
+    request(`/u/${username}/sages`),
 
   // ── Agent ────────────────────────────────────────
   organizeThreads: () =>

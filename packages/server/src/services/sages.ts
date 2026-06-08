@@ -9,7 +9,7 @@ function genId() {
 
 export async function registerSage(
   userId: string,
-  sage: { id?: string; name: string; description?: string; version?: string; keywords?: string[]; sage_json?: any },
+  sage: { id?: string; name: string; description?: string; version?: string; keywords?: string[]; sage_json?: any; public?: boolean },
   authorEmail?: string,
 ): Promise<string> {
   const sageId = sage.id || genId()
@@ -22,32 +22,32 @@ export async function registerSage(
 
   if (existing) {
     await run(
-      `UPDATE sages SET name = $1, description = $2, version = $3, keywords = $4, author_email = $5, sage_json = $6, updated_at = NOW()
-       WHERE id = $7 AND owner_user_id = $8`,
-      [sage.name, sage.description || null, sage.version || null, keywords, authorEmail || null, JSON.stringify(sage.sage_json || sage), sageId, userId],
+      `UPDATE sages SET name = $1, description = $2, version = $3, keywords = $4, author_email = $5, sage_json = $6, public = $7, updated_at = NOW()
+       WHERE id = $8 AND owner_user_id = $9`,
+      [sage.name, sage.description || null, sage.version || null, keywords, authorEmail || null, JSON.stringify(sage.sage_json || sage), sage.public || false, sageId, userId],
     )
     return sageId
   }
 
   await run(
-    `INSERT INTO sages (id, owner_user_id, name, description, version, author_email, keywords, sage_json)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [sageId, userId, sage.name, sage.description || null, sage.version || null, authorEmail || null, keywords, JSON.stringify(sage.sage_json || sage)],
+    `INSERT INTO sages (id, owner_user_id, name, description, version, author_email, keywords, sage_json, public)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [sageId, userId, sage.name, sage.description || null, sage.version || null, authorEmail || null, keywords, JSON.stringify(sage.sage_json || sage), sage.public || false],
   )
 
   return sageId
 }
 
-// ─── List ────────────────────────────────────────────────────
+// ─── List (own sages) ────────────────────────────────────────
 
-export async function listSages(userId: string, opts?: { installed?: boolean; keyword?: string }) {
+export async function listSages(userId: string, opts?: { favorited?: boolean; keyword?: string }) {
   let sql = 'SELECT * FROM sages WHERE owner_user_id = $1'
   const params: unknown[] = [userId]
   let idx = 2
 
-  if (opts?.installed !== undefined) {
-    sql += ` AND installed = $${idx}`
-    params.push(opts.installed)
+  if (opts?.favorited !== undefined) {
+    sql += ` AND favorited = $${idx}`
+    params.push(opts.favorited)
     idx++
   }
   if (opts?.keyword) {
@@ -56,7 +56,7 @@ export async function listSages(userId: string, opts?: { installed?: boolean; ke
     idx++
   }
 
-  sql += ' ORDER BY installed DESC, created_at DESC'
+  sql += ' ORDER BY favorited DESC, created_at DESC'
   return queryAll(sql, params)
 }
 
@@ -69,24 +69,36 @@ export async function getSage(userId: string, id: string) {
   )
 }
 
-// ─── Search ──────────────────────────────────────────────────
+// ─── Search (own sages) ──────────────────────────────────────
 
 export async function searchSages(userId: string, keyword: string) {
   return queryAll(
     `SELECT * FROM sages
      WHERE owner_user_id = $1
        AND (keywords @> ARRAY[$2]::text[] OR name ILIKE '%' || $2 || '%')
-     ORDER BY installed DESC, created_at DESC
+     ORDER BY favorited DESC, created_at DESC
      LIMIT 20`,
     [userId, keyword],
   )
 }
 
-// ─── Install / Uninstall ─────────────────────────────────────
+// ─── Favorite / Unfavorite ───────────────────────────────────
 
-export async function setInstalled(userId: string, sageId: string, installed: boolean) {
+export async function setFavorited(userId: string, sageId: string, favorited: boolean) {
   await run(
-    'UPDATE sages SET installed = $1, updated_at = NOW() WHERE id = $2 AND owner_user_id = $3',
-    [installed, sageId, userId],
+    'UPDATE sages SET favorited = $1, updated_at = NOW() WHERE id = $2 AND owner_user_id = $3',
+    [favorited, sageId, userId],
+  )
+}
+
+// ─── Public profile: list a user's public sages ──────────────
+
+export async function listPublicSages(username: string) {
+  return queryAll(
+    `SELECT s.id, s.name, s.description, s.version, s.author_email, s.keywords, s.created_at
+     FROM sages s JOIN users u ON s.owner_user_id = u.id
+     WHERE u.username = $1 AND s.public = TRUE
+     ORDER BY s.created_at DESC`,
+    [username],
   )
 }

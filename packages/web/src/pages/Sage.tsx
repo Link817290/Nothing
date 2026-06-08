@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BrainCircuit, Search, Download, X, Tag } from 'lucide-react';
+import { Loader2, BrainCircuit, Search, Star, X, Tag } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/toast';
 
@@ -15,12 +15,12 @@ interface Sage {
   description?: string;
   version?: string;
   author_email?: string;
-  installed: boolean;
+  favorited: boolean;
   keywords: string[];
   created_at: string;
 }
 
-type FilterType = 'all' | 'installed';
+type FilterType = 'all' | 'favorited';
 
 export default function SagePage() {
   const { t } = useTranslation();
@@ -33,7 +33,7 @@ export default function SagePage() {
   const load = useCallback(() => {
     setLoading(true);
     const params: Record<string, string> = {};
-    if (filter === 'installed') params.installed = 'true';
+    if (filter === 'favorited') params.favorited = 'true';
     if (search.trim()) params.keyword = search.trim();
 
     api.sages(params)
@@ -47,12 +47,12 @@ export default function SagePage() {
   const handleToggleInstall = async (sage: Sage) => {
     setToggling((s) => new Set(s).add(sage.id));
     try {
-      if (sage.installed) {
-        await api.uninstallSage(sage.id);
-        toast({ title: t('sage.uninstall_success'), variant: 'success' });
+      if (sage.favorited) {
+        await api.unfavoriteSage(sage.id);
+        toast({ title: t('sage.unfavorite_success'), variant: 'success' });
       } else {
-        await api.installSage(sage.id);
-        toast({ title: t('sage.install_success'), variant: 'success' });
+        await api.favoriteSage(sage.id);
+        toast({ title: t('sage.favorite_success'), variant: 'success' });
       }
       load();
     } catch (err: any) {
@@ -61,7 +61,7 @@ export default function SagePage() {
     setToggling((s) => { const n = new Set(s); n.delete(sage.id); return n; });
   };
 
-  const installedCount = sages.filter((s) => s.installed).length;
+  const favoritedCount = sages.filter((s) => s.favorited).length;
 
   return (
     <>
@@ -73,7 +73,7 @@ export default function SagePage() {
         <div className="flex items-center gap-2 md:gap-3">
           <div className="flex items-center gap-1 shrink-0">
             <FilterTab label={t('sage.all')} active={filter === 'all'} onClick={() => setFilter('all')} />
-            <FilterTab label={t('sage.installed')} active={filter === 'installed'} count={installedCount} onClick={() => setFilter('installed')} />
+            <FilterTab label={t('sage.favorited')} active={filter === 'favorited'} count={favoritedCount} onClick={() => setFilter('favorited')} />
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
@@ -122,7 +122,7 @@ export default function SagePage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        {s.installed && (
+                        {s.favorited && (
                           <span className="h-2 w-2 rounded-full bg-brand shrink-0" />
                         )}
                         <p className="font-semibold text-foreground truncate">
@@ -156,7 +156,7 @@ export default function SagePage() {
 
                   <div className="mt-4">
                     <Button
-                      variant={s.installed ? 'outline' : 'default'}
+                      variant={s.favorited ? 'outline' : 'default'}
                       size="sm"
                       className="h-7 text-xs"
                       disabled={toggling.has(s.id)}
@@ -164,10 +164,10 @@ export default function SagePage() {
                     >
                       {toggling.has(s.id) ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : s.installed ? (
-                        <><X className="h-3 w-3" /> {t('sage.uninstall')}</>
+                      ) : s.favorited ? (
+                        <><X className="h-3 w-3" /> {t('sage.unfavorite')}</>
                       ) : (
-                        <><Download className="h-3 w-3" /> {t('sage.install')}</>
+                        <><Star className="h-3 w-3" /> {t('sage.favorite')}</>
                       )}
                     </Button>
                   </div>

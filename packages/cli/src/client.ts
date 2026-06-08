@@ -202,9 +202,9 @@ export class NothingClient {
 
   // ─── Sages ─────────────────────────────────────────────────────
 
-  listSages(query?: { installed?: boolean; keyword?: string }) {
+  listSages(query?: { favorited?: boolean; keyword?: string }) {
     const params = new URLSearchParams()
-    if (query?.installed !== undefined) params.set('installed', String(query.installed))
+    if (query?.favorited !== undefined) params.set('favorited', String(query.favorited))
     if (query?.keyword) params.set('keyword', query.keyword)
     const qs = params.toString()
     return this.request<{ sages: any[] }>('GET', `/api/sages${qs ? '?' + qs : ''}`)
@@ -214,11 +214,11 @@ export class NothingClient {
     return this.request<{ sages: any[] }>('GET', `/api/sages/search?q=${encodeURIComponent(keyword)}`)
   }
 
-  installSage(id: string) {
-    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/install`)
+  favoriteSage(id: string) {
+    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/favorite`)
   }
 
-  uninstallSage(id: string) {
-    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/uninstall`)
+  unfavoriteSage(id: string) {
+    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/unfavorite`)
   }
 }
