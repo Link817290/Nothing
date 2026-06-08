@@ -18,7 +18,7 @@ export { Registry } from './registry.js'
 export { schemaRegistry, resolveSchema } from './schemas.js'
 
 // Validation
-export { validatePayload, validateMarkdown, validateExecutionCapsule, validateHelpRequest } from './validate.js'
+export { validatePayload, validateMarkdown, validateSage, validateHelpRequest } from './validate.js'
 export type { ValidationResult } from './validate.js'
 
 // Smart Envelope — routing + hooks

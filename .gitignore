@@ -23,3 +23,4 @@ data/
 *.tmp
 tmp/
 *.zip
+.claude/settings.local.json

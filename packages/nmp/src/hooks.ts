@@ -206,18 +206,16 @@ export function postReadHook(payload: NmpPayload | null | undefined): string[] {
     }
   }
 
-  if (payload.execution_capsule) {
-    const cap = payload.execution_capsule
-    lines.push(`📦 Execution Capsule: ${cap.name || 'unnamed'} v${cap.version || '?'}`)
-    if (cap.description) lines.push(`   ${cap.description}`)
-    lines.push(`   Use nothing_capsule_inspect to view state machine and tool policy.`)
+  if (payload.type === 'nmp:task' || payload.type === 'nmp:help-request') {
+    lines.push(`📋 This is a task request. Deliver the result and reply with nmp:task-result.`)
+    if (payload.sage_id) lines.push(`   Sage: ${payload.sage_id}`)
   }
 
-  if (payload.experience_pack) {
-    const pack = payload.experience_pack
-    lines.push(`📦 Experience Pack: ${pack.name || 'unnamed'} [${pack.id}]`)
-    if (pack.activation?.keywords?.length) lines.push(`   Keywords: ${pack.activation.keywords.join(', ')}`)
-    lines.push(`   Use nothing_experience_packs to browse, or install via nothing_experience_pack_search.`)
+  if (payload.task_result) {
+    const tr = payload.task_result
+    lines.push(`📋 Task Result: ${tr.status}`)
+    if (tr.summary) lines.push(`   ${tr.summary}`)
+    if (tr.notes) lines.push(`   Notes: ${tr.notes}`)
   }
 
   if (payload.ack) {

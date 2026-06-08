@@ -64,47 +64,13 @@ export function generateMarkdown(
     sections.push(`## Help Request\n\n${parts.join('\n')}`)
   }
 
-  // ## Execution Capsule (optional — summary for AI reading)
-  if (payload.execution_capsule) {
-   try {
-    const cap = payload.execution_capsule
-    const sm = cap.state_machine
-    const parts: string[] = [
-      `- id: ${cap.id}`,
-      `- name: ${cap.name}`,
-      `- version: ${cap.version}`,
-      `- applies_to: ${cap.activation?.task_types?.join(', ') || 'general'}`,
-      `- entry_state: ${sm?.initial || 'start'}`,
-    ]
-    if (cap.description) parts.push(`- description: ${cap.description}`)
-    sections.push(`## Execution Capsule\n\n${parts.join('\n')}`)
-
-    // State Machine
-    if (sm?.states) {
-      const smParts: string[] = []
-      for (const [name, state] of Object.entries(sm.states)) {
-        for (const t of (state as any).transitions || []) {
-          smParts.push(`- ${name} -> ${t.to}`)
-        }
-      }
-      if (smParts.length) sections.push(`## State Machine\n\n${smParts.join('\n')}`)
-    }
-
-    // Tool Policy
-    if (cap.tool_policy) {
-      const tp = cap.tool_policy
-      const tpParts = [`- allow: ${tp.allow?.join(', ') || '*'}`]
-      if (tp.deny?.length) tpParts.push(`- deny: ${tp.deny.join(', ')}`)
-      if (tp.require_confirm?.length) tpParts.push(`- require_confirm: ${tp.require_confirm.join(', ')}`)
-      sections.push(`## Tool Policy\n\n${tpParts.join('\n')}`)
-    }
-
-    // Validators
-    if (cap.validators?.length) {
-      const vParts = cap.validators.map((v: any) => `- ${v.rule || v.id || v.type || 'check'}`)
-      sections.push(`## Validators\n\n${vParts.join('\n')}`)
-    }
-   } catch { /* capsule markdown generation failed — skip, don't crash */ }
+  // ## Task Result (optional)
+  if (payload.task_result) {
+    const tr = payload.task_result
+    const parts: string[] = [`- status: ${tr.status}`]
+    if (tr.summary) parts.push(`- summary: ${tr.summary}`)
+    if (tr.notes) parts.push(`- notes: ${tr.notes}`)
+    sections.push(`## Task Result\n\n${parts.join('\n')}`)
   }
 
   return sections.join('\n\n') + '\n'

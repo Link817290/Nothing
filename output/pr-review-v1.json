@@ -1,0 +1,109 @@
+{
+  "id": "pr-review-v1",
+  "name": "PR 代码审查",
+  "version": "2.0",
+  "description": "对 Git 分支或 PR 进行结构化代码审查。先理解变更意图，再按安全/正确/性能/可维护性逐文件审查，验证发现后输出分级报告。",
+  "activation": {
+    "keywords": ["review", "审查", "PR", "code review", "代码审查", "merge", "合并", "cr"],
+    "task_types": ["code-review"]
+  },
+  "inputs": [
+    {
+      "name": "target",
+      "type": "string",
+      "description": "审查目标：PR 编号（如 #123）、分支名（如 feat/xxx）、或 commit range（如 HEAD~3..HEAD）",
+      "required": true
+    },
+    {
+      "name": "focus",
+      "type": "string",
+      "description": "审查重点（可选）：security / performance / logic / all（默认 all）",
+      "required": false
+    }
+  ],
+  "state_machine": {
+    "initial": "s0_env",
+    "final": ["done"],
+    "states": {
+      "s0_env": {
+        "title": "环境与范围",
+        "goal": "确认 git 环境，获取变更范围和统计",
+        "instructions": "1. 确认在 git 仓库中：git rev-parse --is-inside-work-tree\n2. 检测 gh CLI 是否可用：gh --version\n3. 获取当前分支：git branch --show-current\n4. 根据 target 获取变更统计：\n   - PR #号：有 gh → gh pr diff <号> --stat；无 gh → 提示提供分支名\n   - 分支名：git diff main...<branch> --stat\n   - commit range：git diff <range> --stat\n5. 记录：变更文件列表、新增/修改/删除数、总行数、涉及语言\n6. 如果变更 >2000 行，提醒用户并建议指定 focus 或关键文件\n\n如果不在 git 仓库中，告知用户并转 done。",
+        "expected_outputs": ["git 环境确认", "变更文件列表与统计"],
+        "allowed_tools": ["Bash"],
+        "transitions": [
+          { "to": "s1_understand", "when": "获得变更范围" },
+          { "to": "done", "when": "不在 git 仓库或无法获取变更" }
+        ]
+      },
+      "s1_understand": {
+        "title": "理解变更意图",
+        "goal": "先理解这次变更要做什么，再审查",
+        "instructions": "在逐行审查之前，先建立宏观理解：\n1. 读 commit messages：git log <range> --oneline\n2. 如果是 PR，读 PR 描述（gh pr view <号> --json body）\n3. 浏览变更文件列表，识别：\n   - 核心逻辑变更（业务代码）\n   - 基础设施变更（配置、CI、依赖）\n   - 测试变更\n4. 总结：这次变更的目的是什么？影响哪些模块？\n\n这一步不做评判，只做理解。理解错误会导致误报。",
+        "expected_outputs": ["变更目的摘要", "模块影响分析"],
+        "allowed_tools": ["Bash", "Read", "Grep", "Glob"],
+        "transitions": [
+          { "to": "s2_review", "when": "理解了变更意图" }
+        ]
+      },
+      "s2_review": {
+        "title": "逐文件审查",
+        "goal": "对每个变更文件按六个维度进行审查",
+        "instructions": "对每个变更文件，用 Read 读取完整内容（需要上下文），用 Grep 搜索风险模式。\n\n六个审查维度：\n\n1. 安全性\n   - 注入（SQL/命令/XSS/SSRF）\n   - 硬编码密钥/密码/token\n   - 路径遍历、不安全反序列化\n   - 权限/认证检查缺失\n\n2. 正确性\n   - 逻辑错误、边界条件\n   - 空值/异常处理不当\n   - 类型不匹配、竞态条件\n\n3. 数据完整性\n   - 输入校验缺失\n   - 事务/原子性问题\n   - 数据丢失风险\n\n4. 性能\n   - N+1 查询\n   - 不必要的循环/分配\n   - 缺少缓存或索引\n\n5. 可维护性\n   - 代码重复\n   - 函数过长（>50行）\n   - 命名不清、魔法数字\n\n6. 稳定性\n   - 错误处理不完整\n   - 降级策略缺失\n   - 资源泄漏（连接/文件句柄）\n\n每个发现记录：\n  文件:行号 | severity | 维度 | 描述 | 建议修复（附代码）\n\nseverity 分级：\n  blocking — 必须修复才能合并\n  critical — 高风险 bug 或安全问题\n  suggestion — 改进建议\n  nit — 风格/格式\n  praise — 写得好的地方（也要记录）\n\n如果用户指定了 focus，该维度的权重提高。",
+        "expected_outputs": ["每个文件的发现列表"],
+        "allowed_tools": ["Read", "Grep", "Glob", "Bash"],
+        "transitions": [
+          { "to": "s3_validate", "when": "所有文件审查完成" }
+        ]
+      },
+      "s3_validate": {
+        "title": "验证发现",
+        "goal": "二次确认每个发现，过滤误报",
+        "instructions": "对 s2 中的每个 blocking/critical 发现：\n1. 重新读相关代码上下文（前后 20 行）\n2. 确认问题是否真实存在（不是误解了逻辑）\n3. 检查是否有其他地方已经处理了这个问题（如上层校验、中间件）\n4. 降级或移除误报\n\n对 suggestion/nit：快速复核，明显误报直接移除。\n\n这一步很关键——宁可漏报也不要误报。误报会损害审查可信度。",
+        "expected_outputs": ["验证后的发现列表"],
+        "allowed_tools": ["Read", "Grep", "Glob"],
+        "transitions": [
+          { "to": "s4_report", "when": "验证完成" }
+        ]
+      },
+      "s4_report": {
+        "title": "生成报告",
+        "goal": "汇总为结构化审查报告",
+        "instructions": "生成 Markdown 报告：\n\n## 概览\n- 审查目标（分支/PR/commit range）\n- 变更统计（文件数、+/- 行数）\n- 变更目的（一句话）\n- 总体评价：✅ 可合并 / ⚠️ 需修复后合并 / ❌ 建议不合并\n- 审查工作量评估（1-5，参考 PR-Agent effort score）\n\n## 发现\n按 severity 排序（blocking → critical → suggestion → nit），每条：\n- **[severity] [维度] 文件:行号** — 描述\n- 建议修复（附代码块）\n\n## 亮点\n写得好的地方（praise），鼓励好实践\n\n## 总结建议\n1-3 条总结性改进方向\n\n将报告展示给用户。",
+        "expected_outputs": ["Markdown 审查报告"],
+        "allowed_tools": ["Bash"],
+        "transitions": [
+          { "to": "done", "when": "报告完成" }
+        ]
+      },
+      "done": {
+        "title": "完成",
+        "goal": "交付审查结果",
+        "instructions": "展示报告。如果有 blocking/critical 问题，明确提醒不应合并。",
+        "expected_outputs": ["审查报告"],
+        "allowed_tools": [],
+        "transitions": []
+      }
+    }
+  },
+  "tool_policy": {
+    "allow": ["Read", "Glob", "Grep", "Bash"],
+    "deny": ["rm -rf", "git push", "git merge", "git rebase", "git reset --hard", "git checkout -- .", "npm publish"],
+    "command_rules": [
+      { "pattern": "^git (diff|log|show|branch|status|rev-parse|remote|shortlog)", "effect": "allow", "reason": "只读 git 操作" },
+      { "pattern": "^gh (pr diff|pr view|pr list|pr checks)", "effect": "allow", "reason": "只读 GitHub PR 操作" },
+      { "pattern": "^(cat|head|tail|wc|sort|uniq|find|ls)", "effect": "allow", "reason": "文件查看" },
+      { "pattern": "git (push|merge|rebase|reset|checkout|cherry-pick|commit|stash)", "effect": "deny", "reason": "禁止修改 git 状态" },
+      { "pattern": "git (branch -[dD]|tag -d)", "effect": "deny", "reason": "禁止删除分支/标签" },
+      { "pattern": "(rm |del |rmdir|format |npm i|pip install|apt |brew )", "effect": "deny", "reason": "禁止修改文件和安装依赖" }
+    ]
+  },
+  "validators": [
+    { "id": "v_structure", "type": "custom", "rule": "报告包含概览、发现、亮点、总结建议四个部分", "target": "review_report", "severity": "error" },
+    { "id": "v_severity", "type": "custom", "rule": "每个发现都标注了 severity 和维度", "target": "review_report", "severity": "error" },
+    { "id": "v_validated", "type": "custom", "rule": "blocking/critical 发现经过二次验证", "target": "review_report", "severity": "warning" }
+  ],
+  "artifacts": [
+    { "name": "review_report", "type": "document", "mime_type": "text/markdown" }
+  ]
+}

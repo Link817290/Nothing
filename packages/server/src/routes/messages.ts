@@ -95,7 +95,7 @@ export async function messageRoutes(app: FastifyInstance) {
   app.post('/api/messages/:id/reply', { preHandler: requirePermission('write') }, async (req, reply) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
-    const body = req.body as { text: string; attachments?: { filename: string; content: string; content_type?: string }[]; execution_capsule?: any; experience_pack?: any }
+    const body = req.body as { text: string; attachments?: { filename: string; content: string; content_type?: string }[] }
     if (!body.text) return reply.code(400).send({ error: 'text required' })
     try {
       return await replyMessage(user.id, id, body)

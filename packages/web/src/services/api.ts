@@ -93,18 +93,16 @@ export const api = {
   reports: (params?: Record<string, string>) =>
     request(`/reports${params ? '?' + new URLSearchParams(params) : ''}`),
 
-  // ── Experience Packs ──────────────────────────────
-  experiencePacks: (params?: Record<string, string>) =>
-    request(`/experience-packs${params ? '?' + new URLSearchParams(params) : ''}`),
-  experiencePack: (id: string) => request(`/experience-packs/${id}`),
-  searchExperiencePacks: (q: string) =>
-    request(`/experience-packs/search?q=${encodeURIComponent(q)}`),
-  saveExperiencePack: (capsuleId: string) =>
-    request('/experience-packs', { method: 'POST', body: JSON.stringify({ capsule_id: capsuleId }) }),
-  installExperiencePack: (id: string) =>
-    request(`/experience-packs/${id}/install`, { method: 'PUT' }),
-  uninstallExperiencePack: (id: string) =>
-    request(`/experience-packs/${id}/uninstall`, { method: 'PUT' }),
+  // ── Sages ────────────────────────────────────────
+  sages: (params?: Record<string, string>) =>
+    request(`/sages${params ? '?' + new URLSearchParams(params) : ''}`),
+  sage: (id: string) => request(`/sages/${id}`),
+  searchSages: (q: string) =>
+    request(`/sages/search?q=${encodeURIComponent(q)}`),
+  installSage: (id: string) =>
+    request(`/sages/${id}/install`, { method: 'PUT' }),
+  uninstallSage: (id: string) =>
+    request(`/sages/${id}/uninstall`, { method: 'PUT' }),
 
   // ── Agent ────────────────────────────────────────
   organizeThreads: () =>

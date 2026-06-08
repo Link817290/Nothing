@@ -88,11 +88,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
     await withTransaction(async (q) => {
       await q('DELETE FROM thread_summaries')
-      await q('DELETE FROM experience_packs')
-      await q('DELETE FROM capsule_events')
-      await q('DELETE FROM artifacts')
-      await q('DELETE FROM capsule_runs')
-      await q('DELETE FROM execution_capsules')
+      await q('DELETE FROM sages')
       await q('DELETE FROM attachments')
       await q('DELETE FROM messages')
       await q('UPDATE email_accounts SET last_sync_at = NOW()')
@@ -135,11 +131,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
     await withTransaction(async (q) => {
       await q('DELETE FROM thread_summaries')
-      await q('DELETE FROM experience_packs')
-      await q('DELETE FROM capsule_events')
-      await q('DELETE FROM artifacts')
-      await q('DELETE FROM capsule_runs')
-      await q('DELETE FROM execution_capsules')
+      await q('DELETE FROM sages')
       await q('DELETE FROM attachments')
       await q('DELETE FROM verification_codes')
       await q('DELETE FROM tasks')

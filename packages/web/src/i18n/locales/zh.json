@@ -16,7 +16,7 @@
     "mailboxes": "邮箱",
     "system": "系统",
     "projects": "所有项目",
-    "packs": "经验包"
+    "sage": "智者"
   },
   "search": {
     "placeholder": "搜索消息..."
@@ -237,11 +237,11 @@
     "no_threads": "暂无会话",
     "no_threads_hint": "当消息被标记此项目时，会话将出现在这里"
   },
-  "packs": {
-    "title": "经验包",
-    "subtitle": "可运行的胶囊化工作流",
-    "empty": "暂无经验包",
-    "empty_hint": "收到执行胶囊邮件后，经验包会出现在这里",
+  "sage": {
+    "title": "智者",
+    "subtitle": "专家服务协议 — 找到能帮你的人",
+    "empty": "暂无智者",
+    "empty_hint": "智者定义了专家能帮你做什么",
     "search_placeholder": "按关键词搜索...",
     "installed": "已安装",
     "all": "全部",
@@ -249,8 +249,7 @@
     "uninstall": "卸载",
     "keywords": "关键词",
     "from": "来自",
-    "capsule": "胶囊",
-    "no_results": "没有匹配的经验包",
+    "no_results": "没有匹配的智者",
     "install_success": "已安装",
     "uninstall_success": "已卸载"
   },

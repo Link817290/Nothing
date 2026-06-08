@@ -135,77 +135,18 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
 
--- ─── Execution Capsules ─────────────────────────────────────────
+-- ─── Sages (Expert Service Protocols) ────────────────────────────
 
-CREATE TABLE IF NOT EXISTS execution_capsules (
+CREATE TABLE IF NOT EXISTS sages (
   id TEXT PRIMARY KEY,
   owner_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  source_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
-  version TEXT NOT NULL,
   description TEXT,
-  capsule_json JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS capsule_runs (
-  id TEXT PRIMARY KEY,
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  capsule_id TEXT REFERENCES execution_capsules(id) ON DELETE CASCADE,
-  source_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
-  help_request_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'created',
-  current_state TEXT NOT NULL,
-  run_json JSONB NOT NULL DEFAULT '{}',
-  inputs JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  completed_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS capsule_events (
-  id TEXT PRIMARY KEY,
-  run_id TEXT REFERENCES capsule_runs(id) ON DELETE CASCADE,
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  event_type TEXT NOT NULL,
-  state TEXT,
-  message TEXT,
-  event_json JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS artifacts (
-  id TEXT PRIMARY KEY,
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  run_id TEXT REFERENCES capsule_runs(id) ON DELETE SET NULL,
-  message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
-  attachment_id TEXT REFERENCES attachments(id) ON DELETE SET NULL,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  mime_type TEXT,
-  sha256 TEXT,
-  size INTEGER,
-  provenance_json JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ─── Experience Packs ────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS experience_packs (
-  id TEXT PRIMARY KEY,
-  owner_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  capsule_id TEXT REFERENCES execution_capsules(id) ON DELETE CASCADE,
-  source_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
-  name TEXT NOT NULL,
-  kind TEXT NOT NULL DEFAULT 'execution_capsule',
-  description TEXT,
+  version TEXT,
   author_email TEXT,
-  installable BOOLEAN NOT NULL DEFAULT TRUE,
-  runnable BOOLEAN NOT NULL DEFAULT TRUE,
   installed BOOLEAN NOT NULL DEFAULT FALSE,
   keywords TEXT[] DEFAULT '{}',
-  metadata_json JSONB DEFAULT '{}',
+  sage_json JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -228,23 +169,14 @@ CREATE TABLE IF NOT EXISTS thread_summaries (
 CREATE INDEX IF NOT EXISTS idx_thread_summaries_thread ON thread_summaries(thread_id);
 CREATE INDEX IF NOT EXISTS idx_thread_summaries_user ON thread_summaries(user_id);
 
-CREATE INDEX IF NOT EXISTS idx_capsules_owner ON execution_capsules(owner_user_id);
-CREATE INDEX IF NOT EXISTS idx_runs_user ON capsule_runs(user_id);
-CREATE INDEX IF NOT EXISTS idx_runs_capsule ON capsule_runs(capsule_id);
-CREATE INDEX IF NOT EXISTS idx_runs_user_capsule ON capsule_runs(user_id, capsule_id);
-CREATE INDEX IF NOT EXISTS idx_events_run ON capsule_events(run_id);
-CREATE INDEX IF NOT EXISTS idx_events_user_run ON capsule_events(user_id, run_id);
-CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id);
-CREATE INDEX IF NOT EXISTS idx_artifacts_user ON artifacts(user_id);
-CREATE INDEX IF NOT EXISTS idx_experience_packs_owner ON experience_packs(owner_user_id);
-CREATE INDEX IF NOT EXISTS idx_experience_packs_capsule ON experience_packs(capsule_id);
+CREATE INDEX IF NOT EXISTS idx_sages_owner ON sages(owner_user_id);
 
 -- Trigram index for full-text search (safe if extension not available)
 DO $$ BEGIN
   CREATE EXTENSION IF NOT EXISTS pg_trgm;
   CREATE INDEX IF NOT EXISTS idx_messages_subject_trgm ON messages USING gin (subject gin_trgm_ops);
   CREATE INDEX IF NOT EXISTS idx_messages_content_trgm ON messages USING gin (content gin_trgm_ops);
-  CREATE INDEX IF NOT EXISTS idx_experience_packs_keywords ON experience_packs USING gin (keywords);
+  CREATE INDEX IF NOT EXISTS idx_sages_keywords ON sages USING gin (keywords);
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 `

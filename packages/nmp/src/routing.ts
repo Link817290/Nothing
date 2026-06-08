@@ -59,8 +59,7 @@ export function decideRoute(input: RouteInput): RouteResult {
   }
 
   // R3: Both parent and this have artifacts → revision (hard fact)
-  // Check both parent.artifact field AND parentHasArtifact flag
-  const parentHadArtifact = !!(parent.artifact || parentHasArtifact)
+  const parentHadArtifact = !!parentHasArtifact
   if (parentHadArtifact && hasArtifact) {
     return { route: 'revise', needLLM: false, confidence: 'high' }
   }

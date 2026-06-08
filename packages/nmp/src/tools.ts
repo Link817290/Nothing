@@ -25,7 +25,6 @@ export const NMP_TOOLS = {
         conversation_id: { type: 'string', description: 'Conversation/thread ID to continue an existing conversation.' },
         expires: { type: 'string', description: 'ISO 8601 expiry timestamp. Message becomes stale after this time.' },
         help_request: { type: 'object', description: 'Structured help request with goal, background, constraints, and expected artifacts.' },
-        execution_capsule: { type: 'object', description: 'Execution Capsule with state machine, tool policy, validators.' },
         ack: { type: 'boolean', description: 'Request delivery acknowledgment from recipient.' },
       },
       required: ['to', 'text'],
@@ -75,15 +74,13 @@ export const NMP_TOOLS = {
 
   nothing_reply: {
     name: 'nothing_reply',
-    description: 'Reply to a message within its thread. Use when the user says "reply to that", "tell them yes", "respond with...". Automatically inherits project, labels, and thread context from the original message. Can include execution_capsule for version iteration.',
+    description: 'Reply to a message within its thread. Use when the user says "reply to that", "tell them yes", "respond with...". Automatically inherits project, labels, and thread context from the original message.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         id: { type: 'string', description: 'Message ID to reply to' },
         text: { type: 'string', description: 'Reply body' },
         files: { type: 'array', items: { type: 'string' }, description: 'File paths to attach' },
-        execution_capsule: { type: 'object', description: 'Execution Capsule (for iterating capsule versions in a thread)' },
-        experience_pack: { type: 'object', description: 'Experience Pack metadata (for registry)' },
       },
       required: ['id', 'text'],
     },
@@ -134,6 +131,7 @@ export const NMP_TOOLS = {
       },
     },
   },
+
   nothing_search: {
     name: 'nothing_search',
     description: 'Search messages by keyword. Use when the user asks "find messages about...", "search for...", or "any messages mentioning...".',
@@ -199,108 +197,27 @@ export const NMP_TOOLS = {
     },
   },
 
-  // ─── Execution Capsule Tools ────────────────────────────────
+  // ─── Sage Tools ────────────────────────────────────────────
 
-  nothing_capsule_inspect: {
-    name: 'nothing_capsule_inspect',
-    description: 'Inspect an Execution Capsule from a received message. Shows state machine, tool policy, validators, and artifact specs. Use when you receive an nmp:execution-capsule message.',
+  nothing_sages: {
+    name: 'nothing_sages',
+    description: 'Browse available Sages (expert service protocols). Sages define what an expert can help with, what you need to provide, and what they deliver. Use when user asks "what help is available?", "who can help me?", "show sages".',
     inputSchema: {
       type: 'object' as const,
       properties: {
-        id: { type: 'string', description: 'Message ID or Capsule ID to inspect' },
-      },
-      required: ['id'],
-    },
-  },
-
-  nothing_capsule_start: {
-    name: 'nothing_capsule_start',
-    description: 'Start executing a capsule. Creates a run and returns the initial state with goal, allowed tools, and expected outputs. Use after inspecting a capsule to begin the task.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        capsule_id: { type: 'string', description: 'Capsule ID to execute' },
-        inputs: { type: 'object', description: 'Input values required by the capsule (e.g., { topic: "AI startup", slides: 10 })' },
-      },
-      required: ['capsule_id'],
-    },
-  },
-
-  nothing_capsule_next: {
-    name: 'nothing_capsule_next',
-    description: 'Get the current state of a running capsule. Returns the goal, instructions, allowed tools, expected outputs, and validators for the current step. Call this to know what to do next.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        run_id: { type: 'string', description: 'Run ID from capsule_start' },
-      },
-      required: ['run_id'],
-    },
-  },
-
-  nothing_capsule_guard: {
-    name: 'nothing_capsule_guard',
-    description: 'Check if a command is allowed by the capsule tool policy BEFORE executing it. Returns allow/deny/confirm with reason. Always call this before running shell commands during capsule execution.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        run_id: { type: 'string', description: 'Run ID' },
-        command: { type: 'string', description: 'The command to check (e.g., "python build_ppt.py", "npm install x")' },
-      },
-      required: ['run_id', 'command'],
-    },
-  },
-
-  nothing_capsule_event: {
-    name: 'nothing_capsule_event',
-    description: 'Record an event during capsule execution. Use to log state transitions, tool calls, validation results, or notes. This builds the execution timeline.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        run_id: { type: 'string', description: 'Run ID' },
-        type: { type: 'string', enum: ['state_entered', 'state_completed', 'tool_requested', 'tool_allowed', 'tool_denied', 'validator_passed', 'validator_failed', 'artifact_created', 'blocked', 'note'], description: 'Event type' },
-        state: { type: 'string', description: 'Current state name' },
-        message: { type: 'string', description: 'Event description' },
-        data: { type: 'object', description: 'Additional event data' },
-      },
-      required: ['run_id', 'type'],
-    },
-  },
-
-  nothing_capsule_validate: {
-    name: 'nothing_capsule_validate',
-    description: 'Validate an artifact against capsule validators. Call after generating the expected output to check if it meets requirements (file exists, correct format, structure rules, etc.).',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        run_id: { type: 'string', description: 'Run ID' },
-        artifact_path: { type: 'string', description: 'Path to the artifact file to validate' },
-        artifact_name: { type: 'string', description: 'Name of the artifact (matches capsule artifact spec)' },
-      },
-      required: ['run_id', 'artifact_path'],
-    },
-  },
-  // ─── Experience Pack Tools ──────────────────────────────────
-
-  nothing_experience_packs: {
-    name: 'nothing_experience_packs',
-    description: 'Browse experience packs (经验包) — installable capsule-based workflows. Use when user asks "what packs do I have?", "show experience packs", "what capsules are available?".',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        installed: { type: 'boolean', description: 'Only show installed packs (default: show all)' },
-        keyword: { type: 'string', description: 'Filter by activation keyword' },
+        installed: { type: 'boolean', description: 'Only show installed sages (default: show all)' },
+        keyword: { type: 'string', description: 'Filter by keyword' },
       },
     },
   },
 
-  nothing_experience_pack_search: {
-    name: 'nothing_experience_pack_search',
-    description: 'Search experience packs by keyword. Use when user mentions a task that might match a pack (e.g., "写作", "writing", "code review", "deploy"). Returns matching packs with activation info and capsule ID for launching.',
+  nothing_sage_search: {
+    name: 'nothing_sage_search',
+    description: 'Search Sages by keyword. Use when the user describes a task they need help with — search for a matching sage that can handle it. If found, suggest using it.',
     inputSchema: {
       type: 'object' as const,
       properties: {
-        keyword: { type: 'string', description: 'Keyword to search (e.g., "写作", "deploy", "review")' },
+        keyword: { type: 'string', description: 'Keyword to search (e.g., "审查", "deploy", "review")' },
       },
       required: ['keyword'],
     },

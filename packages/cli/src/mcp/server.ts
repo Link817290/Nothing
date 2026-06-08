@@ -73,8 +73,8 @@ AVAILABLE TOOLS:
   nothing_sent     — Check sent status. Trigger: "did they reply", "delivery status"
   nothing_projects — List projects. Trigger: "project overview", "what projects"
   nothing_report   — Activity report. Trigger: "weekly summary", "report"
-  nothing_experience_packs — Browse experience packs. Trigger: "show packs", "what capsules", "经验包"
-  nothing_experience_pack_search — Search packs by keyword. Trigger: "写作", "deploy", task keywords
+  nothing_sages  — Browse expert services (Sage). Trigger: "who can help", "show sages", "智者"
+  nothing_sage_search — Search sages by keyword. Trigger: task keywords
 
 BEST PRACTICES:
   - Only set project when user explicitly asks to tag one
@@ -101,10 +101,8 @@ SMART ENVELOPE (auto-tagging + routing — the system handles most of this):
 
   Rich fields (fill ONLY when clearly needed — do NOT add speculatively):
   - reply_schema: ONLY when user explicitly asks for structured responses
-    (e.g., "reply with {approved: bool, reason: string}")
   - help_request: ONLY when user explicitly asks for help with goal + constraints
   - capabilities/require: ONLY when user mentions skill requirements
-  - execution_capsule: ONLY for formal experience packages with state machines
 
 CODE CONTEXT (always fill when discussing code):
   - context.repo: Run "git remote get-url origin" to get the repo URL
@@ -112,159 +110,26 @@ CODE CONTEXT (always fill when discussing code):
   - context.lines: Line range if relevant (e.g., "10-25")
   - context.language: Auto-inferred from extension if omitted
 
-EXPERIENCE PACKS (经验包):
+SAGE (智者 — expert service protocols):
 
-  Installed experience packs are pre-built workflows users can run.
-  When a user describes a task, search installed packs by keyword
-  (nothing_experience_pack_search). If a match is found and installed,
-  offer to run it. If confirmed, start via nothing_capsule_start and
-  enter STRICT EXECUTION MODE.
+  Sages are expert service protocols that define what an expert can help with.
+  When a user is struggling with a task or not satisfied with results,
+  search for a matching sage (nothing_sage_search). If found:
+    1. Tell the user a sage is available and what it can do
+    2. User confirms → send nmp:task to the expert via nothing_send
+    3. Expert processes the request and replies with results
 
-  Browse: nothing_experience_packs
-  Search: nothing_experience_pack_search
-  Create & send to others: nothing_send with execution_capsule
+  This should feel smooth and natural — not a separate workflow.
+  The user just says "帮我审查这个 PR" and you check if there's a sage for it.
 
-  Example flow:
-    User: "帮我写一封交付延期说明"
-    → nothing_experience_pack_search("写作")
-    → found installed pack "工作写作模式"
-    → "你有「工作写作模式」经验包，要用它来写吗？"
-    → user confirms
-    → nothing_capsule_start(capsule_id) → STRICT EXECUTION MODE
+  Browse: nothing_sages
+  Search: nothing_sage_search
 
-EXPERIENCE CAPSULES (经验包 — execution format):
-
-  A capsule = state machine + tool boundary + validators.
-  Sender builds it, receiver executes it via MCP tools.
-
-  ── STRUCTURE ──
-
-  {
-    "id": "cap_<random>",
-    "name": "...",
-    "version": "1.0",
-    "description": "...",
-    "state_machine": {
-      "initial": "<first_state>",
-      "final": ["<end_state>"],
-      "states": {
-        "<state_name>": {
-          "goal": "what to achieve in this state",
-          "instructions": "how to do it",
-          "expected_outputs": ["what success looks like"],
-          "allowed_tools": ["tools available in this state"],
-          "transitions": [{ "to": "<next_state>", "when": "condition" }]
-        }
-      }
-    },
-    "tool_policy": {
-      "allow": ["tools the executor may use"],
-      "deny": ["operations that are forbidden"]
-    },
-    "validators": [
-      { "id": "v1", "type": "file_exists|file_type|schema|custom", "config": { ... } }
-    ],
-    "artifacts": [
-      { "name": "...", "type": "file", "mime_type": "..." }
-    ]
-  }
-
-  ── RULES ──
-
-  - Design states based on the actual task. 2-4 states is typical.
-  - tool_policy.deny is the BOUNDARY — forbidden operations are enforced.
-  - Each state can have its own allowed_tools (narrower than global policy).
-  - Validators define how to check outputs — the executor calls validate after work.
-
-  ── EXECUTION FLOW (receiver side, via MCP tools) ──
-
-    nothing_capsule_inspect → understand the capsule
-    nothing_capsule_start   → begin, get initial state
-    nothing_capsule_next    → get current state goal + instructions
-    nothing_capsule_guard   → check EVERY command before running (boundary!)
-    nothing_capsule_event   → log state transitions / tool calls
-    nothing_capsule_validate → verify outputs meet requirements
-
-    Flow: inspect → start → loop { next → guard → work → event → validate } → done
-    Guard is mandatory — if denied, the executor must NOT proceed.
-
-  ── SENDING ──
-
-  Use nothing_send with type "nmp:execution-capsule" and execution_capsule field.
-  Ask user only: "what should be done" and "who to send to". Infer the rest.
-
-EXECUTING EXPERIENCE CAPSULES (when you RECEIVE an nmp:execution-capsule message):
-  When you read a message with type "nmp:execution-capsule", execute it step by step.
-
-  ── STEP 1: INSPECT ──
-  Call nothing_capsule_inspect with the capsule id.
-  Read: state machine, tool policy, validators, artifacts.
-  Understand what is expected before doing anything.
-
-  ── STEP 2: START ──
-  Call nothing_capsule_start with the capsule_id.
-  You get: run_id, current_state, goal, instructions, allowed_tools.
-  Save the run_id — you need it for all subsequent calls.
-
-  ── STEP 3: WORK LOOP ──
-  Repeat until you reach a final state:
-
-    a) Call nothing_capsule_next with run_id.
-       Read the current state's goal, instructions, expected_outputs.
-
-    b) Before EVERY command or tool call:
-       Call nothing_capsule_guard with run_id + the command string.
-       - "allow" → proceed
-       - "deny" → DO NOT execute. Log event and skip or find alternative.
-       - "confirm" → ask the user before proceeding
-
-    c) Do the actual work (read files, write files, search, etc.)
-       Only use tools listed in the state's allowed_tools.
-
-    d) Call nothing_capsule_event to log what you did:
-       { type: "tool_call", state: "<current>", message: "what happened" }
-
-    e) When the state's expected_outputs are met, log a transition event:
-       { type: "state_transition", state: "<current>", data: { to: "<next>" } }
-       Then call nothing_capsule_next again to move forward.
-
-  ── STEP 4: VALIDATE ──
-  Before finishing, call nothing_capsule_validate for each artifact.
-  If validation fails, go back and fix the output.
-
-  ── STEP 5: COMPLETE ──
-  When you reach a final state, reply to the sender with the results.
-  Use nothing_reply with a summary of what was done + artifact references.
-
-  ── STRICT EXECUTION MODE ──
-  When a capsule run is active, you enter STRICT EXECUTION MODE:
-
-  1. TOOL LOCKDOWN: You may ONLY use tools listed in the current state's
-     allowed_tools. ALL other tools are FORBIDDEN. Do not call any tool
-     (Read, Write, Bash, Grep, etc.) unless it appears in allowed_tools
-     or is a nothing_capsule_* tool.
-
-  2. MANDATORY GUARD: Before EVERY shell command or tool call, you MUST
-     call nothing_capsule_guard. If it returns "deny", you MUST NOT
-     execute that command. No exceptions. No workarounds.
-
-  3. STATE MACHINE ONLY: Follow the state machine transitions exactly.
-     Do not skip states. Do not invent new states. Do not do work
-     outside the current state's goal.
-
-  4. NO SIDE EFFECTS: Do not install packages, modify files, or run
-     commands that are not directly required by the current state's goal
-     and instructions.
-
-  5. LOG EVERYTHING: Every tool call, state transition, and validation
-     must be recorded via nothing_capsule_event.
-
-  6. VALIDATE BEFORE DONE: Call nothing_capsule_validate for each artifact
-     before transitioning to a final state. If validation fails, fix and
-     re-validate.
-
-  7. IF STUCK: Reply to sender asking for help. Do NOT guess or bypass
-     the state machine.
+TASK PROTOCOL:
+  When you receive an nmp:task or nmp:help-request message:
+    1. The postReadHook will tell you what's expected (goal, constraints, deliverables)
+    2. Do the work using your normal tools
+    3. Reply with the result. The preReplyHook will check if you delivered what was asked.
 
 MINIMAL DISRUPTION (highest priority rule):
   - Default: zero questions, zero blocking. Most messages just send directly.
@@ -392,7 +257,7 @@ export async function startMcpServer() {
             explicitExpires: !!a.expires,
             explicitFields: {
               reply_schema: a.reply_schema as any,
-              artifact: undefined,
+              task_result: undefined,
             },
           })
 
@@ -413,7 +278,6 @@ export async function startMcpServer() {
             conversation_id: (a.conversation_id as string) || hookResult.patch.conversation_id,
             expires: (a.expires as string) || hookResult.patch.expires,
             help_request: a.help_request as Record<string, unknown> | undefined,
-            execution_capsule: a.execution_capsule as Record<string, unknown> | undefined,
             ack: a.ack as boolean | undefined,
           })
 
@@ -486,8 +350,6 @@ export async function startMcpServer() {
 
           const result = await client.reply(a.id as string, {
             text: a.text as string, attachments,
-            execution_capsule: a.execution_capsule as any,
-            experience_pack: a.experience_pack as any,
           })
 
           let output = JSON.stringify(result, null, 2)
@@ -577,105 +439,29 @@ export async function startMcpServer() {
           return { content: [{ type: 'text', text }] }
         }
 
-        // ─── Capsule Tools ──────────────────────────────────────
+        // ─── Sage Tools ─────────────────────────────────────────
 
-        case 'nothing_capsule_inspect': {
-          const capsule = await client.getCapsule(a.id as string)
-          const sm = capsule.state_machine
-          let text = `Capsule: ${capsule.name} v${capsule.version}\n`
-          if (capsule.description) text += `${capsule.description}\n`
-          text += `\nApplies to: ${capsule.activation?.task_types?.join(', ') || 'general'}\n`
-          text += `\nState Machine: ${sm?.initial || '?'} → ${sm?.final?.join(', ') || '?'}\n`
-          for (const [name, state] of Object.entries(sm.states)) {
-            text += `  ${name}: ${(state as any).goal}\n`
-          }
-          text += `\nTool Policy: allow=[${capsule.tool_policy.allow.join(',')}]`
-          if (capsule.tool_policy.deny?.length) text += ` deny=[${capsule.tool_policy.deny.join(',')}]`
-          text += `\nValidators: ${capsule.validators?.length || 0}`
-          if (capsule.artifacts?.length) text += `\nArtifacts: ${capsule.artifacts.map((a: any) => a.name).join(', ')}`
-          return { content: [{ type: 'text', text }] }
-        }
-
-        case 'nothing_capsule_start': {
-          const result = await client.startCapsule(a.capsule_id as string, a.inputs as Record<string, unknown> | undefined)
-          const state = result.capsule?.state_machine?.states?.[result.current_state]
-          const deny = result.capsule?.tool_policy?.deny || []
-          let text = `⚠ STRICT EXECUTION MODE ACTIVE\nRun: ${result.id}\nState: ${result.current_state}\n`
-          if (state) {
-            text += `\nGoal: ${state.goal}\n`
-            if (state.instructions) text += `Instructions: ${state.instructions}\n`
-            if (state.allowed_tools?.length) text += `ALLOWED tools (use ONLY these): ${state.allowed_tools.join(', ')}\n`
-            if (state.expected_outputs?.length) text += `Expected outputs: ${state.expected_outputs.join(', ')}\n`
-          }
-          if (deny.length) text += `DENIED operations: ${deny.join(', ')}\n`
-          text += `\nYou MUST call nothing_capsule_guard before every command.\nDo NOT use tools outside allowed_tools.`
-          return { content: [{ type: 'text', text }] }
-        }
-
-        case 'nothing_capsule_next': {
-          const step = await client.getNextStep(a.run_id as string)
-          if (step.is_final) return { content: [{ type: 'text', text: `Run completed (state: ${step.current_state})` }] }
-          let text = `State: ${step.current_state} [${step.status}]\n\nGoal: ${step.goal}\n`
-          if (step.instructions) text += `Instructions: ${step.instructions}\n`
-          if (step.allowed_tools?.length) {
-            text += `ALLOWED tools (ONLY these): ${step.allowed_tools.join(', ')}\n`
-          }
-          if (step.expected_outputs?.length) text += `Expected outputs: ${step.expected_outputs.join(', ')}\n`
-          if (step.transitions?.length) {
-            text += `\nTransitions:\n`
-            step.transitions.forEach((t: any) => { text += `  → ${t.to} when ${t.when}\n` })
-          }
-          text += `\n⚠ Guard every command. Do NOT use tools outside the list above.`
-          return { content: [{ type: 'text', text }] }
-        }
-
-        case 'nothing_capsule_guard': {
-          const result = await client.guardCommand(a.run_id as string, a.command as string)
-          return { content: [{ type: 'text', text: `${result.effect.toUpperCase()}: ${a.command}\nReason: ${result.reason}` }] }
-        }
-
-        case 'nothing_capsule_event': {
-          const result = await client.appendCapsuleEvent(a.run_id as string, {
-            type: a.type as string, state: a.state as string | undefined,
-            message: a.message as string | undefined, data: a.data as Record<string, unknown> | undefined,
-          })
-          return { content: [{ type: 'text', text: `Event recorded: ${result.event_id}` }] }
-        }
-
-        case 'nothing_capsule_validate': {
-          const result = await client.validateArtifact(
-            a.run_id as string, a.artifact_name as string, a.artifact_path as string | undefined
-          )
-          let text = `Artifact: ${result.artifact}\nResult: ${result.passed ? 'PASSED' : 'FAILED'}\n`
-          for (const r of result.results) {
-            text += `  ${r.passed ? '✓' : '✗'} ${r.id}: ${r.message}\n`
-          }
-          return { content: [{ type: 'text', text }] }
-        }
-
-        // ─── Experience Pack Tools ──────────────────────────────
-
-        case 'nothing_experience_packs': {
-          const result = await client.listExperiencePacks({
+        case 'nothing_sages': {
+          const result = await client.listSages({
             installed: a.installed as boolean | undefined,
             keyword: a.keyword as string | undefined,
           })
-          if (result.packs.length === 0) {
-            return { content: [{ type: 'text', text: 'No experience packs found.' }] }
+          if (result.sages.length === 0) {
+            return { content: [{ type: 'text', text: 'No sages found.' }] }
           }
-          const text = result.packs.map((p: any) =>
-            `${p.installed ? '✓' : '○'} ${p.name} [${p.id}]\n  Keywords: ${(p.keywords || []).join(', ') || '—'}\n  Capsule: ${p.capsule_id}${p.author_email ? '\n  From: ' + p.author_email : ''}`
+          const text = result.sages.map((s: any) =>
+            `${s.installed ? '✓' : '○'} ${s.name}${s.version ? ' v' + s.version : ''} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ') || '—'}${s.author_email ? '\n  From: ' + s.author_email : ''}`
           ).join('\n\n')
           return { content: [{ type: 'text', text }] }
         }
 
-        case 'nothing_experience_pack_search': {
-          const result = await client.searchExperiencePacks(a.keyword as string)
-          if (result.packs.length === 0) {
-            return { content: [{ type: 'text', text: `No experience packs matching "${a.keyword}".` }] }
+        case 'nothing_sage_search': {
+          const result = await client.searchSages(a.keyword as string)
+          if (result.sages.length === 0) {
+            return { content: [{ type: 'text', text: `No sages matching "${a.keyword}".` }] }
           }
-          const text = result.packs.map((p: any) =>
-            `${p.installed ? '✓' : '○'} ${p.name} [${p.id}]\n  Keywords: ${(p.keywords || []).join(', ')}\n  Capsule: ${p.capsule_id} — use nothing_capsule_start to run`
+          const text = result.sages.map((s: any) =>
+            `${s.installed ? '✓' : '○'} ${s.name} [${s.id}]\n  ${s.description || '—'}\n  Keywords: ${(s.keywords || []).join(', ')}`
           ).join('\n\n')
           return { content: [{ type: 'text', text }] }
         }

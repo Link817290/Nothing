@@ -67,66 +67,19 @@ export function validatePayload(payload: unknown): ValidationResult {
   return { valid: errors.length === 0, errors, level }
 }
 
-/** Validate an Execution Capsule */
-export function validateExecutionCapsule(capsule: unknown): ValidationResult {
+/** Validate a Sage (expert service protocol) */
+export function validateSage(sage: unknown): ValidationResult {
   const errors: string[] = []
 
-  if (!capsule || typeof capsule !== 'object') {
-    return { valid: false, errors: ['Capsule is not an object'], level: NMP_COMPLIANCE.NONE }
+  if (!sage || typeof sage !== 'object') {
+    return { valid: false, errors: ['Sage is not an object'], level: NMP_COMPLIANCE.NONE }
   }
 
-  const c = capsule as Record<string, unknown>
+  const s = sage as Record<string, unknown>
 
-  if (!c.id || typeof c.id !== 'string') errors.push('Missing or invalid capsule id')
-  if (!c.name || typeof c.name !== 'string') errors.push('Missing or invalid capsule name')
-  if (!c.version || typeof c.version !== 'string') errors.push('Missing or invalid capsule version')
-
-  // Activation (optional)
-  if (c.activation && typeof c.activation === 'object') {
-    const act = c.activation as Record<string, unknown>
-    if (act.task_types !== undefined && (!Array.isArray(act.task_types) || act.task_types.length === 0)) {
-      errors.push('activation.task_types must be a non-empty array if provided')
-    }
-  }
-
-  // State machine
-  if (!c.state_machine || typeof c.state_machine !== 'object') {
-    errors.push('Missing state_machine')
-  } else {
-    const sm = c.state_machine as Record<string, unknown>
-    if (!sm.initial || typeof sm.initial !== 'string') errors.push('state_machine.initial required')
-    if (!Array.isArray(sm.final) || sm.final.length === 0) errors.push('state_machine.final must be non-empty array')
-    if (!sm.states || typeof sm.states !== 'object') {
-      errors.push('state_machine.states required')
-    } else {
-      const states = sm.states as Record<string, unknown>
-      if (typeof sm.initial === 'string' && !states[sm.initial]) {
-        errors.push(`state_machine.initial "${sm.initial}" not found in states`)
-      }
-      for (const [name, state] of Object.entries(states)) {
-        if (!state || typeof state !== 'object') {
-          errors.push(`State "${name}" is not an object`)
-          continue
-        }
-        const s = state as Record<string, unknown>
-        if (!s.goal || typeof s.goal !== 'string') errors.push(`State "${name}" missing goal`)
-        if (!Array.isArray(s.transitions)) errors.push(`State "${name}" missing transitions array`)
-      }
-    }
-  }
-
-  // Tool policy
-  if (!c.tool_policy || typeof c.tool_policy !== 'object') {
-    errors.push('Missing tool_policy')
-  } else {
-    const tp = c.tool_policy as Record<string, unknown>
-    if (!Array.isArray(tp.allow)) errors.push('tool_policy.allow must be an array')
-  }
-
-  // Validators
-  if (!Array.isArray(c.validators)) {
-    errors.push('validators must be an array')
-  }
+  if (!s.id || typeof s.id !== 'string') errors.push('Missing or invalid sage id')
+  if (!s.name || typeof s.name !== 'string') errors.push('Missing or invalid sage name')
+  if (!s.description || typeof s.description !== 'string') errors.push('Missing or invalid sage description')
 
   return {
     valid: errors.length === 0,

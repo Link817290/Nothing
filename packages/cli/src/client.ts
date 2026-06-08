@@ -75,7 +75,7 @@ export class NothingClient {
 
   // ─── Messages ──────────────────────────────────────────────────
 
-  send(req: { to: string; text: string; subject?: string; type?: string; agent?: string; project?: string; labels?: string[]; priority?: string; require?: string[]; attachments?: { filename: string; content: string; content_type?: string }[]; account_id?: string; context?: { repo?: string; file?: string; lines?: string; language?: string }; capabilities?: string[]; reply_schema?: Record<string, unknown>; conversation_id?: string; expires?: string; help_request?: Record<string, unknown>; execution_capsule?: Record<string, unknown>; ack?: boolean }) {
+  send(req: { to: string; text: string; subject?: string; type?: string; agent?: string; project?: string; labels?: string[]; priority?: string; require?: string[]; attachments?: { filename: string; content: string; content_type?: string }[]; account_id?: string; context?: { repo?: string; file?: string; lines?: string; language?: string }; capabilities?: string[]; reply_schema?: Record<string, unknown>; conversation_id?: string; expires?: string; help_request?: Record<string, unknown>; ack?: boolean }) {
     return this.request<{ success: boolean; message_id: string; status: string }>('POST', '/api/messages/send', req)
   }
 
@@ -105,7 +105,7 @@ export class NothingClient {
     return this.request<any>('GET', `/api/messages/${id}`)
   }
 
-  reply(id: string, req: { text: string; attachments?: { filename: string; content: string; content_type?: string }[]; execution_capsule?: any; experience_pack?: any }) {
+  reply(id: string, req: { text: string; attachments?: { filename: string; content: string; content_type?: string }[] }) {
     return this.request<{ success: boolean; message_id: string; status: string }>('POST', `/api/messages/${id}/reply`, req)
   }
 
@@ -200,71 +200,25 @@ export class NothingClient {
     return { filename, data }
   }
 
-  // ─── Capsules ──────────────────────────────────────────────────
+  // ─── Sages ─────────────────────────────────────────────────────
 
-  listCapsules() {
-    return this.request<{ capsules: any[] }>('GET', '/api/capsules')
-  }
-
-  getCapsule(id: string) {
-    return this.request<any>('GET', `/api/capsules/${id}`)
-  }
-
-  startCapsule(capsuleId: string, inputs?: Record<string, unknown>) {
-    return this.request<any>('POST', '/api/capsule-runs', { capsule_id: capsuleId, inputs })
-  }
-
-  getRun(runId: string) {
-    return this.request<any>('GET', `/api/capsule-runs/${runId}`)
-  }
-
-  getNextStep(runId: string) {
-    return this.request<any>('GET', `/api/capsule-runs/${runId}/next`)
-  }
-
-  transitionState(runId: string, to: string, reason?: string) {
-    return this.request<any>('POST', `/api/capsule-runs/${runId}/transition`, { to, reason })
-  }
-
-  guardCommand(runId: string, command: string) {
-    return this.request<{ effect: string; reason: string }>('POST', `/api/capsule-runs/${runId}/guard`, { command })
-  }
-
-  appendCapsuleEvent(runId: string, event: { type: string; state?: string; message?: string; data?: Record<string, unknown> }) {
-    return this.request<{ event_id: string }>('POST', `/api/capsule-runs/${runId}/events`, event)
-  }
-
-  listCapsuleEvents(runId: string) {
-    return this.request<{ events: any[] }>('GET', `/api/capsule-runs/${runId}/events`)
-  }
-
-  validateArtifact(runId: string, artifactName: string, artifactPath?: string, size?: number) {
-    return this.request<any>('POST', `/api/capsule-runs/${runId}/validate`, { artifact_name: artifactName, artifact_path: artifactPath, size })
-  }
-
-  // ─── Experience Packs ──────────────────────────────────────────
-
-  listExperiencePacks(query?: { installed?: boolean; keyword?: string }) {
+  listSages(query?: { installed?: boolean; keyword?: string }) {
     const params = new URLSearchParams()
     if (query?.installed !== undefined) params.set('installed', String(query.installed))
     if (query?.keyword) params.set('keyword', query.keyword)
     const qs = params.toString()
-    return this.request<{ packs: any[] }>('GET', `/api/experience-packs${qs ? '?' + qs : ''}`)
+    return this.request<{ sages: any[] }>('GET', `/api/sages${qs ? '?' + qs : ''}`)
   }
 
-  getExperiencePack(id: string) {
-    return this.request<any>('GET', `/api/experience-packs/${id}`)
+  searchSages(keyword: string) {
+    return this.request<{ sages: any[] }>('GET', `/api/sages/search?q=${encodeURIComponent(keyword)}`)
   }
 
-  searchExperiencePacks(keyword: string) {
-    return this.request<{ packs: any[] }>('GET', `/api/experience-packs/search?q=${encodeURIComponent(keyword)}`)
+  installSage(id: string) {
+    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/install`)
   }
 
-  installExperiencePack(id: string) {
-    return this.request<{ success: boolean }>('PUT', `/api/experience-packs/${id}/install`)
-  }
-
-  uninstallExperiencePack(id: string) {
-    return this.request<{ success: boolean }>('PUT', `/api/experience-packs/${id}/uninstall`)
+  uninstallSage(id: string) {
+    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/uninstall`)
   }
 }

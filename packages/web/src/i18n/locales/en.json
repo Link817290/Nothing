@@ -16,7 +16,7 @@
     "mailboxes": "Mailboxes",
     "system": "System",
     "projects": "All Projects",
-    "packs": "Experience Packs"
+    "sage": "Sage"
   },
   "search": {
     "placeholder": "Search messages..."
@@ -237,11 +237,11 @@
     "no_threads": "No threads in this project",
     "no_threads_hint": "Threads will appear here when messages are tagged with this project"
   },
-  "packs": {
-    "title": "Experience Packs",
-    "subtitle": "Capsule-based workflows you can run",
-    "empty": "No experience packs yet",
-    "empty_hint": "Packs appear here when you receive execution capsules via email",
+  "sage": {
+    "title": "Sage",
+    "subtitle": "Expert service protocols — find help when you need it",
+    "empty": "No sages yet",
+    "empty_hint": "Sages define what experts can help you with",
     "search_placeholder": "Search by keyword...",
     "installed": "Installed",
     "all": "All",
@@ -249,10 +249,9 @@
     "uninstall": "Uninstall",
     "keywords": "Keywords",
     "from": "From",
-    "capsule": "Capsule",
-    "no_results": "No packs matching this keyword",
-    "install_success": "Pack installed",
-    "uninstall_success": "Pack uninstalled"
+    "no_results": "No sages matching this keyword",
+    "install_success": "Sage installed",
+    "uninstall_success": "Sage uninstalled"
   },
   "admin": {
     "users_title": "Users",

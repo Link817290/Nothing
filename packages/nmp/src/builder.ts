@@ -2,24 +2,12 @@ import {
   NMP_VERSION, NMP_HEADERS, NMP_ATTACHMENT_NAME, NMP_DEFAULTS,
   resolveType,
   type NmpType, type NmpPriority, type NmpContext, type NmpPayload, type NmpEmail,
-  type NmpHelpRequest, type NmpExecutionCapsule, type NmpCapsuleRun, type NmpCapsuleEvent, type NmpArtifact, type NmpExperiencePack,
+  type NmpHelpRequest, type NmpTaskResult,
 } from './types.js'
 import { generateMarkdown, generatePlainText } from './markdown.js'
 
 /**
  * Fluent builder for constructing NMP emails.
- *
- * Usage:
- *   const email = NmpBuilder.create()
- *     .from('agent@example.com')
- *     .to('user@example.com')
- *     .subject('Hello')
- *     .type('nmp:chat')
- *     .agent('claude-code')
- *     .body('Message content here')
- *     .build()
- *
- * Returns an NmpEmail object ready for nodemailer.
  */
 export class NmpBuilder {
   private _from = ''
@@ -43,11 +31,8 @@ export class NmpBuilder {
   private _references?: string[]
   private _signature?: string
   private _helpRequest?: NmpHelpRequest
-  private _executionCapsule?: NmpExecutionCapsule
-  private _capsuleRun?: NmpCapsuleRun
-  private _capsuleEvent?: NmpCapsuleEvent
-  private _artifact?: NmpArtifact
-  private _experiencePack?: NmpExperiencePack
+  private _taskResult?: NmpTaskResult
+  private _sageId?: string
 
   static create(): NmpBuilder {
     return new NmpBuilder()
@@ -75,11 +60,8 @@ export class NmpBuilder {
   references(refs: string[]): this { this._references = refs; return this }
   signature(sig: string): this { this._signature = sig; return this }
   helpRequest(req: NmpHelpRequest): this { this._helpRequest = req; this._type = 'nmp:help-request'; return this }
-  executionCapsule(cap: NmpExecutionCapsule): this { this._executionCapsule = cap; this._type = 'nmp:execution-capsule'; return this }
-  capsuleRun(run: NmpCapsuleRun): this { this._capsuleRun = run; this._type = 'nmp:capsule-run'; return this }
-  capsuleEvent(evt: NmpCapsuleEvent): this { this._capsuleEvent = evt; this._type = 'nmp:capsule-event'; return this }
-  artifactCreated(art: NmpArtifact): this { this._artifact = art; this._type = 'nmp:artifact-created'; return this }
-  experiencePack(pack: NmpExperiencePack): this { this._experiencePack = pack; return this }
+  taskResult(result: NmpTaskResult): this { this._taskResult = result; this._type = 'nmp:task-result'; return this }
+  sageId(id: string): this { this._sageId = id; return this }
 
   /** Build the NMP payload object */
   buildPayload(): NmpPayload {
@@ -100,11 +82,8 @@ export class NmpBuilder {
       reply_schema: this._replySchema,
       signature: this._signature,
       help_request: this._helpRequest,
-      execution_capsule: this._executionCapsule,
-      capsule_run: this._capsuleRun,
-      capsule_event: this._capsuleEvent,
-      artifact: this._artifact,
-      experience_pack: this._experiencePack,
+      task_result: this._taskResult,
+      sage_id: this._sageId,
     }
   }
 

@@ -33,11 +33,6 @@ export async function sendMessage(userId: string, req: SendRequest) {
     agent: req.agent, project: req.project, labels: req.labels,
     priority: (req.priority as any), require: req.require,
     help_request: req.help_request,
-    execution_capsule: req.execution_capsule,
-    capsule_run: req.capsule_run,
-    capsule_event: req.capsule_event,
-    artifact: req.artifact,
-    experience_pack: req.experience_pack,
   }
 
   const hasAttachments = (req.attachments?.length || 0) > 0
@@ -47,29 +42,6 @@ export async function sendMessage(userId: string, req: SendRequest) {
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'queued', 'nmp', $13, 'outbound', $14)`,
     [id, userId, account.id, from, req.to, subject, req.text, JSON.stringify(payload), req.agent || null, req.project || null, JSON.stringify(req.labels || []), account.provider, id, hasAttachments]
   )
-
-  // Save outbound execution capsule
-  if (req.execution_capsule) {
-    try {
-      const { validateExecutionCapsule } = await import('@nothingmail/nmp')
-      const validation = validateExecutionCapsule(req.execution_capsule)
-      if (validation.valid) {
-        const { saveCapsule } = await import('./capsules.js')
-        await saveCapsule(userId, id, req.execution_capsule)
-        // Auto-register experience pack
-        try {
-          const capsule = req.execution_capsule
-          const { registerPack } = await import('./experience-packs.js')
-          await registerPack(userId, capsule.id, id, (req as any).experience_pack || {
-            id: capsule.id, name: capsule.name, kind: 'execution_capsule',
-            installable: true, runnable: true,
-            activation: { keywords: capsule.activation?.keywords || [] },
-            source: { message_id: id, author: from },
-          }, from)
-        } catch {}
-      }
-    } catch {}
-  }
 
   // Save outbound attachments to disk
   if (hasAttachments) {
@@ -167,11 +139,8 @@ export async function getMessage(userId: string, id: string) {
     labels: typeof row.labels === 'string' ? JSON.parse(row.labels) : (row.labels || []),
     context: payload?.context, status: row.status, source: row.source,
     json_payload: payload,
-    execution_capsule: payload?.execution_capsule || undefined,
     help_request: payload?.help_request || undefined,
-    capsule_run: payload?.capsule_run || undefined,
-    capsule_event: payload?.capsule_event || undefined,
-    artifact: payload?.artifact || undefined,
+    task_result: payload?.task_result || undefined,
     attachments: await (async () => {
       try {
         const { listAttachments } = await import('./attachments.js')
@@ -189,7 +158,7 @@ export async function getMessage(userId: string, id: string) {
 
 // ─── Reply ─────────────────────────────────────────────────────
 
-export async function replyMessage(userId: string, id: string, req: { text: string; files?: string[]; attachments?: { filename: string; content: string; content_type?: string }[]; execution_capsule?: any; experience_pack?: any }) {
+export async function replyMessage(userId: string, id: string, req: { text: string; files?: string[]; attachments?: { filename: string; content: string; content_type?: string }[] }) {
   const original = await queryOne(`SELECT * FROM messages WHERE id = $1 AND user_id = $2`, [id, userId])
   if (!original) throw new Error('Message not found')
 
@@ -205,11 +174,9 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   const origLabels = typeof original.labels === 'string' ? JSON.parse(original.labels) : (original.labels || [])
 
   const payload: NmpPayload = {
-    nmp: 1, type: req.execution_capsule ? 'nmp:execution-capsule' : 'nmp:reply',
+    nmp: 1, type: 'nmp:reply',
     project: original.project || undefined,
     labels: origLabels,
-    execution_capsule: req.execution_capsule,
-    experience_pack: req.experience_pack,
   }
 
   await run(
@@ -224,28 +191,6 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
     for (const att of req.attachments) {
       await saveAttachment(replyId, att.filename, att.content_type || 'application/octet-stream', Buffer.from(att.content, 'base64'))
     }
-  }
-
-  // Save capsule + register experience pack (version iteration in thread)
-  if (req.execution_capsule) {
-    try {
-      const { validateExecutionCapsule } = await import('@nothingmail/nmp')
-      const validation = validateExecutionCapsule(req.execution_capsule)
-      if (validation.valid) {
-        const { saveCapsule } = await import('./capsules.js')
-        await saveCapsule(userId, replyId, req.execution_capsule)
-        try {
-          const capsule = req.execution_capsule
-          const { registerPack } = await import('./experience-packs.js')
-          await registerPack(userId, capsule.id, replyId, req.experience_pack || {
-            id: capsule.id, name: capsule.name, kind: 'execution_capsule',
-            installable: true, runnable: true,
-            activation: { keywords: capsule.activation?.keywords || [] },
-            source: { message_id: replyId, author: from },
-          }, from)
-        } catch {}
-      }
-    } catch {}
   }
 
   let status = 'sent'

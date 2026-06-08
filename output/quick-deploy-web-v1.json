@@ -1,0 +1,91 @@
+{
+  "id": "quick-deploy-web-v1",
+  "name": "一键部署网页到公网",
+  "version": "1.2",
+  "description": "将本地网页文件部署到公网临时访问，无需登录任何服务。自动检测环境，选择最佳部署方案。",
+  "activation": {
+    "keywords": ["部署", "deploy", "公网", "上线", "发布网页", "临时访问"],
+    "task_types": ["deploy", "web"]
+  },
+  "inputs": [
+    {
+      "name": "path",
+      "type": "string",
+      "description": "要部署的目录路径（包含 index.html 等文件）",
+      "required": true
+    }
+  ],
+  "state_machine": {
+    "initial": "s0_env",
+    "final": ["done"],
+    "states": {
+      "s0_env": {
+        "title": "环境检测",
+        "goal": "检测用户系统环境，确定可用的工具链",
+        "instructions": "逐项检测，记录哪些可用：\n1. 操作系统：Windows / macOS / Linux\n2. Node.js：node --version（有则可用 npx serve、npx cloudflared）\n3. Python：python --version 或 python3 --version（有则可用 http.server）\n4. cloudflared：npx cloudflared --version 或 cloudflared --version\n5. curl：curl --version\n\n最低要求：\n- HTTP 服务器：Node.js 或 Python 至少有一个\n- Tunnel：Node.js（npx cloudflared）或系统已装 cloudflared\n- curl：用于验证\n\n如果最低要求不满足，告知用户缺什么、怎么装，然后转 done。",
+        "expected_outputs": ["OS 类型", "可用工具清单", "选定的部署方案"],
+        "allowed_tools": ["Bash"],
+        "transitions": [
+          { "to": "s1_check", "when": "最低要求满足，记录选定的工具组合" },
+          { "to": "done", "when": "缺少关键工具，告知用户如何安装" }
+        ]
+      },
+      "s1_check": {
+        "title": "检查文件",
+        "goal": "确认目标目录存在且包含可部署的网页文件",
+        "instructions": "1. 检查用户提供的目录路径是否存在\n2. 确认目录下有 index.html 或其他网页文件（.html/.htm）\n3. 列出将要部署的文件",
+        "expected_outputs": ["确认目录存在", "文件列表"],
+        "allowed_tools": ["Read", "Glob", "Bash", "Grep"],
+        "transitions": [
+          { "to": "s2_serve", "when": "目录存在且包含网页文件" },
+          { "to": "done", "when": "目录不存在或无网页文件，告知用户" }
+        ]
+      },
+      "s2_serve": {
+        "title": "启动服务并暴露公网",
+        "goal": "在本地启动 HTTP 服务器，然后用 cloudflared tunnel 暴露到公网",
+        "instructions": "根据 s0_env 检测到的工具选择方案：\n\n── HTTP 服务器（选一个，后台运行，端口 8787）──\n  有 Node.js → npx serve <目录> -l 8787\n  有 Python3 → python3 -m http.server 8787 -d <目录>\n  有 Python  → cd <目录> && python -m http.server 8787\n\n用 curl 确认本地服务返回 200 后再继续。\n\n── Tunnel（后台运行）──\n  有 Node.js → npx cloudflared tunnel --url http://localhost:8787\n  系统有 cloudflared → cloudflared tunnel --url http://localhost:8787\n\n⚠ 不要用 winget/brew 现装后直接调用，PATH 可能未刷新。\n  用 npx cloudflared 最稳定。\n\n等待 tunnel 启动（轮询最多 20 秒），从输出中提取 https://*.trycloudflare.com URL。",
+        "expected_outputs": ["本地服务启动成功", "公网 URL"],
+        "allowed_tools": ["Bash"],
+        "transitions": [
+          { "to": "s3_verify", "when": "获得公网 URL" }
+        ]
+      },
+      "s3_verify": {
+        "title": "验证公网访问",
+        "goal": "验证公网 URL 能正常访问到网页内容",
+        "instructions": "1. 用 curl 请求公网 URL\n2. 确认返回 HTTP 200\n3. 确认返回内容包含 html 标签\n4. 如果失败，等几秒重试一次（tunnel 可能还在建立连接）",
+        "expected_outputs": ["HTTP 200 响应", "网页内容确认"],
+        "allowed_tools": ["Bash"],
+        "transitions": [
+          { "to": "done", "when": "验证通过" },
+          { "to": "s2_serve", "when": "验证失败且可重试" }
+        ]
+      },
+      "done": {
+        "title": "完成",
+        "goal": "向用户报告部署结果",
+        "instructions": "输出公网访问 URL。提醒用户：\n- 这是临时链接，关闭终端或停止 cloudflared 后失效\n- 如需长期部署，考虑 Vercel / Cloudflare Pages / GitHub Pages",
+        "expected_outputs": ["公网 URL", "使用说明"],
+        "allowed_tools": [],
+        "transitions": []
+      }
+    }
+  },
+  "tool_policy": {
+    "allow": ["Read", "Glob", "Grep", "Bash"],
+    "deny": ["rm -rf", "git push --force", "npm publish", "DROP TABLE", "DELETE FROM", "format", "mkfs"],
+    "command_rules": [
+      { "pattern": "^(npx |python|python3|node |cloudflared|curl|wget|ls|cat|head|mkdir|cd )", "effect": "allow", "reason": "环境检测、部署和验证所需命令" },
+      { "pattern": "(rm -rf|rmdir /s|del /|format |mkfs|shutdown)", "effect": "deny", "reason": "禁止破坏性操作" },
+      { "pattern": "(git push|npm publish|docker push)", "effect": "deny", "reason": "禁止发布到外部服务" }
+    ]
+  },
+  "validators": [
+    { "id": "v_url", "type": "custom", "rule": "公网 URL 格式为 https://*.trycloudflare.com", "target": "public_url", "severity": "error" },
+    { "id": "v_http", "type": "custom", "rule": "curl 公网 URL 返回 HTTP 200", "target": "public_url", "severity": "error" }
+  ],
+  "artifacts": [
+    { "name": "public_url", "type": "url", "mime_type": "text/plain" }
+  ]
+}
