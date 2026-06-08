@@ -179,8 +179,6 @@ async function fetchNewEmails(acc: Record<string, any>): Promise<number> {
             agent = nmpResult.payload?.agent || null
             project = nmpResult.payload?.project || null
             labels = nmpResult.payload?.labels || []
-
-            }
           } else {
             body = parsed.html || parsed.textAsHtml || parsed.text || email.preview || subject
           }
