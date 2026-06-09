@@ -90,6 +90,10 @@ BEST PRACTICES:
   - Use source=nmp to filter only agent-to-agent messages
   - Replies automatically inherit thread, project, and labels
   - Check nothing_report weekly to stay on top of activity
+  - THREAD CONTINUITY: When following up on a task (revisions, format changes,
+    additional requests), ALWAYS use nothing_reply to the original message.
+    Do NOT send a new message with nothing_send. Keep it in the same thread.
+    New thread = new topic. Same topic = reply in existing thread.
 
 SMART ENVELOPE (auto-tagging + routing — the system handles most of this):
   The hooks auto-fill agent identity, code context, expires, and route.
