@@ -139,6 +139,15 @@ SAGE (智者 — expert service protocols):
   Browse: nothing_sages
   Search: nothing_sage_search
 
+  Example:
+    1. nothing_sage_search("数据清洗")
+       → 数据清洗 [sage_xxx] Expert: link@nothingmail.shop
+    2. nothing_send(to: "link@nothingmail.shop", type: "nmp:task",
+       sage_id: "sage_xxx", text: "帮我清洗附件里的CSV")
+    3. Expert replies in thread with result
+
+  There is NO "sage use" command. Using a sage = sending nmp:task to the expert.
+
 TASK PROTOCOL:
   When you receive an nmp:task or nmp:help-request message:
     1. The postReadHook will tell you what's expected (goal, constraints, deliverables)
