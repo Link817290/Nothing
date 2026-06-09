@@ -207,3 +207,71 @@ export async function sageCreate(opts: {
     console.log(`  ✗ ${err.message}`)
   }
 }
+
+export async function sageUse(id: string, text: string, opts?: { file?: string[] }) {
+  const client = getClient()
+  if (!client) return
+
+  // Find sage — try own first, then public
+  let sage: any = null
+  try {
+    const result = await client.listSages({})
+    sage = result.sages?.find((s: any) => s.id === id)
+  } catch {}
+  if (!sage) {
+    try { sage = await client.getPublicSage(id) } catch {}
+  }
+
+  if (!sage) {
+    console.log(`  ✗ Sage "${id}" not found.`)
+    return
+  }
+
+  if (!sage.author_email) {
+    console.log(`  ✗ Sage has no expert email. Can't send request.`)
+    return
+  }
+
+  // Read files and encode as base64
+  let attachments: { filename: string; content: string; content_type?: string }[] | undefined
+  if (opts?.file?.length) {
+    const { readFileSync, existsSync } = await import('fs')
+    const { basename } = await import('path')
+    attachments = []
+    for (const filePath of opts.file) {
+      if (!existsSync(filePath)) {
+        console.log(`  ✗ File not found: ${filePath}`)
+        return
+      }
+      attachments.push({
+        filename: basename(filePath),
+        content: readFileSync(filePath).toString('base64'),
+      })
+    }
+  }
+
+  const sj = typeof sage.sage_json === 'string' ? JSON.parse(sage.sage_json) : (sage.sage_json || {})
+
+  console.log(`\n  🧙 ${sage.name}`)
+  console.log(`  → ${sage.author_email}`)
+  if (sj.request_hint) console.log(`  📋 ${sj.request_hint}`)
+  console.log()
+
+  try {
+    const result = await client.send({
+      to: sage.author_email,
+      text,
+      type: 'nmp:task',
+      sage_id: id,
+      subject: `Sage: ${sage.name}`,
+      labels: ['sage', ...(sage.keywords || [])],
+      attachments,
+    })
+    console.log(`  ✓ Request sent to ${sage.author_email}`)
+    console.log(`  Message-ID: ${result.message_id}`)
+    if (attachments?.length) console.log(`  Attachments: ${attachments.map(a => a.filename).join(', ')}`)
+    console.log()
+  } catch (err: any) {
+    console.log(`  ✗ ${err.message}`)
+  }
+}
