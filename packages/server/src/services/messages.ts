@@ -176,9 +176,18 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   const threadId = original.thread_id || original.id
   const origLabels = typeof original.labels === 'string' ? JSON.parse(original.labels) : (original.labels || [])
 
-  // Auto-set type: replying to a task → task-result, otherwise → reply
+  // Auto-set type: if thread contains nmp:task → task-result, otherwise → reply
+  let replyType: string = 'nmp:reply'
   const parentType = (original.json_payload || {}).type
-  const replyType = (parentType === 'nmp:task' || parentType === 'nmp:help-request') ? 'nmp:task-result' : 'nmp:reply'
+  if (parentType === 'nmp:task' || parentType === 'nmp:help-request') {
+    replyType = 'nmp:task-result'
+  } else if (threadId) {
+    const threadHasTask = await queryOne(
+      `SELECT id FROM messages WHERE thread_id = $1 AND user_id = $2 AND json_payload->>'type' IN ('nmp:task', 'nmp:help-request') LIMIT 1`,
+      [threadId, userId]
+    )
+    if (threadHasTask) replyType = 'nmp:task-result'
+  }
 
   const payload: NmpPayload = {
     nmp: 1, type: replyType,
