@@ -153,10 +153,16 @@ TASK PROTOCOL (when you receive an nmp:task or nmp:help-request):
      - What's requested (goal, constraints, expected deliverables)
      - If sage_id is set: the full Sage protocol (delivery format, quality criteria)
   2. Do the work using your normal tools (Read, Bash, Grep, etc.)
-  3. Reply with nothing_reply — include the result in your reply text
-     - Attach files if the protocol requires them
+  3. Reply with nothing_reply:
+     - Text: brief summary of what was done
+     - Files: attach the actual deliverables (CSV, markdown, code, etc.)
+     - Use -f flag: nothing_reply with files parameter for attachments
      - The type is auto-set to nmp:task-result
   4. If you can't complete the task, reply explaining why
+
+  IMPORTANT: For data/file deliverables, always attach as files.
+  Don't paste large results in the reply body — write to a file first,
+  then attach it. Body should only have a brief summary.
 
 CHECKING FOR NEW MESSAGES:
   At conversation start, check for unread messages:
