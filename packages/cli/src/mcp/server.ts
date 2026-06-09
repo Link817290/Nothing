@@ -160,9 +160,14 @@ TASK PROTOCOL (when you receive an nmp:task or nmp:help-request):
      - The type is auto-set to nmp:task-result
   4. If you can't complete the task, reply explaining why
 
-  IMPORTANT: For data/file deliverables, always attach as files.
-  Don't paste large results in the reply body — write to a file first,
-  then attach it. Body should only have a brief summary.
+  IMPORTANT:
+  - For data/file deliverables, always attach as files.
+    Write to file first, then attach. Body = brief summary only.
+  - Sage protocol defines the BASE requirements (format, quality).
+    The requester's message text may contain extra requirements (tip).
+    You must satisfy BOTH the protocol AND the tip.
+    Example: protocol says "deliver markdown report",
+    tip says "重点关注安全性" — deliver markdown report focused on security.
 
 CHECKING FOR NEW MESSAGES:
   At conversation start, check for unread messages:
@@ -370,10 +375,13 @@ export async function startMcpServer() {
                 const sj = typeof sage.sage_json === 'string' ? JSON.parse(sage.sage_json) : (sage.sage_json || {})
                 const lines = [`🧙 Sage Protocol: ${sage.name}`]
                 if (sage.description) lines.push(`   ${sage.description}`)
-                if (sj.request_hint) lines.push(`   Requester provides: ${sj.request_hint}`)
                 if (sj.delivery_format) lines.push(`   Deliver as: ${sj.delivery_format}`)
-                if (sj.delivery_hints?.length) lines.push(`   Quality: ${sj.delivery_hints.join('; ')}`)
-                lines.push(`   Follow this protocol to deliver the result.`)
+                if (sj.delivery_hints?.length) lines.push(`   Quality criteria: ${sj.delivery_hints.join('; ')}`)
+                lines.push(``)
+                lines.push(`   ⚠ Two layers to satisfy:`)
+                lines.push(`   1. Protocol (above): base delivery format and quality criteria`)
+                lines.push(`   2. User tip (in message body): any extra requirements from the requester`)
+                lines.push(`   Deliver as file attachment. Reply body = brief summary only.`)
                 readHints.unshift(...lines)
               }
             } catch {}
