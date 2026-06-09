@@ -82,9 +82,15 @@ export async function sageFavorite(id: string, favorite: boolean) {
   }
 }
 
-export async function sagePublish(id: string, isPublic: boolean) {
+export async function sagePublish(id: string, isPublic: boolean, opts?: { yes?: boolean }) {
   const client = getClient()
   if (!client) return
+
+  if (isPublic && !opts?.yes) {
+    const { confirm } = await import('@inquirer/prompts')
+    const ok = await confirm({ message: `Publish sage "${id}" to your public profile?`, default: false })
+    if (!ok) { console.log('  Cancelled.'); return }
+  }
 
   try {
     await client.publishSage(id, isPublic)
@@ -134,6 +140,7 @@ export async function sageCreate(opts: {
   deliveryFormat?: string
   deliveryHints?: string
   public?: boolean
+  yes?: boolean
 }) {
   const client = getClient()
   if (!client) return
@@ -173,6 +180,14 @@ export async function sageCreate(opts: {
     }
   }
 
+  // Confirm before publishing
+  let shouldPublish = opts.public || false
+  if (shouldPublish && !opts.yes) {
+    const { confirm } = await import('@inquirer/prompts')
+    const ok = await confirm({ message: `Publish "${opts.name}" to your public profile?`, default: false })
+    if (!ok) shouldPublish = false
+  }
+
   try {
     const result = await client.createSage({
       name: opts.name,
@@ -180,10 +195,10 @@ export async function sageCreate(opts: {
       version: opts.version,
       keywords,
       sage_json: sageJson,
-      public: opts.public,
+      public: shouldPublish,
     })
     console.log(`  ✓ Sage created: ${result.sage_id}`)
-    if (opts.public) console.log(`  🌐 Published to your profile`)
+    if (shouldPublish) console.log(`  🌐 Published to your profile`)
     if (missing.length > 0) {
       console.log(`\n  Update with: nothing sage update ${result.sage_id} --description "..." --keywords "..."`)
     }

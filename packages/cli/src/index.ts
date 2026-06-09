@@ -22,10 +22,10 @@ program
     nothing_read, nothing_reply, nothing_projects, nothing_report.
 
   More info: https://github.com/Link817290/Nothing`)
-  .version('0.13.1')
+  .version('0.14.0')
 
 // ─── Version check (non-blocking) ──────────────────────────────
-const CURRENT_VERSION = '0.13.1'
+const CURRENT_VERSION = '0.14.0'
 fetch('https://registry.npmjs.org/nothing-cli/latest')
   .then(r => r.json())
   .then(data => {
@@ -465,6 +465,7 @@ sageCmd
   .option('--delivery-format <format>', 'Result format (e.g., markdown, JSON)')
   .option('--delivery-hints <hints>', 'Quality criteria (comma-separated)')
   .option('-p, --public', 'Publish to your profile')
+  .option('-y, --yes', 'Skip confirmation for publish')
   .description('Create a sage — your agent can help fill the details')
   .action(async (opts) => {
     const { sageCreate } = await import('./commands/sage.js')
@@ -507,10 +508,11 @@ sageCmd
 
 sageCmd
   .command('publish <id>')
+  .option('-y, --yes', 'Skip confirmation')
   .description('Make a sage public on your profile')
-  .action(async (id: string) => {
+  .action(async (id: string, opts) => {
     const { sagePublish } = await import('./commands/sage.js')
-    await sagePublish(id, true)
+    await sagePublish(id, true, opts)
   })
 
 sageCmd
