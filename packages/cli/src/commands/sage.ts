@@ -208,7 +208,7 @@ export async function sageCreate(opts: {
   }
 }
 
-export async function sageUse(id: string, text: string, opts?: { file?: string[] }) {
+export async function sageUse(id: string, text: string, opts?: { file?: string[]; replyTo?: string }) {
   const client = getClient()
   if (!client) return
 
@@ -258,16 +258,24 @@ export async function sageUse(id: string, text: string, opts?: { file?: string[]
   console.log()
 
   try {
-    const result = await client.send({
-      to: sage.author_email,
-      text,
-      type: 'nmp:task',
-      sage_id: id,
-      subject: `Sage: ${sage.name}`,
-      labels: ['sage', ...(sage.keywords || [])],
-      attachments,
-    })
-    console.log(`  ✓ Request sent to ${sage.author_email}`)
+    let result: any
+    if (opts?.replyTo) {
+      // Continue in existing thread
+      result = await client.reply(opts.replyTo, { text, attachments })
+      console.log(`  ✓ Request sent in thread (reply to ${opts.replyTo})`)
+    } else {
+      // New thread
+      result = await client.send({
+        to: sage.author_email,
+        text,
+        type: 'nmp:task',
+        sage_id: id,
+        subject: `Sage: ${sage.name}`,
+        labels: ['sage', ...(sage.keywords || [])],
+        attachments,
+      })
+      console.log(`  ✓ Request sent to ${sage.author_email}`)
+    }
     console.log(`  Message-ID: ${result.message_id}`)
     if (attachments?.length) console.log(`  Attachments: ${attachments.map(a => a.filename).join(', ')}`)
     console.log()

@@ -150,7 +150,12 @@ SAGE (智者 — expert service protocols):
        sage_id: "sage_xxx", text: "帮我清洗附件里的CSV")
     3. Expert replies in thread with result
 
-  CLI shortcut: nothing sage use <id> "description" [-f file1 file2]
+  CLI shortcut: nothing sage use <id> "description" [-f file] [-r messageId]
+
+  THREADING: If user is already in a conversation and wants to bring in
+  a sage, use nothing_reply (not nothing_send) to keep it in the same thread.
+  The sage_id can be passed to nothing_send for new threads only.
+  For existing threads, just mention the sage context in the reply text.
 
 TASK PROTOCOL (when you receive an nmp:task or nmp:help-request):
   1. Read the message — postReadHook will show:
