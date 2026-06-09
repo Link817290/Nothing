@@ -456,6 +456,22 @@ const sageCmd = program
   .description('Sage — expert service protocols')
 
 sageCmd
+  .command('create')
+  .requiredOption('-n, --name <name>', 'Sage name')
+  .option('-d, --description <desc>', 'What this sage does')
+  .option('-k, --keywords <keywords>', 'Trigger keywords (comma-separated)')
+  .option('-v, --version <version>', 'Version (default: 1.0)')
+  .option('--request-hint <hint>', 'What the requester should provide')
+  .option('--delivery-format <format>', 'Result format (e.g., markdown, JSON)')
+  .option('--delivery-hints <hints>', 'Quality criteria (comma-separated)')
+  .option('-p, --public', 'Publish to your profile')
+  .description('Create a sage — your agent can help fill the details')
+  .action(async (opts) => {
+    const { sageCreate } = await import('./commands/sage.js')
+    await sageCreate(opts)
+  })
+
+sageCmd
   .command('list')
   .option('-f, --favorited', 'Only show favorited sages')
   .option('-k, --keyword <keyword>', 'Filter by keyword')

@@ -214,6 +214,10 @@ export class NothingClient {
     return this.request<{ sages: any[] }>('GET', `/api/sages/search?q=${encodeURIComponent(keyword)}`)
   }
 
+  createSage(data: { name: string; description?: string; version?: string; keywords?: string[]; sage_json?: any; public?: boolean }) {
+    return this.request<{ success: boolean; sage_id: string }>('POST', '/api/sages', data)
+  }
+
   favoriteSage(id: string) {
     return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/favorite`)
   }
