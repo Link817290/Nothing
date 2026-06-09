@@ -69,6 +69,15 @@ export async function getSage(userId: string, id: string) {
   )
 }
 
+// ─── Get public sage (any user can read) ─────────────────────
+
+export async function getPublicSage(id: string) {
+  return queryOne(
+    'SELECT * FROM sages WHERE id = $1 AND public = TRUE',
+    [id],
+  )
+}
+
 // ─── Search (own sages) ──────────────────────────────────────
 
 export async function searchSages(userId: string, keyword: string) {

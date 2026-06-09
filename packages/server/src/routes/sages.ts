@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { authenticate } from '../middleware/auth.js'
-import { listSages, getSage, searchSages, setFavorited, registerSage, listPublicSages } from '../services/sages.js'
+import { listSages, getSage, getPublicSage, searchSages, setFavorited, registerSage, listPublicSages } from '../services/sages.js'
 
 export async function sageRoutes(app: FastifyInstance) {
 
@@ -9,6 +9,14 @@ export async function sageRoutes(app: FastifyInstance) {
     const { username } = req.params as { username: string }
     const sages = await listPublicSages(username)
     return { sages }
+  })
+
+  // ─── Public: get sage by ID (for cross-user sage protocol lookup) ─
+  app.get('/api/sages/public/:id', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const sage = await getPublicSage(id)
+    if (!sage) return reply.code(404).send({ error: 'Sage not found or not public' })
+    return formatSage(sage)
   })
 
   // ─── Authenticated ─────────────────────────────────────────────

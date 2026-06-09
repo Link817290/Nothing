@@ -233,4 +233,8 @@ export class NothingClient {
   browseUserSages(username: string) {
     return this.request<{ sages: any[] }>('GET', `/api/u/${username}/sages`)
   }
+
+  getPublicSage(id: string) {
+    return this.request<any>('GET', `/api/sages/public/${id}`)
+  }
 }
