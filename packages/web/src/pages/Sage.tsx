@@ -121,19 +121,29 @@ export default function SagePage() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        {s.favorited && (
-                          <span className="h-2 w-2 rounded-full bg-brand shrink-0" />
-                        )}
-                        <p className="font-semibold text-foreground truncate">
-                          {s.name}
-                          {s.version && <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">v{s.version}</span>}
-                        </p>
-                      </div>
+                      <p className="font-semibold text-foreground truncate">
+                        {s.name}
+                        {s.version && <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">v{s.version}</span>}
+                      </p>
                       {s.description && (
                         <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.description}</p>
                       )}
                     </div>
+                    <Button
+                      variant={s.favorited ? 'outline' : 'default'}
+                      size="sm"
+                      className="h-7 text-xs shrink-0"
+                      disabled={toggling.has(s.id)}
+                      onClick={() => handleToggleInstall(s)}
+                    >
+                      {toggling.has(s.id) ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : s.favorited ? (
+                        <><X className="h-3 w-3" /> {t('sage.unfavorite')}</>
+                      ) : (
+                        <><Star className="h-3 w-3" /> {t('sage.favorite')}</>
+                      )}
+                    </Button>
                   </div>
 
                   {s.keywords.length > 0 && (
@@ -148,28 +158,8 @@ export default function SagePage() {
                     </div>
                   )}
 
-                  <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                    {s.author_email && (
-                      <span className="truncate">{s.author_email.split('@')[0]}</span>
-                    )}
-                  </div>
-
-                  <div className="mt-4">
-                    <Button
-                      variant={s.favorited ? 'outline' : 'default'}
-                      size="sm"
-                      className="h-7 text-xs"
-                      disabled={toggling.has(s.id)}
-                      onClick={() => handleToggleInstall(s)}
-                    >
-                      {toggling.has(s.id) ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : s.favorited ? (
-                        <><X className="h-3 w-3" /> {t('sage.unfavorite')}</>
-                      ) : (
-                        <><Star className="h-3 w-3" /> {t('sage.favorite')}</>
-                      )}
-                    </Button>
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    {s.author_email ? s.author_email : 'me'}
                   </div>
                 </CardContent>
               </Card>
