@@ -174,10 +174,9 @@ TASK PROTOCOL (when you receive an nmp:task or nmp:help-request):
     tip says "重点关注安全性" — deliver markdown report focused on security.
 
 CHECKING FOR NEW MESSAGES:
-  At conversation start, check for unread messages:
-    1. First try: read ~/.nothing/notifications.json (fast, local)
-    2. If file missing or stale: use nothing_inbox to check directly
-  Tell the user immediately if there are unread messages.
+  Unread messages are auto-injected into nothing_inbox tool description.
+  If you see [📬 N unread: ...] in the tool list, tell the user immediately.
+  No need to read files or call tools — it's already there.
 
 MINIMAL DISRUPTION (highest priority rule):
   - Default: zero questions, zero blocking. Most messages just send directly.
@@ -238,24 +237,38 @@ export async function startMcpServer() {
     messages: [{ role: 'user', content: { type: 'text', text: NOTHING_INSTRUCTIONS } }],
   }))
 
-  // Tools — inject unread notification into tool list so agent sees it immediately
+  // Tools — inject live unread notification into tool list so agent sees it immediately
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const tools = Object.values(NMP_TOOLS).map(t => ({ ...t }))
 
-    // Read notifications and prepend to nothing_inbox description
+    // Live inbox check — query API directly, don't rely on stale file
     try {
-      const { readNotifications } = await import('../config.js')
-      const notif = readNotifications()
-      if (notif.unread > 0) {
+      const result = await client.inbox({ unread: true, limit: 5 })
+      if (result.total_unread > 0) {
         const inbox = tools.find((t: any) => t.name === 'nothing_inbox') as any
         if (inbox) {
-          const preview = notif.messages.slice(0, 3).map((m: any) =>
+          const preview = result.messages.slice(0, 3).map((m: any) =>
             `${m.from?.split('@')[0]}: ${m.subject || '(no subject)'}`
           ).join('; ')
-          inbox.description = `[📬 ${notif.unread} unread: ${preview}] ` + inbox.description
+          inbox.description = `[📬 ${result.total_unread} unread: ${preview}] ` + inbox.description
         }
       }
-    } catch {}
+    } catch {
+      // Fallback to local file if API unreachable
+      try {
+        const { readNotifications } = await import('../config.js')
+        const notif = readNotifications()
+        if (notif.unread > 0) {
+          const inbox = tools.find((t: any) => t.name === 'nothing_inbox') as any
+          if (inbox) {
+            const preview = notif.messages.slice(0, 3).map((m: any) =>
+              `${m.from?.split('@')[0]}: ${m.subject || '(no subject)'}`
+            ).join('; ')
+            inbox.description = `[📬 ${notif.unread} unread: ${preview}] ` + inbox.description
+          }
+        }
+      } catch {}
+    }
 
     return { tools }
   })
