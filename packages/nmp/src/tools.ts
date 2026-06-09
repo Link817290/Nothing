@@ -25,6 +25,7 @@ export const NMP_TOOLS = {
         conversation_id: { type: 'string', description: 'Conversation/thread ID to continue an existing conversation.' },
         expires: { type: 'string', description: 'ISO 8601 expiry timestamp. Message becomes stale after this time.' },
         help_request: { type: 'object', description: 'Structured help request with goal, background, constraints, and expected artifacts.' },
+        sage_id: { type: 'string', description: 'Sage ID to reference when requesting help from an expert. The expert\'s agent will use this to know what protocol to follow.' },
         ack: { type: 'boolean', description: 'Request delivery acknowledgment from recipient.' },
       },
       required: ['to', 'text'],

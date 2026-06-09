@@ -100,7 +100,14 @@ export interface SendRequest {
   priority?: string
   require?: string[]
   attachments?: SendAttachment[]
+  context?: { repo?: string; file?: string; lines?: string; language?: string }
+  capabilities?: string[]
+  reply_schema?: Record<string, unknown>
+  conversation_id?: string
+  expires?: string
+  ack?: boolean
   help_request?: any
+  sage_id?: string
 }
 
 export interface InboxQuery {

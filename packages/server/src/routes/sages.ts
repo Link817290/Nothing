@@ -99,6 +99,7 @@ function formatSage(row: Record<string, any>) {
     public: row.public || false,
     favorited: row.favorited || false,
     keywords: row.keywords || [],
+    sage_json: row.sage_json || {},
     created_at: row.created_at,
     updated_at: row.updated_at,
   }

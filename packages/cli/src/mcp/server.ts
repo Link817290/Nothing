@@ -121,9 +121,10 @@ SAGE (智者 — expert service protocols):
     3. User confirms → nothing_send to the sage's expert email:
        - type: nmp:task
        - to: the expert's email (from search result)
+       - sage_id: the sage ID (so expert's agent knows the protocol)
        - text: describe what you need in natural language
-    4. Expert works and replies in the same thread
-    5. You receive the result via inbox
+    4. Expert reads message → sage protocol is auto-injected → works accordingly
+    5. Expert replies in the same thread → you receive the result
 
   This is just email — happens in a normal thread, not a separate system.
 
@@ -283,6 +284,7 @@ export async function startMcpServer() {
             conversation_id: (a.conversation_id as string) || hookResult.patch.conversation_id,
             expires: (a.expires as string) || hookResult.patch.expires,
             help_request: a.help_request as Record<string, unknown> | undefined,
+            sage_id: a.sage_id as string | undefined,
             ack: a.ack as boolean | undefined,
           })
 
@@ -323,9 +325,28 @@ export async function startMcpServer() {
           // Smart Envelope: postReadHook — inject contract prompts
           const readHints = postReadHook(msg.json_payload || {})
 
+          // Sage protocol injection: if message references a sage_id, inject protocol details
+          const sageId = msg.json_payload?.sage_id
+          if (sageId) {
+            try {
+              const sageResult = await client.listSages({})
+              const sage = sageResult.sages?.find((s: any) => s.id === sageId)
+              if (sage) {
+                const sj = typeof sage.sage_json === 'string' ? JSON.parse(sage.sage_json) : (sage.sage_json || {})
+                const lines = [`🧙 Sage Protocol: ${sage.name}`]
+                if (sage.description) lines.push(`   ${sage.description}`)
+                if (sj.request_hint) lines.push(`   Requester provides: ${sj.request_hint}`)
+                if (sj.delivery_format) lines.push(`   Deliver as: ${sj.delivery_format}`)
+                if (sj.delivery_hints?.length) lines.push(`   Quality: ${sj.delivery_hints.join('; ')}`)
+                lines.push(`   Follow this protocol to deliver the result.`)
+                readHints.unshift(...lines)
+              }
+            } catch {}
+          }
+
           let text = ''
           if (readHints.length > 0) {
-            text += readHints.join('\n') + '\n\n---\n\n'
+            text += readHints.filter(Boolean).join('\n') + '\n\n---\n\n'
           }
           text += `From: ${msg.from}\nTo: ${msg.to}\nSubject: ${msg.subject}\nDate: ${msg.date}\n`
           if (msg.project) text += `Project: ${msg.project}\n`

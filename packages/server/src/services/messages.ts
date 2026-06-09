@@ -32,7 +32,10 @@ export async function sendMessage(userId: string, req: SendRequest) {
     nmp: 1, type: (req.type as any) || 'nmp:chat',
     agent: req.agent, project: req.project, labels: req.labels,
     priority: (req.priority as any), require: req.require,
-    help_request: req.help_request,
+    context: req.context, capabilities: req.capabilities,
+    reply_schema: req.reply_schema, conversation_id: req.conversation_id,
+    expires: req.expires, ack: req.ack,
+    help_request: req.help_request, sage_id: req.sage_id,
   }
 
   const hasAttachments = (req.attachments?.length || 0) > 0
