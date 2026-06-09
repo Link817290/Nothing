@@ -67,6 +67,12 @@ SETUP (if not configured):
   3. Done — MCP tools are auto-installed
   Note: Do NOT run "nothing init" without flags — it's interactive and won't work here.
 
+CLI NON-INTERACTIVE RULES:
+  All CLI commands that ask for confirmation have --yes (-y) to skip.
+  Always use -y when running: nothing delete, nothing reset, nothing project:delete,
+  nothing sage publish, nothing sage create --public.
+  NEVER run interactive commands without flags — they will hang.
+
 AVAILABLE TOOLS:
   nothing_send     — Send email/NMP message. Trigger: "send to", "email", "notify"
   nothing_inbox    — Check inbox. Trigger: "check mail", "any messages", "inbox"
