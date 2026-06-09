@@ -186,10 +186,13 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
     labels: origLabels,
   }
 
+  // Reply to_address: if replying to own message, send to original's to_address
+  const replyToAddr = original.from_address === from ? original.to_address : original.from_address
+
   await run(
     `INSERT INTO messages (id, user_id, account_id, from_address, to_address, subject, content, json_payload, project, labels, status, source, thread_id, in_reply_to, direction, has_attachments)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'queued', 'nmp', $11, $12, 'outbound', $13)`,
-    [replyId, userId, account.id, from, original.from_address, subject, req.text, JSON.stringify(payload), original.project || null, JSON.stringify(origLabels), threadId, id, (req.attachments?.length || 0) > 0]
+    [replyId, userId, account.id, from, replyToAddr, subject, req.text, JSON.stringify(payload), original.project || null, JSON.stringify(origLabels), threadId, id, (req.attachments?.length || 0) > 0]
   )
 
   // Save reply attachments
@@ -210,12 +213,12 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
       content: Buffer.from(a.content, 'base64'),
       contentType: a.content_type || 'application/octet-stream',
     }))
-    // Reply All: send to all thread participants (except self)
+    // Determine reply recipient: all participants except self
     const allAddrs = new Set([original.from_address, ...(original.to_address || '').split(',').map((s: string) => s.trim())])
     allAddrs.delete(from)
     let replyTo = [...allAddrs].filter(Boolean).join(', ')
 
-    // If no recipients left (replying to own message), find other participants from thread
+    // If replying to own message, find other participants from thread
     if (!replyTo && threadId) {
       const threadMsgs = await queryAll(
         `SELECT DISTINCT from_address, to_address FROM messages WHERE thread_id = $1 AND user_id = $2`,
@@ -230,7 +233,8 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
       replyTo = [...threadAddrs].filter(Boolean).join(', ')
     }
 
-    if (!replyTo) replyTo = original.from_address
+    // Last resort: if still no recipient, use original's to_address (not from, to avoid self-send)
+    if (!replyTo) replyTo = original.from_address === from ? original.to_address : original.from_address
     const result = await smtpSend({ account, from, to: replyTo, subject, text: req.text, payload, inReplyTo: origSmtpId, references: [origSmtpId], userAttachments })
     if (result.messageId) {
       await run(`UPDATE messages SET smtp_message_id = $1 WHERE id = $2`, [result.messageId, replyId])

@@ -178,8 +178,12 @@ CHECKING FOR NEW MESSAGES:
   If you see [📬 N unread: ...] in the tool list, tell the user immediately.
   No need to read files or call tools — it's already there.
 
-MINIMAL DISRUPTION (highest priority rule):
-  - Default: zero questions, zero blocking. Most messages just send directly.
+SEND CONFIRMATION:
+  Before sending any message (nothing_send or nothing_reply), briefly confirm
+  with the user: who you're sending to, what you're sending. Don't send silently.
+  Example: "我要把审查报告回复给 apple@nothingmail.shop，确认吗？"
+
+MINIMAL DISRUPTION:
   - When you see Smart Envelope Hints, try filling gaps with sensible defaults
     BEFORE asking the user. Only ask if "not filling would clearly cause an error
     AND this message is important."
