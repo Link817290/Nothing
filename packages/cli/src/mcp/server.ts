@@ -62,8 +62,10 @@ IMPORTANT — ALWAYS DO THIS FIRST:
 SETUP (if not configured):
   If the user hasn't set up Nothing yet, guide them:
   1. Install: npm i -g nothing-cli
-  2. Connect: nothing init (choose login or register)
+  2. Connect: nothing init -s https://nothingmail.shop -k <API_KEY>
+     (user gets API key from web dashboard Settings page)
   3. Done — MCP tools are auto-installed
+  Note: Do NOT run "nothing init" without flags — it's interactive and won't work here.
 
 AVAILABLE TOOLS:
   nothing_send     — Send email/NMP message. Trigger: "send to", "email", "notify"
