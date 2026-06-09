@@ -449,4 +449,68 @@ program
     await report(opts)
   })
 
+// ─── Sage ─────────────────────────────────────────────────────
+
+const sageCmd = program
+  .command('sage')
+  .description('Sage — expert service protocols')
+
+sageCmd
+  .command('list')
+  .option('-f, --favorited', 'Only show favorited sages')
+  .option('-k, --keyword <keyword>', 'Filter by keyword')
+  .description('List your sages')
+  .action(async (opts) => {
+    const { sageList } = await import('./commands/sage.js')
+    await sageList(opts)
+  })
+
+sageCmd
+  .command('search <keyword>')
+  .description('Search sages by keyword')
+  .action(async (keyword: string) => {
+    const { sageSearch } = await import('./commands/sage.js')
+    await sageSearch(keyword)
+  })
+
+sageCmd
+  .command('favorite <id>')
+  .description('Favorite a sage')
+  .action(async (id: string) => {
+    const { sageFavorite } = await import('./commands/sage.js')
+    await sageFavorite(id, true)
+  })
+
+sageCmd
+  .command('unfavorite <id>')
+  .description('Unfavorite a sage')
+  .action(async (id: string) => {
+    const { sageFavorite } = await import('./commands/sage.js')
+    await sageFavorite(id, false)
+  })
+
+sageCmd
+  .command('publish <id>')
+  .description('Make a sage public on your profile')
+  .action(async (id: string) => {
+    const { sagePublish } = await import('./commands/sage.js')
+    await sagePublish(id, true)
+  })
+
+sageCmd
+  .command('unpublish <id>')
+  .description('Make a sage private')
+  .action(async (id: string) => {
+    const { sagePublish } = await import('./commands/sage.js')
+    await sagePublish(id, false)
+  })
+
+sageCmd
+  .command('browse <username>')
+  .description("Browse a user's public sages")
+  .action(async (username: string) => {
+    const { sageBrowse } = await import('./commands/sage.js')
+    await sageBrowse(username)
+  })
+
 program.parse()

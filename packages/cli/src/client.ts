@@ -221,4 +221,12 @@ export class NothingClient {
   unfavoriteSage(id: string) {
     return this.request<{ success: boolean }>('PUT', `/api/sages/${id}/unfavorite`)
   }
+
+  publishSage(id: string, isPublic: boolean) {
+    return this.request<{ success: boolean }>('PUT', `/api/sages/${id}`, { public: isPublic })
+  }
+
+  browseUserSages(username: string) {
+    return this.request<{ sages: any[] }>('GET', `/api/u/${username}/sages`)
+  }
 }

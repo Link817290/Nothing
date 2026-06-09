@@ -49,6 +49,27 @@ export async function sageRoutes(app: FastifyInstance) {
     return { success: true, sage_id: id }
   })
 
+  // Update sage (publish/unpublish etc.)
+  app.put('/api/sages/:id', async (req, reply) => {
+    const user = (req as any).user as { id: string }
+    const { id } = req.params as { id: string }
+    const body = req.body as { public?: boolean; name?: string; description?: string }
+    const sage = await getSage(user.id, id)
+    if (!sage) return reply.code(404).send({ error: 'Sage not found' })
+    const { run } = await import('../repositories/db.js')
+    const updates: string[] = []
+    const params: unknown[] = []
+    let idx = 1
+    if (body.public !== undefined) { updates.push(`public = $${idx}`); params.push(body.public); idx++ }
+    if (body.name) { updates.push(`name = $${idx}`); params.push(body.name); idx++ }
+    if (body.description !== undefined) { updates.push(`description = $${idx}`); params.push(body.description); idx++ }
+    if (updates.length === 0) return { success: true }
+    updates.push('updated_at = NOW()')
+    params.push(id, user.id)
+    await run(`UPDATE sages SET ${updates.join(', ')} WHERE id = $${idx} AND owner_user_id = $${idx + 1}`, params)
+    return { success: true }
+  })
+
   app.put('/api/sages/:id/favorite', async (req, reply) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
