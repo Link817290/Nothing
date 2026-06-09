@@ -146,13 +146,23 @@ SAGE (智者 — expert service protocols):
        sage_id: "sage_xxx", text: "帮我清洗附件里的CSV")
     3. Expert replies in thread with result
 
-  There is NO "sage use" command. Using a sage = sending nmp:task to the expert.
+  CLI shortcut: nothing sage use <id> "description" [-f file1 file2]
 
-TASK PROTOCOL:
-  When you receive an nmp:task or nmp:help-request message:
-    1. The postReadHook will tell you what's expected (goal, constraints, deliverables)
-    2. Do the work using your normal tools
-    3. Reply with the result. The preReplyHook will check if you delivered what was asked.
+TASK PROTOCOL (when you receive an nmp:task or nmp:help-request):
+  1. Read the message — postReadHook will show:
+     - What's requested (goal, constraints, expected deliverables)
+     - If sage_id is set: the full Sage protocol (delivery format, quality criteria)
+  2. Do the work using your normal tools (Read, Bash, Grep, etc.)
+  3. Reply with nothing_reply — include the result in your reply text
+     - Attach files if the protocol requires them
+     - The type is auto-set to nmp:task-result
+  4. If you can't complete the task, reply explaining why
+
+CHECKING FOR NEW MESSAGES:
+  At conversation start, check for unread messages:
+    1. First try: read ~/.nothing/notifications.json (fast, local)
+    2. If file missing or stale: use nothing_inbox to check directly
+  Tell the user immediately if there are unread messages.
 
 MINIMAL DISRUPTION (highest priority rule):
   - Default: zero questions, zero blocking. Most messages just send directly.

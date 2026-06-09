@@ -99,9 +99,9 @@ export async function mcpInstall() {
 const NOTHING_INSTRUCTION = `# Nothing Mail
 You have Nothing email tools via MCP. At the start of EVERY conversation:
 1. Read ~/.nothing/notifications.json — if unread messages exist, tell the user immediately.
+   If the file is missing, use nothing_inbox to check directly.
 2. When user mentions email, messages, sending, inbox, or contacts — use Nothing tools.
-3. Read ~/.nothing/memory.json for user preferences and context from prior sessions.
-4. Respect ~/.nothing/preferences.json for reply style, language, and signature.`
+3. Respect ~/.nothing/preferences.json for reply style, language, and signature.`
 
 function installCodexMcp(mcpConfig: Record<string, unknown>) {
   const codexConfig = join(homedir(), '.codex', 'config.toml')
