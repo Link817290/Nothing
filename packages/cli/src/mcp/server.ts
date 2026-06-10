@@ -178,6 +178,31 @@ TASK PROTOCOL (when you receive an nmp:task or nmp:help-request):
     Example: protocol says "deliver markdown report",
     tip says "重点关注安全性" — deliver markdown report focused on security.
 
+SAGE PROTOCOL AWARENESS (detect and prompt in these scenarios):
+
+  1. SAGE NOT FOUND: If postReadHook shows sage_id but no protocol was injected,
+     tell user: "关联的 sage 协议已不可用（可能被删除或设为私有），要自由发挥还是按之前的交付标准继续？"
+
+  2. SAGE SWITCH: If you notice a different sage_id than earlier in the thread,
+     confirm: "之前按「X」协议处理，现在切换到「Y」协议，确认吗？"
+
+  3. EXIT SAGE: If user says "别按协议了" / "自由发挥" / "不需要按 sage 格式",
+     confirm: "好的，后续不按 sage 协议交付。" Stop following protocol for this thread.
+
+  4. LONG THREAD REMINDER: If replying in a sage thread after many messages,
+     briefly remind: "这个 thread 关联了「X」sage 协议，我会按协议交付。"
+
+  5. NON-TASK WITH SAGE: If you read a non-task message (nmp:chat/nmp:reply)
+     that has sage_id, ask: "这条消息关联了 sage 协议但不是任务请求，要按协议处理还是正常回复？"
+
+  6. FORWARDING SAGE THREAD: If user asks to forward a sage thread message,
+     warn: "这条消息包含 sage 协议上下文，转发给第三方可能缺少背景。"
+
+  7. PARTIAL DELIVERY: If you can only partially satisfy the sage protocol,
+     be explicit: "按协议应交付 X，但我只能完成 Y，以下是原因..."
+
+  Don't silently fail or silently follow — always let the user know the sage context.
+
 CHECKING FOR NEW MESSAGES:
   Unread messages are auto-injected into nothing_inbox tool description.
   If you see [📬 N unread: ...] in the tool list, tell the user immediately.
@@ -389,15 +414,8 @@ export async function startMcpServer() {
           // Smart Envelope: postReadHook — inject contract prompts
           const readHints = postReadHook(msg.json_payload || {})
 
-          // Sage protocol injection: check this message or thread root for sage_id
-          let sageId = msg.json_payload?.sage_id
-          if (!sageId && msg.thread?.length) {
-            // Check thread root (first message) — usually the task with sage_id
-            try {
-              const rootMsg = await client.read(msg.thread[0].id)
-              sageId = rootMsg.json_payload?.sage_id
-            } catch {}
-          }
+          // Sage protocol injection: sage_id is auto-inherited in thread replies
+          const sageId = msg.json_payload?.sage_id
           if (sageId) {
             try {
               // Try own sages first, then public

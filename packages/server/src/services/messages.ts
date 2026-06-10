@@ -180,10 +180,14 @@ export async function replyMessage(userId: string, id: string, req: { text: stri
   const parentType = (original.json_payload || {}).type
   const replyType = (parentType === 'nmp:task' || parentType === 'nmp:help-request') ? 'nmp:task-result' : 'nmp:reply'
 
+  // Inherit sage_id from parent message (like project/labels)
+  const parentSageId = (original.json_payload || {}).sage_id
+
   const payload: NmpPayload = {
     nmp: 1, type: replyType,
     project: original.project || undefined,
     labels: origLabels,
+    sage_id: parentSageId || undefined,
   }
 
   // Reply to_address: if replying to own message, send to original's to_address
