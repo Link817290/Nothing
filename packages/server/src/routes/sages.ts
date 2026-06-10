@@ -81,8 +81,26 @@ export async function sageRoutes(app: FastifyInstance) {
   app.put('/api/sages/:id/favorite', async (req, reply) => {
     const user = (req as any).user as { id: string }
     const { id } = req.params as { id: string }
-    const sage = await getSage(user.id, id)
-    if (!sage) return reply.code(404).send({ error: 'Sage not found' })
+
+    // Check own sages first
+    let sage = await getSage(user.id, id)
+
+    // If not own, try to copy from public sage
+    if (!sage) {
+      const publicSage = await getPublicSage(id)
+      if (!publicSage) return reply.code(404).send({ error: 'Sage not found or not public' })
+
+      // Copy public sage to own collection
+      await registerSage(user.id, {
+        id: publicSage.id,
+        name: publicSage.name,
+        description: publicSage.description,
+        version: publicSage.version,
+        keywords: publicSage.keywords || [],
+        sage_json: publicSage.sage_json,
+      }, publicSage.author_email)
+    }
+
     await setFavorited(user.id, id, true)
     return { success: true }
   })
