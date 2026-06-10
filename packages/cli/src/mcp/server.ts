@@ -389,8 +389,15 @@ export async function startMcpServer() {
           // Smart Envelope: postReadHook — inject contract prompts
           const readHints = postReadHook(msg.json_payload || {})
 
-          // Sage protocol injection: if message references a sage_id, fetch protocol (own or public)
-          const sageId = msg.json_payload?.sage_id
+          // Sage protocol injection: check this message or thread root for sage_id
+          let sageId = msg.json_payload?.sage_id
+          if (!sageId && msg.thread?.length) {
+            // Check thread root (first message) — usually the task with sage_id
+            try {
+              const rootMsg = await client.read(msg.thread[0].id)
+              sageId = rootMsg.json_payload?.sage_id
+            } catch {}
+          }
           if (sageId) {
             try {
               // Try own sages first, then public
