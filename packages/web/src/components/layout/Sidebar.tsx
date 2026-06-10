@@ -57,6 +57,7 @@ export function Sidebar() {
           <nav className="flex flex-col gap-0.5 px-3">
             <SectionLabel>{t('nav.overview')}</SectionLabel>
             <NavItem icon={LayoutDashboard} label={t('nav.dashboard')} href="/dashboard" active={isActive('/dashboard')} />
+            <NavItem icon={BrainCircuit} label={t('nav.sage')} href="/sage" active={isActive('/sage')} />
 
             <SectionLabel>{t('nav.mail')}</SectionLabel>
             <NavItem icon={GitBranch} label={t('nav.threads')} href="/threads" active={isActive('/threads')} />
@@ -79,7 +80,6 @@ export function Sidebar() {
             ))}
 
             <SectionLabel>{t('nav.manage')}</SectionLabel>
-            <NavItem icon={BrainCircuit} label={t('nav.sage')} href="/sage" active={isActive('/sage')} />
             <NavItem icon={Plug} label={t('nav.connect')} href="/connect" active={isActive('/connect')} />
             <NavItem icon={Settings} label={t('nav.settings')} href="/settings" active={isActive('/settings')} />
 
