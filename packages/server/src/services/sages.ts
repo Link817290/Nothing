@@ -41,23 +41,37 @@ export async function registerSage(
 // ─── List (own sages) ────────────────────────────────────────
 
 export async function listSages(userId: string, opts?: { favorited?: boolean; keyword?: string }) {
-  let sql = 'SELECT * FROM sages WHERE owner_user_id = $1'
-  const params: unknown[] = [userId]
-  let idx = 2
-
-  if (opts?.favorited !== undefined) {
-    sql += ` AND favorited = $${idx}`
-    params.push(opts.favorited)
-    idx++
+  // Favorited: only own sages marked as favorited
+  if (opts?.favorited) {
+    let sql = 'SELECT * FROM sages WHERE owner_user_id = $1 AND favorited = TRUE'
+    const params: unknown[] = [userId]
+    let idx = 2
+    if (opts.keyword) {
+      sql += ` AND (keywords @> ARRAY[$${idx}]::text[] OR name ILIKE '%' || $${idx} || '%')`
+      params.push(opts.keyword)
+      idx++
+    }
+    sql += ' ORDER BY created_at DESC'
+    return queryAll(sql, params)
   }
+
+  // All: own sages UNION all public sages from others
+  let keywordFilter = ''
+  const params: unknown[] = [userId, userId]
+  let idx = 3
   if (opts?.keyword) {
-    sql += ` AND (keywords @> ARRAY[$${idx}]::text[] OR name ILIKE '%' || $${idx} || '%')`
+    keywordFilter = ` AND (keywords @> ARRAY[$${idx}]::text[] OR name ILIKE '%' || $${idx} || '%')`
     params.push(opts.keyword)
     idx++
   }
 
-  sql += ' ORDER BY favorited DESC, created_at DESC'
-  return queryAll(sql, params)
+  return queryAll(
+    `SELECT * FROM sages WHERE owner_user_id = $1${keywordFilter}
+     UNION
+     SELECT * FROM sages WHERE public = TRUE AND owner_user_id != $2${keywordFilter}
+     ORDER BY favorited DESC, created_at DESC`,
+    params,
+  )
 }
 
 // ─── Get ─────────────────────────────────────────────────────
@@ -83,7 +97,7 @@ export async function getPublicSage(id: string) {
 export async function searchSages(userId: string, keyword: string) {
   return queryAll(
     `SELECT * FROM sages
-     WHERE owner_user_id = $1
+     WHERE (owner_user_id = $1 OR public = TRUE)
        AND (keywords @> ARRAY[$2]::text[] OR name ILIKE '%' || $2 || '%')
      ORDER BY favorited DESC, created_at DESC
      LIMIT 20`,
