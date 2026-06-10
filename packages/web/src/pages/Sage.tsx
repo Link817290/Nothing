@@ -26,7 +26,7 @@ export default function SagePage() {
   const { t } = useTranslation();
   const [sages, setSages] = useState<Sage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>('favorited');
   const [search, setSearch] = useState('');
   const [toggling, setToggling] = useState<Set<string>>(new Set());
 
